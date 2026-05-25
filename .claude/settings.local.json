@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"d:\\\\Fiverr\\\\time-cut-ai\" -Recurse -Force)",
+      "Bash(Select-Object FullName, PSIsContainer)",
+      "Bash(Sort-Object FullName)",
+      "Bash(node -e \"import\\('dotenv'\\).then\\(m => console.log\\('dotenv ok', typeof m.default\\)\\)\")",
+      "Bash(del src\\\\components\\\\ReportPanel.tsx src\\\\components\\\\InputPanel.tsx src\\\\components\\\\Header.tsx)",
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Path src,server -Include *.tsx,*.ts | Select-Object -ExpandProperty FullName | Sort-Object\")"
+    ]
+  }
+}
