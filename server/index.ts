@@ -6,7 +6,7 @@ import multer from 'multer'
 import OpenAI from 'openai'
 
 const _require = createRequire(import.meta.url)
-const pdfParse = _require('pdf-parse') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
+const pdfParse = _require('pdf-parse/lib/pdf-parse.js') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
