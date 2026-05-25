@@ -1,12 +1,17 @@
 import 'dotenv/config'
+import { createRequire } from 'module'
+import { pathToFileURL } from 'url'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
 import OpenAI from 'openai'
 
+const _require = createRequire(import.meta.url)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
+  _require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
+).href
 
 async function extractPDFText(buffer: Buffer): Promise<string> {
   const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)

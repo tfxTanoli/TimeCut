@@ -1,11 +1,16 @@
+import { createRequire } from 'module'
+import { pathToFileURL } from 'url'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
 import { generateReport } from './_lib/shared.js'
 
+const _require = createRequire(import.meta.url)
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
-pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
+  _require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
+).href
 
 async function extractPDFText(buffer: Buffer): Promise<string> {
   const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
