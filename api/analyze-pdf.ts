@@ -34,7 +34,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     try {
       const buffer = fs.readFileSync(file.filepath)
       const text = await extractPDFText(buffer)
-      if (!text?.trim()) throw new Error('Could not extract text from PDF')
+      const meaningful = text.replace(/-+Page \(\d+\) Break-+/g, '').trim()
+      if (meaningful.length < 50) {
+        throw new Error('This PDF has no extractable text (likely scanned/image-based). Please upload a PDF with selectable text.')
+      }
       const data = await generateReport(text, language)
       return res.json({ data })
     } catch (e) {
