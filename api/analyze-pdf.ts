@@ -1,10 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
+import { extractText, getDocumentProxy } from 'unpdf'
 import { generateReport } from './_lib/shared.js'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require('pdf-parse/lib/pdf-parse.js') as (buf: Buffer) => Promise<{ text: string }>
 
 export const config = { api: { bodyParser: false } }
 
@@ -25,7 +23,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const buffer = fs.readFileSync(file.filepath)
-      const { text } = await pdfParse(buffer)
+      const pdf = await getDocumentProxy(new Uint8Array(buffer))
+      const { text } = await extractText(pdf, { mergePages: true })
       if (!text?.trim()) throw new Error('Could not extract text from PDF')
       const data = await generateReport(text, language)
       return res.json({ data })

@@ -1,12 +1,9 @@
 import 'dotenv/config'
-import { createRequire } from 'module'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
 import OpenAI from 'openai'
-
-const _require = createRequire(import.meta.url)
-const pdfParse = _require('pdf-parse/lib/pdf-parse.js') as (buffer: Buffer) => Promise<{ text: string; numpages: number }>
+import { extractText, getDocumentProxy } from 'unpdf'
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
@@ -80,10 +77,11 @@ app.post('/api/analyze', express.json(), async (req, res) => {
 app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) { res.status(400).json({ error: 'No PDF file uploaded' }); return }
-    const pdfData = await pdfParse(req.file.buffer)
-    if (!pdfData.text?.trim()) throw new Error('Could not extract text from PDF')
+    const pdf = await getDocumentProxy(new Uint8Array(req.file.buffer))
+    const { text } = await extractText(pdf, { mergePages: true })
+    if (!text?.trim()) throw new Error('Could not extract text from PDF')
     const language = req.body.language || 'English'
-    const data = await generateReport(pdfData.text, language)
+    const data = await generateReport(text, language)
     res.json({ data })
   } catch (err) {
     res.status(500).json({ error: err instanceof Error ? err.message : 'PDF parsing failed' })

@@ -6,7 +6,12 @@
       "Bash(Sort-Object FullName)",
       "Bash(node -e \"import\\('dotenv'\\).then\\(m => console.log\\('dotenv ok', typeof m.default\\)\\)\")",
       "Bash(del src\\\\components\\\\ReportPanel.tsx src\\\\components\\\\InputPanel.tsx src\\\\components\\\\Header.tsx)",
-      "Bash(powershell -Command \"Get-ChildItem -Recurse -Path src,server -Include *.tsx,*.ts | Select-Object -ExpandProperty FullName | Sort-Object\")"
+      "Bash(powershell -Command \"Get-ChildItem -Recurse -Path src,server -Include *.tsx,*.ts | Select-Object -ExpandProperty FullName | Sort-Object\")",
+      "PowerShell(npm install -g vercel 2>&1)",
+      "PowerShell(vercel --version)",
+      "Bash(vercel --prod --scope muhammad-usmans-projects-8e80afc3)",
+      "Bash(del api\\\\package.json)",
+      "Bash(npx tsx *)"
     ]
   }
 }
