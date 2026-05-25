@@ -86,7 +86,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 {activeTab === 'text' && (
                   <textarea
                     className="text-area"
-                    placeholder="Paste any content here: article, email, video description, book chapter..."
+                    placeholder="Paste any content here: article, email, book chapter, report..."
                     value={textValue}
                     onChange={e => setTextValue(e.target.value)}
                     rows={6}

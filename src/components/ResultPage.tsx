@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { TimeCutReport } from '../types'
 import ScoreGauge from './ScoreGauge'
 
@@ -7,13 +8,18 @@ interface Props {
 }
 
 export default function ResultPage({ report, onBack }: Props) {
+  const [copied, setCopied] = useState(false)
+
   function handleDownload() {
     window.print()
   }
 
   function handleShare() {
     const text = `Time Intelligence Report\n\nVerdict: ${report.verdict}\n${report.verdict_description}\n\nValue Score: ${report.value_score}/10\nTime Saved: ${report.time_saved_minutes} mins\n\nFinal Decision:\n${report.final_decision}`
-    navigator.clipboard.writeText(text).then(() => alert('Report copied to clipboard!'))
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   const verdictClass =
@@ -39,7 +45,7 @@ export default function ResultPage({ report, onBack }: Props) {
           <h2 className="result-nav-title">TIME INTELLIGENCE REPORT</h2>
           <div className="result-nav-actions">
             <button className="icon-btn" onClick={handleDownload}>↓ Download Report</button>
-            <button className="icon-btn" onClick={handleShare}>↗ Share</button>
+            <button className="icon-btn" onClick={handleShare}>{copied ? '✓ Copied!' : '↗ Share'}</button>
           </div>
         </div>
       </div>

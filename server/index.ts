@@ -17,7 +17,30 @@ function extractPDFText(buffer: Buffer): Promise<string> {
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
-Analyze the content and return an honest, specific, direct JSON report.
+STEP 1 — DETECT CONTENT TYPE
+Classify the content as one of:
+- FICTION / NARRATIVE: novels, short stories, creative writing, screenplays, poetry, narrative essays
+- INFORMATIONAL: articles, blog posts, emails, reports, research papers, business documents, self-help, news, academic papers, transcripts
+
+STEP 2 — SCORE BASED ON CONTENT TYPE
+
+For FICTION / NARRATIVE, evaluate:
+- Emotional engagement and resonance
+- Atmosphere and immersion
+- Narrative tension and pacing
+- Character depth and authenticity
+- Writing quality and originality (do NOT penalize fiction for "low information density" — that is not the goal of this content type)
+
+For INFORMATIONAL content, evaluate:
+- Information density (useful information per paragraph)
+- Originality (fresh ideas vs recycled talking points)
+- Practical value (actionable takeaways)
+- Clarity and structure
+- Evidence quality (data, examples, logic)
+
+STEP 3 — PRODUCE THE REPORT
+
+Return an honest, specific, direct JSON report.
 
 OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
 {
@@ -25,7 +48,7 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
   "verdict_description": "One clear sentence explaining the verdict",
   "overall_value_score": <number 0.0 to 10.0>,
   "time_saved_minutes": <integer, estimated minutes the user can safely skip>,
-  "value_score": <number 0.0 to 10.0, based on information density and originality>,
+  "value_score": <number 0.0 to 10.0>,
   "attention_quality": "High" | "Medium" | "Low",
   "attention_quality_description": "One sentence describing the quality of attention this content deserves",
   "what_this_is_about": "2 to 3 sentences describing what the content actually covers",
@@ -36,9 +59,9 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
 }
 
 SCORING GUIDE:
-- "MUST READ": overall_value_score 8 to 10, highly original, valuable, worth full attention
-- "SKIM ONLY": overall_value_score 4 to 7.9, some value but significant filler or repetition
-- "SKIP IT": overall_value_score 0 to 3.9, low value, repetitive, or misleading
+- "MUST READ": overall_value_score 8 to 10 — exceptional for its type (gripping fiction OR highly original, actionable non-fiction)
+- "SKIM ONLY": overall_value_score 4 to 7.9 — some value but notable padding, slow pacing, or repetition
+- "SKIP IT": overall_value_score 0 to 3.9 — low value, derivative, dull, or misleading
 
 Generate ALL text fields in the user's selected language.`
 
@@ -88,7 +111,10 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) { res.status(400).json({ error: 'No PDF file uploaded' }); return }
     const text = await extractPDFText(req.file.buffer)
-    if (!text) throw new Error('Could not extract text from PDF')
+    const meaningful = text.replace(/-+Page \(\d+\) Break-+/g, '').trim()
+    if (meaningful.length < 50) {
+      throw new Error('This PDF has no extractable text (likely scanned/image-based). Please upload a PDF with selectable text.')
+    }
     const language = req.body.language || 'English'
     const data = await generateReport(text, language)
     res.json({ data })
