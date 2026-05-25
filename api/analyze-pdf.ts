@@ -1,14 +1,12 @@
-import { createRequire } from 'module'
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
 import { generateReport } from './_lib/shared.js'
 
-// Tell Vercel NOT to parse the body — formidable reads the raw stream
-export const config = { api: { bodyParser: false } }
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
 
-const _require = createRequire(import.meta.url)
-const pdfParse = _require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>
+export const config = { api: { bodyParser: false } }
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
