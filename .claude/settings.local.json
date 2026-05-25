@@ -19,7 +19,9 @@
       "Bash(node -e \"const p = require\\('./node_modules/pdf-parse/package.json'\\); console.log\\(p.version, p.description, p.main\\)\")",
       "Bash(node -e ' *)",
       "Bash(npm uninstall *)",
-      "Bash(curl -s http://localhost:3001/api/analyze -X POST -H \"Content-Type: application/json\" -d '{\"content\":\"test\",\"language\":\"English\"}')"
+      "Bash(curl -s http://localhost:3001/api/analyze -X POST -H \"Content-Type: application/json\" -d '{\"content\":\"test\",\"language\":\"English\"}')",
+      "Bash(pkill -f \"tsx\")",
+      "Bash(node -e \"const P = require\\('pdf2json'\\); console.log\\('pdf2json loaded:', typeof P\\)\")"
     ]
   }
 }

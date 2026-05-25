@@ -1,29 +1,18 @@
 import 'dotenv/config'
-import { createRequire } from 'module'
-import { pathToFileURL } from 'url'
 import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
 import OpenAI from 'openai'
+import PDFParser from 'pdf2json'
 
-const _require = createRequire(import.meta.url)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
-pdfjsLib.GlobalWorkerOptions.workerSrc = pathToFileURL(
-  _require.resolve('pdfjs-dist/legacy/build/pdf.worker.mjs')
-).href
-
-async function extractPDFText(buffer: Buffer): Promise<string> {
-  const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
-  const pdfDoc = await pdfjsLib.getDocument({ data }).promise
-  const parts: string[] = []
-  for (let i = 1; i <= pdfDoc.numPages; i++) {
-    const page = await pdfDoc.getPage(i)
-    const content = await page.getTextContent()
+function extractPDFText(buffer: Buffer): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const parser = new PDFParser(null, true)
+    parser.on('pdfParser_dataReady', () => resolve(parser.getRawTextContent()))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parts.push(content.items.map((item: any) => item.str ?? '').join(' '))
-  }
-  return parts.join('\n').trim()
+    parser.on('pdfParser_dataError', (err: any) => reject(err.parserError ?? err))
+    parser.parseBuffer(buffer)
+  })
 }
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
@@ -104,6 +93,7 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
     const data = await generateReport(text, language)
     res.json({ data })
   } catch (err) {
+    console.error('[PDF ERROR]', err)
     res.status(500).json({ error: err instanceof Error ? err.message : 'PDF parsing failed' })
   }
 })
