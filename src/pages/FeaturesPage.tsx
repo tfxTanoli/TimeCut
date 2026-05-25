@@ -5,13 +5,13 @@ const FEATURES = [
   {
     emoji: '⚖️',
     title: 'Smart Verdict System',
-    desc: 'Every report ends with one of three clear verdicts — MUST READ, SKIM ONLY, or SKIP IT — giving you instant decision clarity.',
+    desc: 'Every report ends with one of three clear verdicts: MUST READ, SKIM ONLY, or SKIP IT, giving you instant decision clarity.',
     color: 'purple',
   },
   {
     emoji: '⭐',
     title: 'Overall Value Score',
-    desc: 'A 0–10 score calculated from information density, originality, and practical usefulness — visualized as a live gauge.',
+    desc: 'A 0 to 10 score calculated from information density, originality, and practical usefulness, visualized as a live gauge.',
     color: 'amber',
   },
   {
@@ -23,7 +23,7 @@ const FEATURES = [
   {
     emoji: '📊',
     title: 'Attention Quality Rating',
-    desc: 'High, Medium, or Low — tells you how much focused attention the content actually deserves.',
+    desc: 'High, Medium, or Low. Tells you how much focused attention the content actually deserves.',
     color: 'blue',
   },
   {
@@ -35,25 +35,25 @@ const FEATURES = [
   {
     emoji: '🚫',
     title: 'What to Skip Detection',
-    desc: 'Specific sections, repetitive parts, or filler content flagged for you to ignore — so you read smarter, not longer.',
+    desc: 'Specific sections, repetitive parts, or filler content flagged for you to ignore. Read smarter, not longer.',
     color: 'red',
   },
   {
     emoji: '👥',
     title: 'Audience Fit Detection',
-    desc: 'Identifies who the content is actually written for — so you know if it\'s the right level for you.',
+    desc: 'Identifies who the content is actually written for, so you know if it\'s the right level for you.',
     color: 'amber',
   },
   {
     emoji: '✅',
     title: 'Final Decision Summary',
-    desc: 'A clear, concise 2–3 sentence recommendation that tells you exactly what to do with the content.',
+    desc: 'A clear, concise recommendation that tells you exactly what to do with the content.',
     color: 'green',
   },
   {
     emoji: '📄',
     title: 'PDF Document Support',
-    desc: 'Upload PDF files directly — reports, books, research papers, and more analyzed instantly.',
+    desc: 'Upload PDF files directly: reports, books, research papers, and more analyzed instantly.',
     color: 'blue',
   },
   {

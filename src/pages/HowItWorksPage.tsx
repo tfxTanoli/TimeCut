@@ -5,7 +5,7 @@ const STEPS = [
   {
     num: '01',
     title: 'Input Your Content',
-    desc: 'Paste any text — articles, emails, newsletters, reports, video scripts — or upload a PDF document up to 10 MB.',
+    desc: 'Paste any text (articles, emails, newsletters, reports, video scripts) or upload a PDF document up to 10 MB.',
     details: [
       'Copy and paste from any source',
       'Upload PDF documents directly',
@@ -30,7 +30,7 @@ const STEPS = [
     desc: 'Receive a complete Time Intelligence Report in seconds, giving you everything you need to decide whether the content deserves your time.',
     details: [
       'Verdict: MUST READ / SKIM ONLY / SKIP IT',
-      'Overall Value Score (0–10)',
+      'Overall Value Score (0 to 10)',
       'Estimated time you can save',
       'Key insights, what to skip, and final decision',
     ],
@@ -44,11 +44,11 @@ const FAQS = [
   },
   {
     q: 'What types of content can I analyze?',
-    a: 'Any text-based content — articles, blog posts, emails, newsletters, reports, book excerpts, video scripts, research papers, PDFs, and more.',
+    a: 'Any text-based content: articles, blog posts, emails, newsletters, reports, book excerpts, video scripts, research papers, PDFs, and more.',
   },
   {
     q: 'How long does analysis take?',
-    a: 'Most analyses complete within 10–20 seconds depending on content length and server load.',
+    a: 'Most analyses complete within 10 to 20 seconds depending on content length and server load.',
   },
   {
     q: 'What languages are supported?',
@@ -104,10 +104,10 @@ export default function HowItWorksPage() {
           <h2 className="section-title">Inside Your Time Intelligence Report</h2>
           <div className="anatomy-grid">
             {[
-              { icon: '⚖️', label: 'Verdict', desc: 'MUST READ / SKIM ONLY / SKIP IT — a clear, decisive recommendation.' },
-              { icon: '⭐', label: 'Value Score', desc: 'A 0–10 score based on originality, density, and usefulness.' },
+              { icon: '⚖️', label: 'Verdict', desc: 'MUST READ, SKIM ONLY, or SKIP IT. A clear, decisive recommendation.' },
+              { icon: '⭐', label: 'Value Score', desc: 'A 0 to 10 score based on originality, density, and usefulness.' },
               { icon: '⏱', label: 'Time Saved', desc: 'Estimated minutes you can skip without missing anything important.' },
-              { icon: '📊', label: 'Attention Quality', desc: 'High, Medium, or Low — how much focus the content deserves.' },
+              { icon: '📊', label: 'Attention Quality', desc: 'High, Medium, or Low. How much focus the content actually deserves.' },
               { icon: '💡', label: 'Key Insights', desc: 'The most valuable ideas extracted from the content.' },
               { icon: '🚫', label: 'What to Skip', desc: 'Specific sections, repetition, or filler to ignore.' },
               { icon: '👥', label: 'Best For', desc: 'The audience that would get the most from this content.' },
@@ -142,7 +142,7 @@ export default function HowItWorksPage() {
       <section className="page-cta-section">
         <div className="container page-cta-inner">
           <h2>Ready to Save Your Time?</h2>
-          <p>Start analyzing content instantly — no account required.</p>
+          <p>Start analyzing content instantly. No account required.</p>
           <Link to="/" className="btn-primary btn-cta">Start for Free</Link>
         </div>
       </section>

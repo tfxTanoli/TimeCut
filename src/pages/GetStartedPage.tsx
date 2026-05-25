@@ -22,7 +22,7 @@ export default function GetStartedPage() {
             <span className="auth-success-icon">✓</span>
             <h2>You're on the list!</h2>
             <p>We'll send your account details to <strong>{email}</strong> shortly.</p>
-            <p style={{ marginTop: 8 }}>In the meantime, start analyzing content right now — no account needed.</p>
+            <p style={{ marginTop: 8 }}>In the meantime, start analyzing content right now, no account needed.</p>
             <Link to="/" className="btn-primary btn-cta" style={{ display: 'inline-block', marginTop: 16 }}>
               Start Analyzing
             </Link>
@@ -83,7 +83,7 @@ export default function GetStartedPage() {
               { icon: '📄', text: 'PDF upload support for documents and reports' },
               { icon: '🌍', text: '10 language support for global content' },
               { icon: '📊', text: 'Full analysis: verdict, score, insights, decisions' },
-              { icon: '🔒', text: 'Private and secure — your content is never stored' },
+              { icon: '🔒', text: 'Private and secure. Your content is never stored' },
               { icon: '🎯', text: 'Clear verdicts: MUST READ, SKIM ONLY, or SKIP IT' },
             ].map((f, i) => (
               <li key={i} className="gs-feature-item">

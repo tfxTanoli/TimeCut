@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { analyzeText, analyzePdf } from '../api'
 import type { TimeCutReport, InputTab } from '../types'
 import LandingPage from '../components/LandingPage'
-import ResultPage from '../components/ResultPage'
+
+const ResultPage = lazy(() => import('../components/ResultPage'))
 
 export default function HomePage() {
   const [report, setReport] = useState<TimeCutReport | null>(null)
@@ -35,7 +36,11 @@ export default function HomePage() {
   }
 
   if (report) {
-    return <ResultPage report={report} onBack={handleBack} />
+    return (
+      <Suspense fallback={<div className="page-loading" />}>
+        <ResultPage report={report} onBack={handleBack} />
+      </Suspense>
+    )
   }
 
   return <LandingPage onSubmit={handleSubmit} isLoading={isLoading} error={error} />

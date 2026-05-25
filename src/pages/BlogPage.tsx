@@ -21,7 +21,7 @@ const POSTS = [
   {
     category: 'Strategy',
     title: 'SKIM vs. SKIP: How to Decide When to Abandon Content',
-    excerpt: 'Not every piece of content deserves full attention — but some deserve at least a skim. Learn the framework for making that call in under 30 seconds.',
+    excerpt: 'Not every piece of content deserves full attention, but some deserve at least a skim. Learn the framework for making that call in under 30 seconds.',
     date: 'April 29, 2025',
     readTime: '4 min read',
     emoji: '📖',
@@ -45,7 +45,7 @@ const POSTS = [
   {
     category: 'Strategy',
     title: 'Building a Time-Aware Content Strategy',
-    excerpt: 'If you create content, the question isn\'t just "is this good?" — it\'s "is this worth someone\'s time?" A new lens for content creators.',
+    excerpt: 'If you create content, the question isn\'t just "is this good?" It\'s "is this worth someone\'s time?" A new lens for content creators.',
     date: 'April 3, 2025',
     readTime: '5 min read',
     emoji: '📝',
@@ -62,7 +62,7 @@ export default function BlogPage() {
           <span className="hero-badge">Time Intelligence Blog</span>
           <h1 className="page-hero-title">Think Smarter About<br />What You Read</h1>
           <p className="page-hero-sub">
-            Insights on attention, time, AI, and how to protect what matters most — your focus.
+            Insights on attention, time, AI, and how to protect what matters most: your focus.
           </p>
         </div>
       </section>
@@ -116,7 +116,7 @@ export default function BlogPage() {
         <div className="container newsletter-inner">
           <div>
             <h2 className="newsletter-title">Time Intelligence Weekly</h2>
-            <p className="newsletter-sub">One email per week. Only the content that's worth your time — pre-screened by TimeCut.</p>
+            <p className="newsletter-sub">One email per week. Only the content that's worth your time, pre-screened by TimeCut.</p>
           </div>
           <form className="newsletter-form" onSubmit={e => e.preventDefault()}>
             <input type="email" className="newsletter-input" placeholder="Enter your email..." />

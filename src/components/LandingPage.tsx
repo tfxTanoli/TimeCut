@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import type { InputTab } from '../types'
 import Footer from './Footer'
@@ -20,6 +20,21 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [language, setLanguage] = useState('English')
   const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const els = document.querySelectorAll<Element>('.fade-up')
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('is-visible')
+          observer.unobserve(e.target)
+        }
+      }),
+      { threshold: 0.12 }
+    )
+    els.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -67,45 +82,47 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             </div>
 
             <div className="input-body">
-              {activeTab === 'text' && (
-                <textarea
-                  className="text-area"
-                  placeholder="Paste any content here — article, email, video description, book chapter..."
-                  value={textValue}
-                  onChange={e => setTextValue(e.target.value)}
-                  rows={6}
-                  disabled={isLoading}
-                />
-              )}
-              {activeTab === 'pdf' && (
-                <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
-                  <IconUpload className="pdf-drop-icon" />
-                  {pdfFile ? (
-                    <>
-                      <p className="pdf-name">{pdfFile.name}</p>
-                      <p className="pdf-size">
-                        {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
-                        <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
-                          Remove
-                        </span>
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="pdf-drop-title">Click to select a PDF file</p>
-                      <p className="pdf-drop-hint">Max 10 MB</p>
-                    </>
-                  )}
-                  <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
-                </div>
-              )}
+              <div key={activeTab} className="tab-fade">
+                {activeTab === 'text' && (
+                  <textarea
+                    className="text-area"
+                    placeholder="Paste any content here: article, email, video description, book chapter..."
+                    value={textValue}
+                    onChange={e => setTextValue(e.target.value)}
+                    rows={6}
+                    disabled={isLoading}
+                  />
+                )}
+                {activeTab === 'pdf' && (
+                  <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
+                    <IconUpload className="pdf-drop-icon" />
+                    {pdfFile ? (
+                      <>
+                        <p className="pdf-name">{pdfFile.name}</p>
+                        <p className="pdf-size">
+                          {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
+                          <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
+                            Remove
+                          </span>
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="pdf-drop-title">Click to select a PDF file</p>
+                        <p className="pdf-drop-hint">Max 10 MB</p>
+                      </>
+                    )}
+                    <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
+                  </div>
+                )}
+              </div>
 
               <div className="input-footer">
                 <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                   {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                 </select>
                 <button type="submit" className="btn-primary btn-cta" disabled={!canSubmit}>
-                  {isLoading ? 'Analyzing...' : 'Save My Time'}
+                  {isLoading ? <><span className="btn-spinner" />Analyzing...</> : 'Save My Time'}
                 </button>
               </div>
             </div>
@@ -122,20 +139,20 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Feature Cards ── */}
       <section className="features">
         <div className="container">
-          <p className="section-eyebrow">Why TimeCut?</p>
-          <h2 className="section-title">Save Time. Protect Attention.</h2>
+          <p className="section-eyebrow fade-up">Why TimeCut?</p>
+          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>Save Time. Protect Attention.</h2>
           <div className="features-grid">
-            <div className="feature-card">
+            <div className="feature-card fade-up" style={{ transitionDelay: '0ms' }}>
               <div className="feature-icon feature-icon--purple"><IconClock /></div>
               <h3>Save Time</h3>
               <p>Know exactly how many minutes you can safely skip before you even start reading.</p>
             </div>
-            <div className="feature-card">
+            <div className="feature-card fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon feature-icon--amber"><IconTarget /></div>
               <h3>Clear Decisions</h3>
-              <p>Get a definitive verdict — Must Read, Skim Only, or Skip It — backed by AI analysis.</p>
+              <p>Get a definitive verdict: Must Read, Skim Only, or Skip It, backed by AI analysis.</p>
             </div>
-            <div className="feature-card">
+            <div className="feature-card fade-up" style={{ transitionDelay: '240ms' }}>
               <div className="feature-icon feature-icon--green"><IconShieldCheck /></div>
               <h3>Protect Attention</h3>
               <p>Identify fluff, repetition, and low-value filler so you only absorb what matters.</p>
@@ -147,14 +164,14 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Demo Section ── */}
       <section className="demo">
         <div className="container">
-          <p className="section-eyebrow">Live Example</p>
-          <h2 className="demo-title">See TimeCut in Action</h2>
-          <div className="demo-card">
+          <p className="section-eyebrow fade-up">Live Example</p>
+          <h2 className="demo-title fade-up" style={{ transitionDelay: '60ms' }}>See TimeCut in Action</h2>
+          <div className="demo-card fade-up" style={{ transitionDelay: '120ms' }}>
             <div className="demo-input">
               <p className="demo-label">INPUT</p>
               <p className="demo-field-label">Paste Text</p>
               <p className="demo-url demo-url--text">
-                "Most people waste 2–3 hours daily on content that adds no real value to their work or life.
+                "Most people waste 2 to 3 hours daily on content that adds no real value to their work or life.
                 Here are 10 productivity habits that will change everything..."
               </p>
             </div>
@@ -174,7 +191,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
               </div>
             </div>
           </div>
-          <div className="demo-cta">
+          <div className="demo-cta fade-up" style={{ transitionDelay: '200ms' }}>
             <Link to="/examples" className="btn-outline">View Full Examples</Link>
           </div>
         </div>
@@ -184,22 +201,22 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       <section className="social-proof">
         <div className="container">
           <div className="stats-row">
-            <div className="stat-item">
+            <div className="stat-item fade-up" style={{ transitionDelay: '0ms' }}>
               <p className="stat-value">50,000+</p>
               <p className="stat-label">Reports Generated</p>
             </div>
             <div className="stat-divider" />
-            <div className="stat-item">
+            <div className="stat-item fade-up" style={{ transitionDelay: '100ms' }}>
               <p className="stat-value">10 Languages</p>
               <p className="stat-label">Supported</p>
             </div>
             <div className="stat-divider" />
-            <div className="stat-item">
+            <div className="stat-item fade-up" style={{ transitionDelay: '200ms' }}>
               <p className="stat-value">GPT-4o</p>
               <p className="stat-label">Powered By</p>
             </div>
             <div className="stat-divider" />
-            <div className="stat-item">
+            <div className="stat-item fade-up" style={{ transitionDelay: '300ms' }}>
               <p className="stat-value">~15 sec</p>
               <p className="stat-label">Analysis Time</p>
             </div>

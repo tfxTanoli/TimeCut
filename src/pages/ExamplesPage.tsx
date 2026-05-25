@@ -22,7 +22,7 @@ const EXAMPLES: { title: string; source: string; report: TimeCutReport }[] = [
         'Journaling helps clarify thoughts and set daily intentions',
       ],
       what_to_skip: [
-        'Paragraphs 1–3: intro fluff and "why mornings matter" generic explanation',
+        'Paragraphs 1 to 3: intro fluff and "why mornings matter" generic explanation',
         'Habits 4, 7, and 9: repeated versions of the same advice',
         'All anecdotal celebrity examples with no supporting data',
       ],
@@ -40,8 +40,8 @@ const EXAMPLES: { title: string; source: string; report: TimeCutReport }[] = [
       time_saved_minutes: 3,
       value_score: 9.4,
       attention_quality: 'High',
-      attention_quality_description: 'Every paragraph carries original thinking backed by research — full attention is warranted.',
-      what_this_is_about: 'An excerpt arguing that the ability to focus without distraction — "deep work" — is becoming increasingly rare and increasingly valuable. Newport contrasts shallow, reactive work (emails, meetings) with the focused, cognitively demanding work that produces real value.',
+      attention_quality_description: 'Every paragraph carries original thinking backed by research. Full attention is warranted.',
+      what_this_is_about: 'An excerpt arguing that the ability to focus without distraction ("deep work") is becoming increasingly rare and increasingly valuable. Newport contrasts shallow, reactive work (emails, meetings) with the focused, cognitively demanding work that produces real value.',
       key_insights: [
         'Deep work produces the most value in the modern economy yet is practiced by very few',
         'The ability to focus deeply is a skill that atrophies without deliberate practice',
@@ -49,7 +49,7 @@ const EXAMPLES: { title: string; source: string; report: TimeCutReport }[] = [
         'Adopting deep work habits can fundamentally change your output quality within weeks',
       ],
       what_to_skip: [
-        'The historical case studies in section 3 — interesting but not critical to the core argument',
+        'The historical case studies in section 3 (interesting but not critical to the core argument)',
       ],
       best_for: ['Knowledge workers', 'Managers and executives', 'Anyone who feels busy but unproductive'],
       final_decision: 'Read this fully and slowly. Highlight the core definitions and the four rules introduced in the final section. This content has a high chance of changing how you structure your workday permanently.',
@@ -69,16 +69,16 @@ const EXAMPLES: { title: string; source: string; report: TimeCutReport }[] = [
       what_this_is_about: 'A weekly newsletter covering AI industry news, tech product launches, and trend commentary. This edition focuses on LLM benchmark updates, a new developer tool release, and a brief take on regulation in the EU.',
       key_insights: [
         'The new LLM benchmark results suggest reasoning improvements, not just scale',
-        'The EU AI Act compliance deadline is now 8 months away — many companies are not ready',
+        'The EU AI Act compliance deadline is now 8 months away. Many companies are not ready',
         'Developer tooling for AI agents is maturing rapidly, with three new entrants this week',
       ],
       what_to_skip: [
-        'The product launch section — pure press release rewriting',
-        'The "hot takes" subsection — opinion without analysis or data',
+        'The product launch section: pure press release rewriting',
+        'The "hot takes" subsection: opinion without analysis or data',
         'Event listings and sponsor content (last 4 items)',
       ],
       best_for: ['AI practitioners and developers', 'Product managers in tech', 'Investors following the AI space'],
-      final_decision: 'Skim the first two sections for the benchmark and EU regulation updates — those are genuinely new information. Skip the rest. You can get the same value in 5 minutes instead of 23.',
+      final_decision: 'Skim the first two sections for the benchmark and EU regulation updates. Those are genuinely new information. Skip the rest. You can get the same value in 5 minutes instead of 23.',
     },
   },
 ]

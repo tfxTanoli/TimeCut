@@ -66,7 +66,7 @@ const FAQS = [
   { q: 'Is the Free plan really free?', a: 'Yes. No credit card required. You get 5 analyses per day with full reports, forever.' },
   { q: 'Can I cancel my Pro plan anytime?', a: 'Absolutely. Cancel anytime from your account settings with no questions asked.' },
   { q: 'What payment methods do you accept?', a: 'Visa, Mastercard, Amex, and PayPal via Stripe. All payments are secure.' },
-  { q: 'Do you offer a free trial for Pro?', a: 'Yes — a 7-day free trial is available on Pro. No charge until the trial ends.' },
+  { q: 'Do you offer a free trial for Pro?', a: 'Yes, a 7-day free trial is available on Pro. No charge until the trial ends.' },
   { q: 'What counts as one analysis?', a: 'Each time you submit content (text or PDF) and receive a report counts as one analysis.' },
 ]
 
@@ -108,7 +108,7 @@ export default function PricingPage() {
                   ))}
                   {plan.missing.map((f, j) => (
                     <li key={j} className="pricing-feat pricing-feat--no">
-                      <span className="feat-icon feat-icon--no">–</span> {f}
+                      <span className="feat-icon feat-icon--no">×</span> {f}
                     </li>
                   ))}
                 </ul>

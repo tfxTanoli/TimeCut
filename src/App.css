@@ -17,11 +17,19 @@
   font-family: var(--sans);
   font-weight: 500;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary:not(:disabled):hover { opacity: 0.85; }
+.btn-primary:not(:disabled):hover {
+  opacity: 0.88;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15,23,42,0.22);
+}
+.btn-primary:not(:disabled):active { transform: translateY(0); box-shadow: none; }
 .btn-sm { padding: 8px 18px; font-size: 14px; }
 .btn-cta { padding: 12px 24px; }
 
@@ -52,8 +60,11 @@
   gap: 6px;
   padding: 0;
   flex-shrink: 0;
+  transition: color 0.2s, transform 0.2s;
 }
-.logo-icon { font-size: 18px; }
+.navbar-logo:hover { color: var(--accent); transform: scale(1.03); }
+.logo-icon { font-size: 18px; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+.navbar-logo:hover .logo-icon { transform: rotate(-12deg) scale(1.15); }
 .navbar-links {
   display: flex;
   list-style: none;
@@ -66,22 +77,39 @@
   text-decoration: none;
   font-size: 14px;
   color: var(--text);
-  transition: color 0.15s;
+  transition: color 0.2s;
+  position: relative;
+  padding-bottom: 3px;
 }
-.navbar-links a:hover { color: var(--text-h); }
+.navbar-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.25s cubic-bezier(0.22,1,0.36,1);
+}
+.navbar-links a:hover { color: var(--accent); }
+.navbar-links a:hover::after { width: 100%; }
 .navbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 .btn-login {
   font-size: 14px;
   color: var(--text-h);
   text-decoration: none;
   padding: 8px 12px;
+  border-radius: 8px;
+  transition: color 0.2s, background 0.2s, transform 0.15s;
 }
-.btn-login:hover { color: var(--accent); }
+.btn-login:hover { color: var(--accent); background: var(--accent-bg); transform: translateY(-1px); }
 
 /* ── Hero ── */
 .hero {
@@ -610,6 +638,13 @@
   margin: 0;
 }
 
+/* ── Page Loading Fallback ── */
+.page-loading {
+  flex: 1;
+  min-height: 60vh;
+  background: var(--bg);
+}
+
 /* ── Print ── */
 @media print {
   .navbar, .result-nav, .back-btn, .result-nav-actions, .bottom-banner { display: none; }
@@ -720,8 +755,14 @@
 .footer-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
 .footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-h); margin: 0 0 12px; }
 .footer-col-links { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
-.footer-col-links a { font-size: 14px; color: var(--text); text-decoration: none; transition: color 0.15s; }
-.footer-col-links a:hover { color: var(--accent); }
+.footer-col-links a {
+  font-size: 14px;
+  color: var(--text);
+  text-decoration: none;
+  display: inline-block;
+  transition: color 0.2s, transform 0.2s;
+}
+.footer-col-links a:hover { color: var(--accent); transform: translateX(5px); }
 .footer-bottom {
   border-top: 1px solid var(--border);
   padding: 16px 24px;
@@ -1265,7 +1306,7 @@
 
 
 /* ════════════════════════════════════════
-   RESPONSIVE — Pages
+   RESPONSIVE - Pages
    ════════════════════════════════════════ */
 @media (max-width: 1024px) {
   .anatomy-grid { grid-template-columns: repeat(2, 1fr); }
@@ -1304,4 +1345,302 @@
   .stats-row { gap: 0; }
   .stat-divider { display: none; }
   .stat-item { padding: 12px 16px; }
+}
+
+/* ══════════════════════════════════════════
+   LANDING PAGE ANIMATIONS & TRANSITIONS
+   ══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95) translateY(18px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0px, 0px) scale(1); }
+  33%       { transform: translate(22px, -18px) scale(1.06); }
+  66%       { transform: translate(-16px, 12px) scale(0.96); }
+}
+@keyframes tabFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Hero entrance (auto on load) ── */
+.hero-badge    { animation: fadeDown 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-title    { animation: fadeUp  0.65s 0.1s cubic-bezier(0.22,1,0.36,1) both; }
+.hero-subtitle { animation: fadeUp  0.65s 0.2s cubic-bezier(0.22,1,0.36,1) both; }
+.input-card    { animation: scaleIn 0.70s 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+.trust-line    { animation: fadeUp  0.55s 0.75s ease both; }
+
+/* ── Hero animated background blobs ── */
+.hero { position: relative; overflow: hidden; }
+.hero::before,
+.hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero::before {
+  width: 520px; height: 520px;
+  background: radial-gradient(circle, rgba(37,99,235,0.11) 0%, transparent 70%);
+  top: -200px; right: -120px;
+  animation: blobFloat 10s ease-in-out infinite;
+}
+.hero::after {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%);
+  bottom: -100px; left: -80px;
+  animation: blobFloat 13s 4s ease-in-out infinite reverse;
+}
+.hero-inner { position: relative; z-index: 1; }
+
+/* ── Input card focus glow ── */
+.input-card { transition: box-shadow 0.3s ease; }
+.input-card:focus-within {
+  box-shadow: 0 4px 24px rgba(37,99,235,0.13), 0 0 0 3px rgba(37,99,235,0.07);
+}
+
+/* ── Tab content switch animation ── */
+.tab-fade { animation: tabFade 0.22s ease both; }
+
+/* ── Scroll-triggered fade-up ── */
+.fade-up {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.65s cubic-bezier(0.22,1,0.36,1),
+              transform 0.65s cubic-bezier(0.22,1,0.36,1);
+}
+.fade-up.is-visible { opacity: 1; transform: translateY(0); }
+
+/* ── Feature card hover lift ── */
+.feature-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.feature-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.09);
+  border-color: var(--accent-border);
+}
+.feature-icon { transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+.feature-card:hover .feature-icon { transform: scale(1.18) rotate(8deg); }
+
+/* ── Demo card hover ── */
+.demo-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.demo-card:hover {
+  box-shadow: 0 10px 36px rgba(0,0,0,0.09);
+  transform: translateY(-3px);
+}
+
+/* ── Stat item hover ── */
+.stat-item { transition: transform 0.2s ease; }
+.stat-item:hover { transform: translateY(-3px); }
+.stat-value { transition: color 0.2s ease; }
+.stat-item:hover .stat-value { color: var(--accent); }
+
+/* ── Outline button hover lift ── */
+.btn-outline {
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s, border-color 0.2s, color 0.2s;
+}
+.btn-outline:hover {
+  background: var(--accent-bg);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(37,99,235,0.14);
+}
+
+/* ── Loading spinner inside button ── */
+.btn-spinner {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(255,255,255,0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.65s linear infinite;
+  vertical-align: middle;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════
+   GLOBAL HOVER INTERACTIONS
+   ══════════════════════════════════════════ */
+
+/* ── Back button in result nav ── */
+.back-btn {
+  transition: color 0.18s, transform 0.18s;
+}
+.back-btn:hover { color: var(--accent); transform: translateX(-4px); }
+
+/* ── Icon buttons (download, share) ── */
+.icon-btn {
+  transition: color 0.18s, transform 0.18s;
+}
+.icon-btn:hover { color: var(--accent); transform: scale(1.15); }
+
+/* ── Social login button ── */
+.btn-social {
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+}
+.btn-social:hover {
+  border-color: #94a3b8;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+.btn-social:active { transform: translateY(0); }
+
+/* ── Form link (forgot password, switch links) ── */
+.form-link {
+  transition: color 0.18s, opacity 0.18s;
+}
+.form-link:hover { text-decoration: underline; opacity: 0.8; }
+
+/* ── Pricing CTA button ── */
+.pricing-cta {
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s, border-color 0.2s, color 0.2s !important;
+}
+.pricing-cta:not([aria-disabled]):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+.pricing-cta.btn-primary:hover { opacity: 0.88; }
+.pricing-cta.btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Blog read link ── */
+.blog-read-link {
+  transition: color 0.18s, transform 0.18s;
+  display: inline-block;
+}
+.blog-read-link:hover { text-decoration: underline; transform: translateX(3px); }
+
+/* ── Blog card hover ── */
+.blog-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.blog-card:hover {
+  box-shadow: 0 10px 32px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+  border-color: var(--accent-border);
+}
+
+/* ── Blog featured card hover ── */
+.blog-featured {
+  transition: box-shadow 0.25s ease;
+}
+.blog-featured:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.08); }
+
+/* ── Category pill hover ── */
+.category-pill {
+  transition: all 0.2s, transform 0.15s;
+}
+.category-pill:hover { transform: translateY(-2px); }
+
+/* ── Example card toggle button ── */
+.example-toggle {
+  transition: border-color 0.2s, color 0.2s, transform 0.15s, box-shadow 0.15s;
+}
+.example-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: scale(1.04);
+  box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+}
+
+/* ── Feature big cards (Features page) ── */
+.feature-big-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.feature-big-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 36px rgba(0,0,0,0.09);
+  border-color: var(--accent-border);
+}
+
+/* ── Anatomy cards (How it Works) ── */
+.anatomy-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.anatomy-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+  border-color: var(--accent-border);
+}
+
+/* ── FAQ items ── */
+.faq-item {
+  transition: background 0.2s;
+}
+.faq-item:hover { background: var(--accent-bg); }
+
+/* ── Bottom banner CTA ── */
+.bottom-banner .btn-cta {
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+.bottom-banner .btn-cta:hover {
+  opacity: 0.88;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+/* ── Pricing card highlight glow on hover ── */
+.pricing-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.pricing-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 36px rgba(0,0,0,0.1);
+}
+.pricing-card--highlight:hover {
+  box-shadow: 0 16px 40px rgba(37,99,235,0.2);
+}
+
+/* ── Newsletter subscribe button ── */
+.newsletter-form .btn-primary {
+  transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+}
+.newsletter-form .btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15,23,42,0.2);
+}
+
+/* ── Step cards (How it Works) ── */
+.step-card {
+  transition: box-shadow 0.25s ease, transform 0.25s ease, border-color 0.25s ease;
+}
+.step-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.08);
+  border-color: var(--accent-border);
+}
+
+/* ── Footer brand logo ── */
+.footer-brand {
+  transition: color 0.2s;
+  display: inline-block;
+  cursor: default;
+}
+
+/* ── Auth card inputs ── */
+.form-input {
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.form-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
 }
