@@ -11,7 +11,15 @@
       "PowerShell(vercel --version)",
       "Bash(vercel --prod --scope muhammad-usmans-projects-8e80afc3)",
       "Bash(del api\\\\package.json)",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(node -e \"const p = require\\('./node_modules/pdfjs-dist/package.json'\\); console.log\\(p.version, Object.keys\\(p.exports || {}\\).slice\\(0,20\\)\\)\")",
+      "Bash(2>&1)",
+      "Bash(node -e \"const x = require\\('pdf-parse'\\); console.log\\(typeof x, Object.keys\\(x\\)\\)\")",
+      "Bash(node -e \"const { PDFParse } = require\\('pdf-parse'\\); console.log\\(typeof PDFParse\\)\")",
+      "Bash(node -e \"const p = require\\('./node_modules/pdf-parse/package.json'\\); console.log\\(p.version, p.description, p.main\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(npm uninstall *)",
+      "Bash(curl -s http://localhost:3001/api/analyze -X POST -H \"Content-Type: application/json\" -d '{\"content\":\"test\",\"language\":\"English\"}')"
     ]
   }
 }

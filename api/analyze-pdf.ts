@@ -1,8 +1,24 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
-import { extractText, getDocumentProxy } from 'unpdf'
 import { generateReport } from './_lib/shared.js'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
+pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+
+async function extractPDFText(buffer: Buffer): Promise<string> {
+  const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+  const pdfDoc = await pdfjsLib.getDocument({ data }).promise
+  const parts: string[] = []
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i)
+    const content = await page.getTextContent()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    parts.push(content.items.map((item: any) => item.str ?? '').join(' '))
+  }
+  return parts.join('\n').trim()
+}
 
 export const config = { api: { bodyParser: false } }
 
@@ -23,9 +39,8 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const buffer = fs.readFileSync(file.filepath)
-      const pdf = await getDocumentProxy(new Uint8Array(buffer))
-      const { text } = await extractText(pdf, { mergePages: true })
-      if (!text?.trim()) throw new Error('Could not extract text from PDF')
+      const text = await extractPDFText(buffer)
+      if (!text) throw new Error('Could not extract text from PDF')
       const data = await generateReport(text, language)
       return res.json({ data })
     } catch (e) {

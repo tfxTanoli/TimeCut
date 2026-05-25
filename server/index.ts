@@ -3,7 +3,23 @@ import express from 'express'
 import cors from 'cors'
 import multer from 'multer'
 import OpenAI from 'openai'
-import { extractText, getDocumentProxy } from 'unpdf'
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pdfjsLib: any = await import('pdfjs-dist/legacy/build/pdf.mjs')
+pdfjsLib.GlobalWorkerOptions.workerSrc = ''
+
+async function extractPDFText(buffer: Buffer): Promise<string> {
+  const data = new Uint8Array(buffer.buffer, buffer.byteOffset, buffer.byteLength)
+  const pdfDoc = await pdfjsLib.getDocument({ data }).promise
+  const parts: string[] = []
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i)
+    const content = await page.getTextContent()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    parts.push(content.items.map((item: any) => item.str ?? '').join(' '))
+  }
+  return parts.join('\n').trim()
+}
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
@@ -77,9 +93,8 @@ app.post('/api/analyze', express.json(), async (req, res) => {
 app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) { res.status(400).json({ error: 'No PDF file uploaded' }); return }
-    const pdf = await getDocumentProxy(new Uint8Array(req.file.buffer))
-    const { text } = await extractText(pdf, { mergePages: true })
-    if (!text?.trim()) throw new Error('Could not extract text from PDF')
+    const text = await extractPDFText(req.file.buffer)
+    if (!text) throw new Error('Could not extract text from PDF')
     const language = req.body.language || 'English'
     const data = await generateReport(text, language)
     res.json({ data })
