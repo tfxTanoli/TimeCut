@@ -125,4 +125,11 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
 })
 
 const PORT = process.env.PORT ?? 3001
-app.listen(PORT, () => console.log(`Time Cut server running on http://localhost:${PORT}`))
+const server = app.listen(PORT, () => console.log(`Time Cut server running on http://localhost:${PORT}`))
+server.on('error', (err: NodeJS.ErrnoException) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`[server] Port ${PORT} is already in use. Kill the old process and retry.`)
+    process.exit(1)
+  }
+  throw err
+})

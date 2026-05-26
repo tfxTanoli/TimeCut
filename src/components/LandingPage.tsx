@@ -58,7 +58,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             <span className="hero-accent">Low-Value Content</span>
           </h1>
           <p className="hero-subtitle">
-            Our AI detects what's truly worth your attention.<br />
+            TimeCut's Time Intelligence Engine detects what's truly worth your attention.<br />
             Know the value before you spend your time.
           </p>
 
@@ -150,7 +150,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             <div className="feature-card fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon feature-icon--amber"><IconTarget /></div>
               <h3>Clear Decisions</h3>
-              <p>Get a definitive verdict: Must Read, Skim Only, or Skip It, backed by AI analysis.</p>
+              <p>Get a definitive verdict: Must Read, Skim Only, or Skip It, backed by TimeCut Analysis.</p>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: '240ms' }}>
               <div className="feature-icon feature-icon--green"><IconShieldCheck /></div>
@@ -175,7 +175,6 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 Here are 10 productivity habits that will change everything..."
               </p>
             </div>
-            <div className="demo-arrow"></div>
             <div className="demo-output">
               <p className="demo-label">RESULT PREVIEW</p>
               <div className="demo-results">
@@ -202,23 +201,23 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
         <div className="container">
           <div className="stats-row">
             <div className="stat-item fade-up" style={{ transitionDelay: '0ms' }}>
-              <p className="stat-value">50,000+</p>
-              <p className="stat-label">Reports Generated</p>
+              <p className="stat-value">12,847</p>
+              <p className="stat-label">Time Intelligence Reports Generated</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '100ms' }}>
-              <p className="stat-value">10 Languages</p>
-              <p className="stat-label">Supported</p>
+              <p className="stat-value">3,420</p>
+              <p className="stat-label">Attention Hours Saved</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '200ms' }}>
-              <p className="stat-value">GPT-4o</p>
-              <p className="stat-label">Powered By</p>
+              <p className="stat-value">10</p>
+              <p className="stat-label">Languages Supported</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '300ms' }}>
               <p className="stat-value">~15 sec</p>
-              <p className="stat-label">Analysis Time</p>
+              <p className="stat-label">Average Analysis Time</p>
             </div>
           </div>
         </div>

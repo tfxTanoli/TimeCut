@@ -11,9 +11,9 @@ const POSTS = [
     emoji: '🧠',
   },
   {
-    category: 'AI',
-    title: 'How AI Can Help You Reclaim Your Focus in 2025',
-    excerpt: 'The information age promised us access to everything. It delivered overwhelm instead. AI-powered reading filters are becoming the new inbox zero.',
+    category: 'Time Intelligence',
+    title: 'How the Time Intelligence Engine Helps You Reclaim Your Focus',
+    excerpt: 'The information age promised us access to everything. It delivered overwhelm instead. Time Intelligence filters are becoming the new inbox zero.',
     date: 'May 8, 2025',
     readTime: '5 min read',
     emoji: '🤖',
@@ -52,7 +52,7 @@ const POSTS = [
   },
 ]
 
-const CATEGORIES = ['All', 'Attention', 'AI', 'Strategy', 'Deep Work']
+const CATEGORIES = ['All', 'Attention', 'Time Intelligence', 'Strategy', 'Deep Work']
 
 export default function BlogPage() {
   return (
@@ -62,7 +62,7 @@ export default function BlogPage() {
           <span className="hero-badge">Time Intelligence Blog</span>
           <h1 className="page-hero-title">Think Smarter About<br />What You Read</h1>
           <p className="page-hero-sub">
-            Insights on attention, time, AI, and how to protect what matters most: your focus.
+            Insights on attention, time, and how to protect what matters most: your focus.
           </p>
         </div>
       </section>

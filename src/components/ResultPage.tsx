@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import type { TimeCutReport } from '../types'
 import ScoreGauge from './ScoreGauge'
+import { useAuth } from '../contexts/AuthContext'
+import { logActivity } from '../lib/userService'
 
 interface Props {
   report: TimeCutReport
@@ -8,9 +10,17 @@ interface Props {
 }
 
 export default function ResultPage({ report, onBack }: Props) {
+  const { user } = useAuth()
   const [copied, setCopied] = useState(false)
 
   function handleDownload() {
+    if (user) {
+      logActivity(user.uid, 'report_downloaded', {
+        verdict: report.verdict,
+        valueScore: report.value_score,
+        timeSavedMinutes: report.time_saved_minutes,
+      })
+    }
     window.print()
   }
 
@@ -19,6 +29,12 @@ export default function ResultPage({ report, onBack }: Props) {
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
+      if (user) {
+        logActivity(user.uid, 'report_shared', {
+          verdict: report.verdict,
+          valueScore: report.value_score,
+        })
+      }
     })
   }
 
@@ -41,11 +57,11 @@ export default function ResultPage({ report, onBack }: Props) {
       {/* ── Result Nav ── */}
       <div className="result-nav">
         <div className="container result-nav-inner">
-          <button className="back-btn" onClick={onBack}>← Back to home</button>
+          <button className="back-btn" onClick={onBack}>Back to home</button>
           <h2 className="result-nav-title">TIME INTELLIGENCE REPORT</h2>
           <div className="result-nav-actions">
-            <button className="icon-btn" onClick={handleDownload}>↓ Download Report</button>
-            <button className="icon-btn" onClick={handleShare}>{copied ? '✓ Copied!' : '↗ Share'}</button>
+            <button className="icon-btn" onClick={handleDownload}>Download Report</button>
+            <button className="icon-btn" onClick={handleShare}>{copied ? '✓ Copied!' : 'Share'}</button>
           </div>
         </div>
       </div>

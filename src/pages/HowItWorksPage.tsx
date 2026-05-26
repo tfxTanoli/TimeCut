@@ -15,8 +15,8 @@ const STEPS = [
   },
   {
     num: '02',
-    title: 'AI Analyzes It',
-    desc: 'Our Time Intelligence Engine, powered by GPT-4o, performs a deep analysis of the content across multiple dimensions.',
+    title: 'Time Intelligence Engine Analyzes',
+    desc: 'The TimeCut Time Intelligence Engine performs a deep analysis of the content across multiple dimensions.',
     details: [
       'Information density and originality scoring',
       'Attention quality assessment',
@@ -40,7 +40,7 @@ const STEPS = [
 const FAQS = [
   {
     q: 'How accurate is the analysis?',
-    a: 'TimeCut uses GPT-4o, one of the most capable AI models available. The verdict is consistent and reliable for most content types, though results may vary for highly technical or niche subjects.',
+    a: 'The TimeCut Time Intelligence Engine delivers consistent, reliable verdicts for most content types. Results may vary for highly technical or niche subjects.',
   },
   {
     q: 'What types of content can I analyze?',
@@ -69,7 +69,7 @@ export default function HowItWorksPage() {
           <span className="hero-badge">Simple Process</span>
           <h1 className="page-hero-title">How Time Cut Works</h1>
           <p className="page-hero-sub">
-            Save your time in 3 simple steps powered by GPT-4o.
+            Save your time in 3 simple steps powered by the Time Intelligence Engine.
           </p>
           <Link to="/" className="btn-primary btn-cta">Try It Free</Link>
         </div>

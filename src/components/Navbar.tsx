@@ -1,4 +1,8 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
+import { useAuthModal } from '../contexts/AuthModalContext'
+import UserDropdown from './UserDropdown'
 
 interface Props {
   onLogoClick?: () => void
@@ -6,11 +10,18 @@ interface Props {
 
 export default function Navbar({ onLogoClick }: Props) {
   const navigate = useNavigate()
+  const { user, displayName } = useAuth()
+  const { openLogin, openSignup } = useAuthModal()
+  const [dropdownOpen, setDropdownOpen] = useState(false)
 
   function handleLogo() {
     onLogoClick?.()
     navigate('/')
   }
+
+  const initials = displayName
+    ? displayName.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')
+    : (user?.email?.[0] ?? 'U').toUpperCase()
 
   return (
     <nav className="navbar">
@@ -27,8 +38,29 @@ export default function Navbar({ onLogoClick }: Props) {
           <li><Link to="/blog">Blog</Link></li>
         </ul>
         <div className="navbar-actions">
-          <Link to="/login" className="btn-login">Log in</Link>
-          <Link to="/get-started" className="btn-primary btn-sm nav-cta">Get Started</Link>
+          {user ? (
+            <div className="navbar-avatar-wrap">
+              <button
+                className={`navbar-avatar ${dropdownOpen ? 'navbar-avatar--active' : ''}`}
+                onClick={() => setDropdownOpen(prev => !prev)}
+                title={displayName || (user.email ?? '')}
+                aria-label="Account menu"
+              >
+                {user.photoURL
+                  ? <img src={user.photoURL} alt={initials} className="navbar-avatar-img" />
+                  : <span>{initials}</span>
+                }
+              </button>
+              {dropdownOpen && (
+                <UserDropdown onClose={() => setDropdownOpen(false)} />
+              )}
+            </div>
+          ) : (
+            <>
+              <button className="btn-login" onClick={openLogin}>Log in</button>
+              <button className="btn-primary btn-sm nav-cta" onClick={openSignup}>Get Started</button>
+            </>
+          )}
         </div>
       </div>
     </nav>
