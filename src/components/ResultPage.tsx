@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { TimeCutReport } from '../types'
 import ScoreGauge from './ScoreGauge'
 import { useAuth } from '../contexts/AuthContext'
+import { useAuthModal } from '../contexts/AuthModalContext'
 import { logActivity } from '../lib/userService'
 
 interface Props {
@@ -9,41 +10,51 @@ interface Props {
   onBack: () => void
 }
 
+const VERDICT_CLASS: Record<string, string> = {
+  'MUST READ':          'verdict-badge--must',
+  'HIGHLY RECOMMENDED': 'verdict-badge--highly',
+  'GOOD READ':          'verdict-badge--good',
+  'LIGHT READ':         'verdict-badge--light',
+  'WORTH A GLANCE':     'verdict-badge--glance',
+  'SKIM ONLY':          'verdict-badge--skim',
+  'DEEP DIVE':          'verdict-badge--deep',
+  'HIDDEN GEM':         'verdict-badge--gem',
+  'MASTERPIECE':        'verdict-badge--masterpiece',
+  'OVERRATED':          'verdict-badge--overrated',
+  'SKIP IT':            'verdict-badge--skip',
+  'TIME WASTER':        'verdict-badge--waster',
+}
+
 export default function ResultPage({ report, onBack }: Props) {
   const { user } = useAuth()
+  const { openSignup } = useAuthModal()
   const [copied, setCopied] = useState(false)
+  const [authPrompt, setAuthPrompt] = useState<'download' | 'share' | null>(null)
 
   function handleDownload() {
-    if (user) {
-      logActivity(user.uid, 'report_downloaded', {
-        verdict: report.verdict,
-        valueScore: report.value_score,
-        timeSavedMinutes: report.time_saved_minutes,
-      })
-    }
+    if (!user) { setAuthPrompt('download'); return }
+    logActivity(user.uid, 'report_downloaded', {
+      verdict: report.verdict,
+      valueScore: report.value_score,
+      timeSavedMinutes: report.time_saved_minutes,
+    })
     window.print()
   }
 
   function handleShare() {
+    if (!user) { setAuthPrompt('share'); return }
     const text = `Time Intelligence Report\n\nVerdict: ${report.verdict}\n${report.verdict_description}\n\nValue Score: ${report.value_score}/10\nTime Saved: ${report.time_saved_minutes} mins\n\nFinal Decision:\n${report.final_decision}`
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
-      if (user) {
-        logActivity(user.uid, 'report_shared', {
-          verdict: report.verdict,
-          valueScore: report.value_score,
-        })
-      }
+      logActivity(user.uid, 'report_shared', {
+        verdict: report.verdict,
+        valueScore: report.value_score,
+      })
     })
   }
 
-  const verdictClass =
-    report.verdict === 'MUST READ'
-      ? 'verdict-badge--must'
-      : report.verdict === 'SKIM ONLY'
-        ? 'verdict-badge--skim'
-        : 'verdict-badge--skip'
+  const verdictClass = VERDICT_CLASS[report.verdict] ?? 'verdict-badge--skip'
 
   const attnClass =
     report.attention_quality === 'High'
@@ -65,6 +76,23 @@ export default function ResultPage({ report, onBack }: Props) {
           </div>
         </div>
       </div>
+
+      {authPrompt && (
+        <div className="auth-prompt-banner">
+          <span className="auth-prompt-icon">🔒</span>
+          <p className="auth-prompt-msg">
+            {authPrompt === 'download'
+              ? 'Please sign up or log in to download your report.'
+              : 'Please sign up or log in to share your report.'}
+          </p>
+          <div className="auth-prompt-actions">
+            <button className="btn-primary btn-sm" onClick={() => { setAuthPrompt(null); openSignup() }}>
+              Sign up free
+            </button>
+            <button className="auth-prompt-dismiss" onClick={() => setAuthPrompt(null)}>Dismiss</button>
+          </div>
+        </div>
+      )}
 
       <div className="container result-content">
         {/* ── Verdict Card ── */}

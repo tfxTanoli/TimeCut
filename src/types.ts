@@ -1,4 +1,16 @@
-export type Verdict = 'MUST READ' | 'SKIM ONLY' | 'SKIP IT'
+export type Verdict =
+  | 'MUST READ'
+  | 'SKIM ONLY'
+  | 'SKIP IT'
+  | 'WORTH A GLANCE'
+  | 'LIGHT READ'
+  | 'GOOD READ'
+  | 'HIGHLY RECOMMENDED'
+  | 'DEEP DIVE'
+  | 'MASTERPIECE'
+  | 'OVERRATED'
+  | 'TIME WASTER'
+  | 'HIDDEN GEM'
 export type AttentionQuality = 'High' | 'Medium' | 'Low'
 export type InputTab = 'text' | 'pdf'
 

@@ -690,9 +690,38 @@
   font-size: 13px;
   letter-spacing: 0.3px;
 }
-.verdict-badge--must { background: #dcfce7; color: #166534; }
-.verdict-badge--skim { background: #fef9c3; color: #854d0e; }
-.verdict-badge--skip { background: #fee2e2; color: #991b1b; }
+.verdict-badge--must        { background: #dcfce7; color: #166534; }
+.verdict-badge--highly      { background: #d1fae5; color: #065f46; }
+.verdict-badge--good        { background: #e0f2fe; color: #075985; }
+.verdict-badge--light       { background: #ede9fe; color: #5b21b6; }
+.verdict-badge--glance      { background: #f0fdf4; color: #166534; }
+.verdict-badge--skim        { background: #fef9c3; color: #854d0e; }
+.verdict-badge--deep        { background: #eef2ff; color: #3730a3; }
+.verdict-badge--gem         { background: #ccfbf1; color: #0f766e; }
+.verdict-badge--masterpiece { background: #fef3c7; color: #92400e; border: 1.5px solid #f59e0b; }
+.verdict-badge--overrated   { background: #ffedd5; color: #9a3412; }
+.verdict-badge--skip        { background: #fee2e2; color: #991b1b; }
+.verdict-badge--waster      { background: #fce7f3; color: #9d174d; }
+
+/* ── Auth Prompt Banner ── */
+.auth-prompt-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  padding: 14px 20px;
+  flex-wrap: wrap;
+}
+.auth-prompt-icon { font-size: 18px; flex-shrink: 0; }
+.auth-prompt-msg  { flex: 1; font-size: 14px; color: #78350f; margin: 0; min-width: 160px; }
+.auth-prompt-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.auth-prompt-dismiss {
+  background: none; border: none; cursor: pointer;
+  font-size: 13px; color: #92400e; text-decoration: underline; padding: 0;
+}
+.auth-prompt-dismiss:hover { color: #78350f; }
 
 /* ── Result Page ── */
 .result-page { flex: 1; background: var(--code-bg); }

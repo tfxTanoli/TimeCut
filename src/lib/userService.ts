@@ -10,7 +10,7 @@ import {
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User } from 'firebase/auth'
-import type { InputTab } from '../types'
+import type { InputTab, TimeCutReport } from '../types'
 
 export type ActivityType =
   | 'signup'
@@ -64,6 +64,35 @@ export async function logActivity(
     type,
     timestamp: serverTimestamp(),
     ...metadata,
+  })
+}
+
+export async function saveAnalysis(
+  uid: string,
+  report: TimeCutReport,
+  inputType: InputTab,
+  language: string,
+) {
+  const analysesRef = collection(db, 'users', uid, 'analyses')
+  await addDoc(analysesRef, {
+    // core verdict
+    verdict: report.verdict,
+    verdict_description: report.verdict_description,
+    overall_value_score: report.overall_value_score,
+    value_score: report.value_score,
+    time_saved_minutes: report.time_saved_minutes,
+    attention_quality: report.attention_quality,
+    attention_quality_description: report.attention_quality_description,
+    // detailed fields
+    what_this_is_about: report.what_this_is_about,
+    key_insights: report.key_insights,
+    what_to_skip: report.what_to_skip,
+    best_for: report.best_for,
+    final_decision: report.final_decision,
+    // meta
+    inputType,
+    language,
+    createdAt: serverTimestamp(),
   })
 }
 

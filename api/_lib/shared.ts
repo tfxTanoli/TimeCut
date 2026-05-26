@@ -23,13 +23,33 @@ For INFORMATIONAL content, evaluate:
 - Clarity and structure
 - Evidence quality (data, examples, logic)
 
-STEP 3 — PRODUCE THE REPORT
+STEP 3 — ASSIGN A VERDICT
+
+Choose exactly ONE verdict from the list below based on the overall_value_score AND content characteristics:
+
+SCORE-BASED VERDICTS:
+- "TIME WASTER"         score 0.0–2.9  — actively wastes time; deeply repetitive, misleading, or zero value
+- "SKIP IT"            score 3.0–4.4  — low value, derivative, dull; not worth reading
+- "SKIM ONLY"          score 4.5–5.9  — some value but notable padding, repetition, or filler
+- "WORTH A GLANCE"     score 6.0–6.4  — quickly interesting but not essential; a brief scan is enough
+- "LIGHT READ"         score 6.5–6.9  — easy, enjoyable casual content with decent value
+- "GOOD READ"          score 7.0–7.4  — solid value and enjoyable; worth the full read
+- "HIGHLY RECOMMENDED" score 7.5–8.4  — strong quality and engagement; clearly above average
+- "MUST READ"          score 8.5–9.4  — exceptional content; do not miss this
+
+SPECIAL CONTEXT VERDICTS (override score range when characteristics match):
+- "OVERRATED"   — Content is widely popular or heavily hyped but actual substance is below average (score typically 3.0–5.9). Use when the content's reputation clearly exceeds its value.
+- "HIDDEN GEM"  — Content is low-profile or niche but delivers surprisingly high value (score typically 7.5+). Use when the content deserves far more attention than it gets.
+- "DEEP DIVE"   — Content is intellectually dense, complex, or academic (score typically 7.0+). Requires active effort but rewards it. Use for technical papers, philosophy, advanced research.
+- "MASTERPIECE" — Extremely rare, top-tier content of lasting value (score 9.5–10.0). Reserve for truly exceptional works only.
+
+STEP 4 — PRODUCE THE REPORT
 
 Return an honest, specific, direct JSON report.
 
 OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
 {
-  "verdict": "MUST READ" | "SKIM ONLY" | "SKIP IT",
+  "verdict": <one of the 12 verdicts above>,
   "verdict_description": "One clear sentence explaining the verdict",
   "overall_value_score": <number 0.0 to 10.0>,
   "time_saved_minutes": <integer, estimated minutes the user can safely skip>,
@@ -42,11 +62,6 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
   "best_for": ["audience type 1", "audience type 2", "audience type 3"],
   "final_decision": "2 to 3 sentences with a clear, actionable final recommendation"
 }
-
-SCORING GUIDE:
-- "MUST READ": overall_value_score 8 to 10 — exceptional for its type (gripping fiction OR highly original, actionable non-fiction)
-- "SKIM ONLY": overall_value_score 4 to 7.9 — some value but notable padding, slow pacing, or repetition
-- "SKIP IT": overall_value_score 0 to 3.9 — low value, derivative, dull, or misleading
 
 Generate ALL text fields in the user's selected language.`
 
