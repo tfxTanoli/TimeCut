@@ -102,7 +102,7 @@ export default function AuthModal() {
               <p className="auth-modal-sub">
                 {tab === 'login'
                   ? 'Sign in to your TimeCut account.'
-                  : 'Free forever. No credit card required.'}
+                  : 'Free. No credit card required.'}
               </p>
             </div>
 

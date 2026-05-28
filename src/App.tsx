@@ -16,6 +16,7 @@ const BlogPage = lazy(() => import('./pages/BlogPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const GetStartedPage = lazy(() => import('./pages/GetStartedPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const ContactPage = lazy(() => import('./pages/ContactPage'))
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/get-started" element={<GetStartedPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/contact" element={<ContactPage />} />
             </Routes>
           </Suspense>
           <AuthModal />

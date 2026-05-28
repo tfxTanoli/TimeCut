@@ -12,7 +12,7 @@ const POSTS = [
   },
   {
     category: 'Time Intelligence',
-    title: 'How the Time Intelligence Engine Helps You Reclaim Your Focus',
+    title: 'How TimeCut Intelligence Helps You Reclaim Your Focus',
     excerpt: 'The information age promised us access to everything. It delivered overwhelm instead. Time Intelligence filters are becoming the new inbox zero.',
     date: 'May 8, 2025',
     readTime: '5 min read',
@@ -35,7 +35,7 @@ const POSTS = [
     emoji: '💸',
   },
   {
-    category: 'Attention',
+    category: 'Focus',
     title: 'The Attention Economy and How to Win',
     excerpt: 'Every app, article, and email is competing for your attention. Most of them deserve none of it. A guide to reclaiming your mental bandwidth.',
     date: 'April 11, 2025',
@@ -43,7 +43,7 @@ const POSTS = [
     emoji: '⚔️',
   },
   {
-    category: 'Strategy',
+    category: 'Content Creation',
     title: 'Building a Time-Aware Content Strategy',
     excerpt: 'If you create content, the question isn\'t just "is this good?" It\'s "is this worth someone\'s time?" A new lens for content creators.',
     date: 'April 3, 2025',
@@ -52,7 +52,11 @@ const POSTS = [
   },
 ]
 
-const CATEGORIES = ['All', 'Attention', 'Time Intelligence', 'Strategy', 'Deep Work']
+const CATEGORIES = ['All', 'Attention', 'Time Intelligence', 'Strategy', 'Focus', 'Deep Work', 'Content Creation']
+
+function comingSoon() {
+  alert('Full article coming soon.')
+}
 
 export default function BlogPage() {
   return (
@@ -87,7 +91,7 @@ export default function BlogPage() {
               </div>
               <h2 className="blog-featured-title">{POSTS[0].title}</h2>
               <p className="blog-featured-excerpt">{POSTS[0].excerpt}</p>
-              <button className="btn-outline">Read Article</button>
+              <button className="btn-outline" onClick={comingSoon}>Read Article</button>
             </div>
           </div>
 
@@ -103,7 +107,7 @@ export default function BlogPage() {
                 <p className="blog-card-excerpt">{post.excerpt}</p>
                 <div className="blog-card-footer">
                   <span className="blog-read">{post.readTime}</span>
-                  <button className="blog-read-link">Read</button>
+                  <button className="blog-read-link" onClick={comingSoon}>Read</button>
                 </div>
               </div>
             ))}
@@ -116,7 +120,7 @@ export default function BlogPage() {
         <div className="container newsletter-inner">
           <div>
             <h2 className="newsletter-title">Time Intelligence Weekly</h2>
-            <p className="newsletter-sub">One email per week. Only the content that's worth your time, pre-screened by TimeCut.</p>
+            <p className="newsletter-sub">Stay sharp. Only the content worth your time, pre-screened by TimeCut.</p>
           </div>
           <form className="newsletter-form" onSubmit={e => e.preventDefault()}>
             <input type="email" className="newsletter-input" placeholder="Enter your email..." />

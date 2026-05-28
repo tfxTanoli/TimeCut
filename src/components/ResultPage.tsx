@@ -116,6 +116,7 @@ export default function ResultPage({ report, onBack }: Props) {
               <p className="metric-label">TIME SAVED</p>
               <p className="metric-value">{report.time_saved_minutes} mins</p>
               <p className="metric-sub">Estimated time you can safely skip</p>
+              <p className="metric-enough">Enough time to: finish a workout · call your parents · watch a movie</p>
             </div>
           </div>
           <div className="metric-card">
@@ -133,6 +134,27 @@ export default function ResultPage({ report, onBack }: Props) {
               <p className={`metric-value ${attnClass}`}>{report.attention_quality}</p>
               <p className="metric-sub">{report.attention_quality_description}</p>
             </div>
+          </div>
+        </div>
+
+        {/* ── Content Analysis Metrics ── */}
+        <div className="content-analysis-row">
+          <div className="ca-card">
+            <p className="ca-label">ORIGINALITY DETECTED</p>
+            <p className="ca-score">{(report.originality_score ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
+          </div>
+          <div className="ca-card">
+            <p className="ca-label">EVIDENCE DENSITY</p>
+            <p className="ca-score">{(report.evidence_density ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
+          </div>
+          <div className="ca-card">
+            <p className="ca-label">REPETITION SCORE</p>
+            <p className="ca-score">{(report.repetition_score ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
+            <p className="ca-hint">lower is better</p>
+          </div>
+          <div className="ca-card">
+            <p className="ca-label">INSIGHT UNIQUENESS</p>
+            <p className="ca-score">{(report.insight_uniqueness ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
           </div>
         </div>
 
@@ -190,8 +212,8 @@ export default function ResultPage({ report, onBack }: Props) {
           <div className="banner-left">
             <span className="banner-icon">💜</span>
             <div>
-              <p className="banner-title">You just saved time and protected your attention.</p>
-              <p className="banner-sub">Focus on what truly matters.</p>
+              <p className="banner-title">Your life attention is precious.</p>
+              <p className="banner-sub">Stop giving it away blindly.</p>
             </div>
           </div>
           <button className="btn-primary btn-cta" onClick={onBack}>

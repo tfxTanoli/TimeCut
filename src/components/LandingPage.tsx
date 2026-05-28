@@ -52,13 +52,13 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Hero ── */}
       <section className="hero">
         <div className="container hero-inner">
-          <span className="hero-badge">Time Intelligence Engine</span>
+          <span className="hero-badge">TimeCut Intelligence</span>
           <h1 className="hero-title">
             Don't Waste Time on<br />
             <span className="hero-accent">Low-Value Content</span>
           </h1>
           <p className="hero-subtitle">
-            TimeCut's Time Intelligence Engine detects what's truly worth your attention.<br />
+            TimeCut's intelligence detects what's truly worth your attention.<br />
             Know the value before you spend your time.
           </p>
 
@@ -216,10 +216,19 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '300ms' }}>
-              <p className="stat-value">~15 sec</p>
+              <p className="stat-value">~10 sec</p>
               <p className="stat-label">Average Analysis Time</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Philosophy ── */}
+      <section className="philosophy-section">
+        <div className="container philosophy-inner">
+          <p className="philosophy-line">Nobody notices life disappearing.</p>
+          <p className="philosophy-line philosophy-line--accent">Because it leaves… minute by minute.</p>
+          <p className="philosophy-question">Where is your life going?</p>
         </div>
       </section>
 

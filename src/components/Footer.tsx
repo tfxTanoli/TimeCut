@@ -34,6 +34,14 @@ export default function Footer() {
               <li><Link to="/get-started">Get Started</Link></li>
             </ul>
           </div>
+          <div>
+            <p className="footer-col-title">Contact</p>
+            <ul className="footer-col-links">
+              <li><Link to="/contact">Send a Message</Link></li>
+              <li><Link to="/contact">Feature Request</Link></li>
+              <li><Link to="/contact">Leave Feedback</Link></li>
+            </ul>
+          </div>
         </div>
       </div>
       <div className="footer-bottom container">

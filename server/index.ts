@@ -15,7 +15,7 @@ function extractPDFText(buffer: Buffer): Promise<string> {
   })
 }
 
-const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
+const SYSTEM_PROMPT = `You are the TimeCut intelligence for "TimeCut", a tool that helps users decide whether content is truly worth their time.
 
 STEP 1 — DETECT CONTENT TYPE
 Classify the content as one of:
@@ -75,7 +75,11 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
   "key_insights": ["insight 1", "insight 2", "insight 3", "insight 4"],
   "what_to_skip": ["element to skip 1", "element to skip 2", "element to skip 3"],
   "best_for": ["audience type 1", "audience type 2", "audience type 3"],
-  "final_decision": "2 to 3 sentences with a clear, actionable final recommendation"
+  "final_decision": "2 to 3 sentences with a clear, actionable final recommendation",
+  "originality_score": <number 0.0 to 10.0 — how fresh and original the ideas are; 10 = highly novel thinking, 0 = entirely recycled clichés>,
+  "evidence_density": <number 0.0 to 10.0 — how well claims are backed by data, examples, or logic; 10 = every claim supported, 0 = pure assertion>,
+  "repetition_score": <number 0.0 to 10.0 — how repetitive the content is; 10 = extremely repetitive padding, 0 = zero repetition>,
+  "insight_uniqueness": <number 0.0 to 10.0 — how non-obvious and novel the key insights are; 10 = rare insights reader won't have seen before, 0 = entirely obvious>
 }
 
 Generate ALL text fields in the user's selected language.`

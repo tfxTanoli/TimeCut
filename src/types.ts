@@ -27,6 +27,10 @@ export interface TimeCutReport {
   what_to_skip: string[]
   best_for: string[]
   final_decision: string
+  originality_score: number
+  evidence_density: number
+  repetition_score: number
+  insight_uniqueness: number
 }
 
 export interface AnalyzeResponse {

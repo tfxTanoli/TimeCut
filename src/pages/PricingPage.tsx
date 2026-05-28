@@ -5,13 +5,13 @@ const PLANS = [
   {
     name: 'Free',
     price: '$0',
-    period: 'forever',
-    desc: 'Perfect for trying out Time Cut with no commitment.',
+    period: '',
+    desc: 'Perfect for trying out TimeCut with no commitment.',
     cta: 'Start for Free',
     ctaTo: '/',
     highlight: false,
     features: [
-      '5 analyses per day',
+      '3 analyses per day',
       'Paste Text input',
       'Full Time Intelligence Report',
       '10 language support',
@@ -63,7 +63,7 @@ const PLANS = [
 ]
 
 const FAQS = [
-  { q: 'Is the Free plan really free?', a: 'Yes. No credit card required. You get 5 analyses per day with full reports, forever.' },
+  { q: 'Is the Free plan really free?', a: 'Yes. No credit card required. You get 3 analyses per day with full reports.' },
   { q: 'Can I cancel my Pro plan anytime?', a: 'Absolutely. Cancel anytime from your account settings with no questions asked.' },
   { q: 'What payment methods do you accept?', a: 'Visa, Mastercard, Amex, and PayPal via Stripe. All payments are secure.' },
   { q: 'Do you offer a free trial for Pro?', a: 'Yes, a 7-day free trial is available on Pro. No charge until the trial ends.' },
@@ -90,7 +90,7 @@ export default function PricingPage() {
                 <p className="pricing-name">{plan.name}</p>
                 <div className="pricing-price-row">
                   <span className="pricing-price">{plan.price}</span>
-                  {plan.price !== 'Custom' && <span className="pricing-period">/{plan.period}</span>}
+                  {plan.price !== 'Custom' && plan.period && <span className="pricing-period">/{plan.period}</span>}
                 </div>
                 <p className="pricing-desc">{plan.desc}</p>
                 <Link
@@ -135,7 +135,7 @@ export default function PricingPage() {
       <section className="page-cta-section">
         <div className="container page-cta-inner">
           <h2>Start Protecting Your Time Today</h2>
-          <p>Free forever. Upgrade when you're ready.</p>
+          <p>Free. Upgrade when you're ready.</p>
           <Link to="/" className="btn-primary btn-cta">Get Started Free</Link>
         </div>
       </section>
