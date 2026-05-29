@@ -12,10 +12,12 @@ export default function HomePage() {
   const [report, setReport] = useState<TimeCutReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [analysisLanguage, setAnalysisLanguage] = useState('English')
 
   async function handleSubmit(tab: InputTab, value: string | File, language: string) {
     setIsLoading(true)
     setError(null)
+    setAnalysisLanguage(language)
 
     if (user) {
       await logActivity(user.uid, 'analysis_submitted', { inputType: tab, language })
@@ -59,7 +61,7 @@ export default function HomePage() {
   if (report) {
     return (
       <Suspense fallback={<div className="page-loading" />}>
-        <ResultPage report={report} onBack={handleBack} />
+        <ResultPage report={report} onBack={handleBack} language={analysisLanguage} />
       </Suspense>
     )
   }

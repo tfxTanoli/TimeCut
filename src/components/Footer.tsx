@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand-block">
-          <p className="footer-brand">⏱ TIMECUT</p>
+          <img src="/timecut-logo.webp" alt="TimeCut" className="footer-logo-img" />
           <p className="footer-tagline">Know the value before you spend your time.</p>
         </div>
         <div className="footer-links-grid">

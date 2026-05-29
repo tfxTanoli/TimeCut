@@ -54,10 +54,6 @@ const POSTS = [
 
 const CATEGORIES = ['All', 'Attention', 'Time Intelligence', 'Strategy', 'Focus', 'Deep Work', 'Content Creation']
 
-function comingSoon() {
-  alert('Full article coming soon.')
-}
-
 export default function BlogPage() {
   return (
     <>
@@ -91,7 +87,7 @@ export default function BlogPage() {
               </div>
               <h2 className="blog-featured-title">{POSTS[0].title}</h2>
               <p className="blog-featured-excerpt">{POSTS[0].excerpt}</p>
-              <button className="btn-outline" onClick={comingSoon}>Read Article</button>
+              <span className="coming-soon-badge">Coming Soon</span>
             </div>
           </div>
 
@@ -107,7 +103,7 @@ export default function BlogPage() {
                 <p className="blog-card-excerpt">{post.excerpt}</p>
                 <div className="blog-card-footer">
                   <span className="blog-read">{post.readTime}</span>
-                  <button className="blog-read-link" onClick={comingSoon}>Read</button>
+                  <span className="coming-soon-badge">Coming Soon</span>
                 </div>
               </div>
             ))}

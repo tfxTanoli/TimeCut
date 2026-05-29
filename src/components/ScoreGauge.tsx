@@ -31,10 +31,10 @@ export default function ScoreGauge({ score, label = 'OVERALL VALUE SCORE' }: Pro
           strokeLinecap="round"
           strokeDasharray={`${filled} ${circumference}`}
         />
-        <text x={cx} y={cy - 4} textAnchor="middle" fontSize="22" fontWeight="700" fill="currentColor">
+        <text x={cx - 2} y={cy - 4} textAnchor="end" fontSize="22" fontWeight="700" fill="currentColor">
           {score.toFixed(1)}
         </text>
-        <text x={cx + 14} y={cy - 4} fontSize="11" fill="#9ca3af">/10</text>
+        <text x={cx + 1} y={cy - 4} textAnchor="start" fontSize="11" fill="#9ca3af"> / 10</text>
       </svg>
       <p className="gauge-label">{label}</p>
     </div>

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import Footer from '../components/Footer'
+import { db } from '../lib/firebase'
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 
 const SUBJECTS = [
   'General Inquiry',
@@ -17,16 +19,30 @@ export default function ContactPage() {
   const [subject, setSubject] = useState(SUBJECTS[0])
   const [message, setMessage] = useState('')
   const [sent, setSent] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\n${message}`)
-    const mailtoLink = `mailto:usman5194999@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`
-    window.location.href = mailtoLink
-    setSent(true)
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      await addDoc(collection(db, 'contacts'), {
+        name: name.trim(),
+        email: email.trim(),
+        subject,
+        message: message.trim(),
+        createdAt: serverTimestamp(),
+      })
+      setSent(true)
+    } catch {
+      setSubmitError('Failed to send message. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  const canSubmit = name.trim() && email.trim() && message.trim()
+  const canSubmit = !isSubmitting && name.trim() && email.trim() && message.trim()
 
   return (
     <>
@@ -90,8 +106,7 @@ export default function ContactPage() {
                 <span className="contact-success-icon">✓</span>
                 <h2 className="contact-success-title">Message Sent!</h2>
                 <p className="contact-success-sub">
-                  Your email client should have opened. If not, email us directly at{' '}
-                  <a href="mailto:usman5194999@gmail.com">usman5194999@gmail.com</a>.
+                  Your message has been saved. We'll get back to you as soon as possible.
                 </p>
                 <button className="btn-primary btn-cta" onClick={() => setSent(false)}>
                   Send Another
@@ -152,12 +167,14 @@ export default function ContactPage() {
                   />
                 </div>
 
+                {submitError && <p className="error-banner">{submitError}</p>}
+
                 <button
                   type="submit"
                   className="btn-primary btn-cta contact-submit"
                   disabled={!canSubmit}
                 >
-                  Send Message
+                  {isSubmitting ? <><span className="btn-spinner" />Sending...</> : 'Send Message'}
                 </button>
               </form>
             )}

@@ -5,7 +5,7 @@ import Footer from './Footer'
 
 const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Arabic',
-  'Portuguese', 'Chinese', 'Japanese', 'Turkish', 'Italian',
+  'Portuguese', 'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Turkish', 'Italian', 'Korean',
 ]
 
 interface Props {
@@ -52,15 +52,17 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Hero ── */}
       <section className="hero">
         <div className="container hero-inner">
-          <span className="hero-badge">TimeCut Intelligence</span>
-          <h1 className="hero-title">
-            Don't Waste Time on<br />
-            <span className="hero-accent">Low-Value Content</span>
-          </h1>
-          <p className="hero-subtitle">
-            TimeCut's intelligence detects what's truly worth your attention.<br />
-            Know the value before you spend your time.
-          </p>
+          <div className="hero-text">
+            <span className="hero-badge">TimeCut Intelligence</span>
+            <h1 className="hero-title">
+              Don't Waste Time on<br />
+              <span className="hero-accent">Low-Value Content</span>
+            </h1>
+            <p className="hero-subtitle">
+              TimeCut's intelligence detects what's truly worth your attention.
+              Know the value before you spend your time.
+            </p>
+          </div>
 
           {/* Input card */}
           <form className="input-card" onSubmit={handleSubmit}>
@@ -84,14 +86,19 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             <div className="input-body">
               <div key={activeTab} className="tab-fade">
                 {activeTab === 'text' && (
-                  <textarea
-                    className="text-area"
-                    placeholder="Paste any content here: article, email, book chapter, report..."
-                    value={textValue}
-                    onChange={e => setTextValue(e.target.value)}
-                    rows={6}
-                    disabled={isLoading}
-                  />
+                  <>
+                    <textarea
+                      className="text-area"
+                      placeholder="Paste any content here: article, email, book chapter, report..."
+                      value={textValue}
+                      onChange={e => setTextValue(e.target.value)}
+                      rows={6}
+                      disabled={isLoading}
+                    />
+                    <p className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
+                      {textValue.length.toLocaleString()} / 15,000
+                    </p>
+                  </>
                 )}
                 {activeTab === 'pdf' && (
                   <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
@@ -185,7 +192,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 </div>
                 <div className="demo-stat">
                   <span className="demo-stat-label">Value Score</span>
-                  <span className="demo-stat-value">6.5 <span className="demo-stat-sub">/10</span></span>
+                  <span className="demo-stat-value">6.5 <span className="demo-stat-sub">/ 10</span></span>
                 </div>
               </div>
             </div>
@@ -211,7 +218,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '200ms' }}>
-              <p className="stat-value">10</p>
+              <p className="stat-value">12</p>
               <p className="stat-label">Languages Supported</p>
             </div>
             <div className="stat-divider" />
