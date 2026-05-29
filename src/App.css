@@ -45,6 +45,7 @@
 .navbar-inner {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 32px;
   height: 60px;
 }
@@ -64,7 +65,10 @@
   transition: color 0.2s, transform 0.2s;
 }
 .navbar-logo:hover { transform: scale(1.03); }
-.navbar-logo-img { height: 36px; width: auto; object-fit: contain; display: block; }
+.navbar-logo:hover .navbar-logo-text { color: var(--accent); }
+.navbar-logo-img { height: 34px; width: 34px; object-fit: cover; border-radius: 50%; display: block; }
+.navbar-logo-text { font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--text-h); transition: color 0.2s; }
+.footer-logo-text { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--text-h); }
 .navbar-links {
   display: flex;
   list-style: none;
@@ -963,9 +967,83 @@
 .bottom-banner .btn-cta:hover { opacity: 0.88; }
 
 
+/* ── Hamburger & Mobile Menu ── */
+.hamburger-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  color: var(--text-h);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.hamburger-btn:hover { background: var(--accent-bg); }
+
+.mobile-menu {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  background: #fff;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+  z-index: 99;
+}
+.mobile-menu-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.mobile-menu-links li a {
+  display: block;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-h);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s, color 0.15s;
+}
+.mobile-menu-links li a:hover { background: var(--accent-bg); color: var(--accent); }
+.mobile-menu-actions {
+  padding: 16px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.mobile-menu-login {
+  width: 100%;
+  padding: 12px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-h);
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: border-color 0.15s, color 0.15s;
+}
+.mobile-menu-login:hover { border-color: var(--accent); color: var(--accent); }
+.mobile-menu-signup {
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  text-align: center;
+}
+.mobile-menu-user { padding: 4px 0; font-size: 14px; color: var(--text); }
+.mobile-menu-email { font-weight: 500; color: var(--text-h); }
+.mobile-menu .lang-switcher { width: 100%; }
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .navbar-links { display: none; }
+  .navbar-actions { display: none; }
+  .hamburger-btn { display: flex; }
   .hero-title { font-size: 38px; }
   .features-grid { grid-template-columns: 1fr; }
   .analysis-grid { grid-template-columns: 1fr; }
@@ -1189,7 +1267,8 @@
 }
 .footer-brand-block { display: flex; flex-direction: column; gap: 8px; }
 .footer-brand { font-size: 17px; font-weight: 700; color: var(--text-h); margin: 0; letter-spacing: 0.5px; }
-.footer-logo-img { height: 32px; width: auto; object-fit: contain; display: block; }
+.footer-logo-wrap { display: flex; align-items: center; gap: 8px; }
+.footer-logo-img { height: 30px; width: 30px; object-fit: cover; border-radius: 50%; display: block; }
 .footer-tagline { font-size: 13px; color: var(--text); margin: 0; line-height: 1.5; }
 .footer-links-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
 .footer-col-title { font-size: 12px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: var(--text-h); margin: 0 0 12px; }
@@ -1214,7 +1293,7 @@
    ════════════════════════════════════════ */
 .page-hero {
   background: linear-gradient(160deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
-  padding: 72px 0 64px;
+  padding: 40px 0 36px;
   text-align: center;
   border-bottom: 1px solid var(--border);
 }
@@ -1222,10 +1301,10 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 .page-hero-title {
-  font-size: 44px;
+  font-size: 38px;
   font-weight: 800;
   letter-spacing: -1.2px;
   color: #0f172a;
@@ -1233,7 +1312,7 @@
   margin: 0;
 }
 .page-hero-sub {
-  font-size: 17px;
+  font-size: 15px;
   color: #64748b;
   line-height: 1.6;
   margin: 0;
@@ -1260,7 +1339,7 @@
 /* ════════════════════════════════════════
    HOW IT WORKS PAGE
    ════════════════════════════════════════ */
-.hiw-steps { padding: 40px 0 80px; }
+.hiw-steps { padding: 28px 0 60px; }
 .hiw-step {
   display: grid;
   grid-template-columns: 160px 1fr;

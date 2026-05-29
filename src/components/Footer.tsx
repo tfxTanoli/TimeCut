@@ -7,7 +7,10 @@ export default function Footer() {
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand-block">
-          <img src="/timecut-logo.webp" alt="TimeCut" className="footer-logo-img" />
+          <div className="footer-logo-wrap">
+            <img src="/timecut-logo.webp" alt="TimeCut" className="footer-logo-img" />
+            <span className="footer-logo-text">TIMECUT</span>
+          </div>
           <p className="footer-tagline">{t('footer.tagline')}</p>
         </div>
         <div className="footer-links-grid">
