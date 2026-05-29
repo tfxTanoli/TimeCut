@@ -67,7 +67,7 @@
 .navbar-logo:hover { transform: scale(1.03); }
 .navbar-logo:hover .navbar-logo-text { color: var(--accent); }
 .navbar-logo-img { height: 34px; width: 34px; object-fit: cover; border-radius: 50%; display: block; }
-.navbar-logo-text { font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--text-h); transition: color 0.2s; }
+.navbar-logo-text { font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: var(--text-h); transition: color 0.2s; }
 .footer-logo-text { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: var(--text-h); }
 .navbar-links {
   display: flex;
