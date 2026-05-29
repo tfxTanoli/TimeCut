@@ -3,12 +3,14 @@ import { analyzeText, analyzePdf } from '../api'
 import type { TimeCutReport, InputTab } from '../types'
 import LandingPage from '../components/LandingPage'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from '../hooks/useTranslation'
 import { logActivity, incrementAnalysisStats, saveAnalysis } from '../lib/userService'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
 
 export default function HomePage() {
   const { user } = useAuth()
+  const { t } = useTranslation()
   const [report, setReport] = useState<TimeCutReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -45,10 +47,10 @@ export default function HomePage() {
           ])
         }
       } else {
-        setError(result.error ?? 'Something went wrong. Please try again.')
+        setError(result.error ?? t('home.errorGeneral'))
       }
     } catch {
-      setError('Network error. Please check your connection and try again.')
+      setError(t('home.errorNetwork'))
     }
     setIsLoading(false)
   }

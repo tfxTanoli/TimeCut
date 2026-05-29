@@ -1,85 +1,34 @@
 import { Link } from 'react-router-dom'
 import Footer from '../components/Footer'
-
-const FEATURES = [
-  {
-    emoji: '⚖️',
-    title: 'Smart Verdict System',
-    desc: 'Every report ends with one of three clear verdicts: MUST READ, SKIM ONLY, or SKIP IT, giving you instant decision clarity.',
-    color: 'purple',
-  },
-  {
-    emoji: '⭐',
-    title: 'Overall Value Score',
-    desc: 'A 0 to 10 score calculated from information density, originality, and practical usefulness, visualized as a live gauge.',
-    color: 'amber',
-  },
-  {
-    emoji: '⏱',
-    title: 'Time Saved Estimation',
-    desc: 'Know exactly how many minutes you can safely skip before investing your attention.',
-    color: 'green',
-  },
-  {
-    emoji: '📊',
-    title: 'Attention Quality Rating',
-    desc: 'High, Medium, or Low. Tells you how much focused attention the content actually deserves.',
-    color: 'blue',
-  },
-  {
-    emoji: '💡',
-    title: 'Key Insights Extraction',
-    desc: 'The top 4 most valuable ideas or truths pulled directly from the content, ready to absorb in seconds.',
-    color: 'purple',
-  },
-  {
-    emoji: '🚫',
-    title: 'What to Skip Detection',
-    desc: 'Specific sections, repetitive parts, or filler content flagged for you to ignore. Read smarter, not longer.',
-    color: 'red',
-  },
-  {
-    emoji: '👥',
-    title: 'Audience Fit Detection',
-    desc: 'Identifies who the content is actually written for, so you know if it\'s the right level for you.',
-    color: 'amber',
-  },
-  {
-    emoji: '✅',
-    title: 'Final Decision Summary',
-    desc: 'A clear, concise recommendation that tells you exactly what to do with the content.',
-    color: 'green',
-  },
-  {
-    emoji: '📄',
-    title: 'PDF Document Support',
-    desc: 'Upload PDF files directly: reports, books, research papers, and more analyzed instantly.',
-    color: 'blue',
-  },
-  {
-    emoji: '🌍',
-    title: 'Multi-Language Support',
-    desc: 'Analyze content and receive reports in 10 languages: English, Spanish, French, German, Arabic, Portuguese, Chinese, Japanese, Turkish, and Italian.',
-    color: 'purple',
-  },
-]
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function FeaturesPage() {
+  const { t } = useTranslation()
+
+  const FEATURES = [
+    { emoji: '⚖️', title: t('features.f1Title'), desc: t('features.f1Desc'), color: 'purple' },
+    { emoji: '⭐', title: t('features.f2Title'), desc: t('features.f2Desc'), color: 'amber' },
+    { emoji: '⏱', title: t('features.f3Title'), desc: t('features.f3Desc'), color: 'green' },
+    { emoji: '📊', title: t('features.f4Title'), desc: t('features.f4Desc'), color: 'blue' },
+    { emoji: '💡', title: t('features.f5Title'), desc: t('features.f5Desc'), color: 'purple' },
+    { emoji: '🚫', title: t('features.f6Title'), desc: t('features.f6Desc'), color: 'red' },
+    { emoji: '👥', title: t('features.f7Title'), desc: t('features.f7Desc'), color: 'amber' },
+    { emoji: '✅', title: t('features.f8Title'), desc: t('features.f8Desc'), color: 'green' },
+    { emoji: '📄', title: t('features.f9Title'), desc: t('features.f9Desc'), color: 'blue' },
+    { emoji: '🌍', title: t('features.f10Title'), desc: t('features.f10Desc'), color: 'purple' },
+  ]
+
   return (
     <>
-      {/* Hero */}
       <section className="page-hero page-hero--features">
         <div className="container page-hero-inner">
-          <span className="hero-badge">Full Feature Set</span>
-          <h1 className="page-hero-title">Everything to Protect<br />Your Time</h1>
-          <p className="page-hero-sub">
-            One report. All the data you need to decide what's worth your attention.
-          </p>
-          <Link to="/" className="btn-primary btn-cta">Try It Free</Link>
+          <span className="hero-badge">{t('features.badge')}</span>
+          <h1 className="page-hero-title">{t('features.title')}</h1>
+          <p className="page-hero-sub">{t('features.subtitle')}</p>
+          <Link to="/" className="btn-primary btn-cta">{t('features.tryFree')}</Link>
         </div>
       </section>
 
-      {/* Features Grid */}
       <section className="features-main-section">
         <div className="container">
           <div className="features-big-grid">
@@ -94,42 +43,40 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Comparison Banner */}
       <section className="comparison-section">
         <div className="container">
-          <p className="section-eyebrow">TimeCut vs. Reading Blindly</p>
-          <h2 className="section-title">Why Guessing Wastes Your Time</h2>
+          <p className="section-eyebrow">{t('features.compEyebrow')}</p>
+          <h2 className="section-title">{t('features.compTitle')}</h2>
           <div className="comparison-grid">
             <div className="comparison-col comparison-col--bad">
-              <h3>❌ Without TimeCut</h3>
+              <h3>{t('features.compBadTitle')}</h3>
               <ul>
-                <li>Read the entire piece before knowing its value</li>
-                <li>No idea which sections to skip</li>
-                <li>Waste time on generic, repetitive content</li>
-                <li>Distracted attention with no recovery</li>
-                <li>Regret spending 30 minutes on a 2-minute takeaway</li>
+                <li>{t('features.compBad1')}</li>
+                <li>{t('features.compBad2')}</li>
+                <li>{t('features.compBad3')}</li>
+                <li>{t('features.compBad4')}</li>
+                <li>{t('features.compBad5')}</li>
               </ul>
             </div>
             <div className="comparison-col comparison-col--good">
-              <h3>✅ With TimeCut</h3>
+              <h3>{t('features.compGoodTitle')}</h3>
               <ul>
-                <li>Know the verdict in 15 seconds, before you start</li>
-                <li>Jump straight to the sections that matter</li>
-                <li>Skip fluff, filler, and repetition confidently</li>
-                <li>Protect your attention for high-value content</li>
-                <li>Spend your time on content that actually moves you forward</li>
+                <li>{t('features.compGood1')}</li>
+                <li>{t('features.compGood2')}</li>
+                <li>{t('features.compGood3')}</li>
+                <li>{t('features.compGood4')}</li>
+                <li>{t('features.compGood5')}</li>
               </ul>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CTA */}
       <section className="page-cta-section">
         <div className="container page-cta-inner">
-          <h2>All Features. Free to Start.</h2>
-          <p>No account needed. Analyze your first piece of content right now.</p>
-          <Link to="/" className="btn-primary btn-cta">Start Analyzing</Link>
+          <h2>{t('features.ctaTitle')}</h2>
+          <p>{t('features.ctaSub')}</p>
+          <Link to="/" className="btn-primary btn-cta">{t('features.ctaBtn')}</Link>
         </div>
       </section>
 

@@ -110,6 +110,25 @@
   transition: color 0.2s, background 0.2s, transform 0.15s;
 }
 .btn-login:hover { color: var(--accent); background: var(--accent-bg); transform: translateY(-1px); }
+
+/* ── Language Switcher ── */
+.lang-switcher {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 5px 8px;
+  background: var(--bg);
+  color: var(--text-h);
+  font-size: 12px;
+  font-family: var(--sans);
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+  min-width: 46px;
+}
+.lang-switcher:hover { border-color: var(--accent); }
+.lang-switcher:focus { border-color: var(--accent); }
+
 /* ── Avatar button ── */
 .navbar-avatar-wrap {
   position: relative;

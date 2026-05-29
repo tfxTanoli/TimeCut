@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from '../hooks/useTranslation'
 
 interface Props {
   onClose: () => void
@@ -8,6 +9,7 @@ interface Props {
 
 export default function UserDropdown({ onClose }: Props) {
   const { user, displayName, logout } = useAuth()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const ref = useRef<HTMLDivElement>(null)
 
@@ -43,7 +45,6 @@ export default function UserDropdown({ onClose }: Props) {
 
   return (
     <div className="udrop" ref={ref}>
-      {/* Identity header */}
       <div className="udrop-header">
         <div className="udrop-avatar">
           {user?.photoURL
@@ -51,20 +52,19 @@ export default function UserDropdown({ onClose }: Props) {
             : <span>{initials}</span>}
         </div>
         <div className="udrop-identity">
-          <p className="udrop-name">{displayName || 'Your Account'}</p>
+          <p className="udrop-name">{displayName || t('user.yourAccount')}</p>
           <p className="udrop-email">{user?.email}</p>
         </div>
       </div>
 
       <div className="udrop-divider" />
 
-      {/* Menu items */}
       <div className="udrop-menu">
         <button className="udrop-item" onClick={handleProfile}>
-          <IconUser /> Profile
+          <IconUser /> {t('user.profile')}
         </button>
         <button className="udrop-item udrop-item--danger" onClick={handleLogout}>
-          <IconLogout /> Log out
+          <IconLogout /> {t('user.logOut')}
         </button>
       </div>
     </div>

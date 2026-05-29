@@ -1,78 +1,87 @@
 import { Link } from 'react-router-dom'
 import Footer from '../components/Footer'
+import { useTranslation } from '../hooks/useTranslation'
 
-const POSTS = [
-  {
-    category: 'Attention',
-    title: 'Why Most Content Is a Waste of Your Time',
-    excerpt: 'Studies show the average knowledge worker reads 10+ pieces of content daily. Less than 20% of it changes how they think or act. Here\'s the hidden cost.',
-    date: 'May 14, 2025',
-    readTime: '6 min read',
-    emoji: '🧠',
-  },
-  {
-    category: 'Time Intelligence',
-    title: 'How TimeCut Intelligence Helps You Reclaim Your Focus',
-    excerpt: 'The information age promised us access to everything. It delivered overwhelm instead. Time Intelligence filters are becoming the new inbox zero.',
-    date: 'May 8, 2025',
-    readTime: '5 min read',
-    emoji: '🤖',
-  },
-  {
-    category: 'Strategy',
-    title: 'SKIM vs. SKIP: How to Decide When to Abandon Content',
-    excerpt: 'Not every piece of content deserves full attention, but some deserve at least a skim. Learn the framework for making that call in under 30 seconds.',
-    date: 'April 29, 2025',
-    readTime: '4 min read',
-    emoji: '📖',
-  },
-  {
-    category: 'Deep Work',
-    title: 'The Hidden Cost of Information Overload',
-    excerpt: 'Beyond time lost, consuming low-quality content degrades your ability to think clearly. The cognitive tax of bad content is rarely discussed.',
-    date: 'April 20, 2025',
-    readTime: '7 min read',
-    emoji: '💸',
-  },
-  {
-    category: 'Focus',
-    title: 'The Attention Economy and How to Win',
-    excerpt: 'Every app, article, and email is competing for your attention. Most of them deserve none of it. A guide to reclaiming your mental bandwidth.',
-    date: 'April 11, 2025',
-    readTime: '8 min read',
-    emoji: '⚔️',
-  },
-  {
-    category: 'Content Creation',
-    title: 'Building a Time-Aware Content Strategy',
-    excerpt: 'If you create content, the question isn\'t just "is this good?" It\'s "is this worth someone\'s time?" A new lens for content creators.',
-    date: 'April 3, 2025',
-    readTime: '5 min read',
-    emoji: '📝',
-  },
+const CATEGORIES_KEYS = [
+  { key: 'blog.catAll', val: 'All' },
+  { key: 'blog.catAttention', val: 'Attention' },
+  { key: 'blog.catTimeIntelligence', val: 'Time Intelligence' },
+  { key: 'blog.catStrategy', val: 'Strategy' },
+  { key: 'blog.catFocus', val: 'Focus' },
+  { key: 'blog.catDeepWork', val: 'Deep Work' },
+  { key: 'blog.catContentCreation', val: 'Content Creation' },
 ]
 
-const CATEGORIES = ['All', 'Attention', 'Time Intelligence', 'Strategy', 'Focus', 'Deep Work', 'Content Creation']
-
 export default function BlogPage() {
+  const { t } = useTranslation()
+
+  const POSTS = [
+    {
+      category: t('blog.catAttention'),
+      title: t('blog.post1Title'),
+      excerpt: t('blog.post1Excerpt'),
+      date: 'May 14, 2025',
+      readTime: '6 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '🧠',
+    },
+    {
+      category: t('blog.catTimeIntelligence'),
+      title: t('blog.post2Title'),
+      excerpt: t('blog.post2Excerpt'),
+      date: 'May 8, 2025',
+      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '🤖',
+    },
+    {
+      category: t('blog.catStrategy'),
+      title: t('blog.post3Title'),
+      excerpt: t('blog.post3Excerpt'),
+      date: 'April 29, 2025',
+      readTime: '4 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '📖',
+    },
+    {
+      category: t('blog.catDeepWork'),
+      title: t('blog.post4Title'),
+      excerpt: t('blog.post4Excerpt'),
+      date: 'April 20, 2025',
+      readTime: '7 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '💸',
+    },
+    {
+      category: t('blog.catFocus'),
+      title: t('blog.post5Title'),
+      excerpt: t('blog.post5Excerpt'),
+      date: 'April 11, 2025',
+      readTime: '8 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '⚔️',
+    },
+    {
+      category: t('blog.catContentCreation'),
+      title: t('blog.post6Title'),
+      excerpt: t('blog.post6Excerpt'),
+      date: 'April 3, 2025',
+      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
+      emoji: '📝',
+    },
+  ]
+
   return (
     <>
       <section className="page-hero">
         <div className="container page-hero-inner">
-          <span className="hero-badge">Time Intelligence Blog</span>
-          <h1 className="page-hero-title">Think Smarter About<br />What You Read</h1>
-          <p className="page-hero-sub">
-            Insights on attention, time, and how to protect what matters most: your focus.
-          </p>
+          <span className="hero-badge">{t('blog.badge')}</span>
+          <h1 className="page-hero-title">{t('blog.title')}</h1>
+          <p className="page-hero-sub">{t('blog.subtitle')}</p>
         </div>
       </section>
 
       <section className="blog-section">
         <div className="container">
           <div className="blog-categories">
-            {CATEGORIES.map(c => (
-              <button key={c} className={`category-pill ${c === 'All' ? 'category-pill--active' : ''}`}>
-                {c}
+            {CATEGORIES_KEYS.map(c => (
+              <button key={c.val} className={`category-pill ${c.val === 'All' ? 'category-pill--active' : ''}`}>
+                {t(c.key)}
               </button>
             ))}
           </div>
@@ -87,7 +96,7 @@ export default function BlogPage() {
               </div>
               <h2 className="blog-featured-title">{POSTS[0].title}</h2>
               <p className="blog-featured-excerpt">{POSTS[0].excerpt}</p>
-              <span className="coming-soon-badge">Coming Soon</span>
+              <span className="coming-soon-badge">{t('blog.comingSoon')}</span>
             </div>
           </div>
 
@@ -103,7 +112,7 @@ export default function BlogPage() {
                 <p className="blog-card-excerpt">{post.excerpt}</p>
                 <div className="blog-card-footer">
                   <span className="blog-read">{post.readTime}</span>
-                  <span className="coming-soon-badge">Coming Soon</span>
+                  <span className="coming-soon-badge">{t('blog.comingSoon')}</span>
                 </div>
               </div>
             ))}
@@ -111,25 +120,24 @@ export default function BlogPage() {
         </div>
       </section>
 
-      {/* Newsletter */}
       <section className="newsletter-section">
         <div className="container newsletter-inner">
           <div>
-            <h2 className="newsletter-title">Time Intelligence Weekly</h2>
-            <p className="newsletter-sub">Stay sharp. Only the content worth your time, pre-screened by TimeCut.</p>
+            <h2 className="newsletter-title">{t('blog.newsletterTitle')}</h2>
+            <p className="newsletter-sub">{t('blog.newsletterSub')}</p>
           </div>
           <form className="newsletter-form" onSubmit={e => e.preventDefault()}>
-            <input type="email" className="newsletter-input" placeholder="Enter your email..." />
-            <button type="submit" className="btn-primary btn-cta">Subscribe</button>
+            <input type="email" className="newsletter-input" placeholder={t('blog.emailPlaceholder')} />
+            <button type="submit" className="btn-primary btn-cta">{t('blog.subscribe')}</button>
           </form>
         </div>
       </section>
 
       <section className="page-cta-section">
         <div className="container page-cta-inner">
-          <h2>Try TimeCut on Any Article</h2>
-          <p>Paste any content and get your intelligence report in seconds.</p>
-          <Link to="/" className="btn-primary btn-cta">Start Analyzing</Link>
+          <h2>{t('blog.ctaTitle')}</h2>
+          <p>{t('blog.ctaSub')}</p>
+          <Link to="/" className="btn-primary btn-cta">{t('blog.ctaBtn')}</Link>
         </div>
       </section>
 

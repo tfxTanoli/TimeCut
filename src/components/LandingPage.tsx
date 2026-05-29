@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import type { InputTab } from '../types'
 import Footer from './Footer'
+import { useTranslation } from '../hooks/useTranslation'
 
 const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Arabic',
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function LandingPage({ onSubmit, isLoading, error }: Props) {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<InputTab>('text')
   const [textValue, setTextValue] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
@@ -53,14 +55,16 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       <section className="hero">
         <div className="container hero-inner">
           <div className="hero-text">
-            <span className="hero-badge">TimeCut Intelligence</span>
+            <span className="hero-badge">{t('home.badge')}</span>
             <h1 className="hero-title">
-              Don't Waste Time on<br />
-              <span className="hero-accent">Low-Value Content</span>
+              {t('home.title').split(t('home.titleAccent'))[0]}
+              <br />
+              <span className="hero-accent">{t('home.titleAccent')}</span>
             </h1>
             <p className="hero-subtitle">
-              TimeCut's intelligence detects what's truly worth your attention.
-              Know the value before you spend your time.
+              {t('home.subtitle').split('\n').map((line, i) => (
+                <span key={i}>{line}{i === 0 ? <br /> : null}</span>
+              ))}
             </p>
           </div>
 
@@ -72,14 +76,14 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 className={`tab-btn ${activeTab === 'text' ? 'tab-btn--active' : ''}`}
                 onClick={() => setActiveTab('text')}
               >
-                <IconDoc /> Paste Text
+                <IconDoc /> {t('home.pasteText')}
               </button>
               <button
                 type="button"
                 className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''}`}
                 onClick={() => setActiveTab('pdf')}
               >
-                <IconUpload /> Upload PDF
+                <IconUpload /> {t('home.uploadPDF')}
               </button>
             </div>
 
@@ -89,7 +93,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                   <>
                     <textarea
                       className="text-area"
-                      placeholder="Paste any content here: article, email, book chapter, report..."
+                      placeholder={t('home.textPlaceholder')}
                       value={textValue}
                       onChange={e => setTextValue(e.target.value)}
                       rows={6}
@@ -109,14 +113,14 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                         <p className="pdf-size">
                           {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
                           <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
-                            Remove
+                            {t('home.pdfRemove')}
                           </span>
                         </p>
                       </>
                     ) : (
                       <>
-                        <p className="pdf-drop-title">Click to select a PDF file</p>
-                        <p className="pdf-drop-hint">Max 10 MB</p>
+                        <p className="pdf-drop-title">{t('home.pdfClick')}</p>
+                        <p className="pdf-drop-hint">{t('home.pdfMax')}</p>
                       </>
                     )}
                     <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
@@ -129,7 +133,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                   {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                 </select>
                 <button type="submit" className="btn-primary btn-cta" disabled={!canSubmit}>
-                  {isLoading ? <><span className="btn-spinner" />Analyzing...</> : 'Save My Time'}
+                  {isLoading ? <><span className="btn-spinner" />{t('home.analyzing')}</> : t('home.saveMyTime')}
                 </button>
               </div>
             </div>
@@ -137,7 +141,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
             {error && <p className="error-banner">{error}</p>}
 
             <p className="trust-line">
-              <IconShield /> Instant Time Intelligence Report &nbsp;•&nbsp; No sign up required
+              <IconShield /> {t('home.trustLine')}
             </p>
           </form>
         </div>
@@ -146,23 +150,23 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Feature Cards ── */}
       <section className="features">
         <div className="container">
-          <p className="section-eyebrow fade-up">Why TimeCut?</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>Save Time. Protect Attention.</h2>
+          <p className="section-eyebrow fade-up">{t('home.whyBadge')}</p>
+          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.whyTitle')}</h2>
           <div className="features-grid">
             <div className="feature-card fade-up" style={{ transitionDelay: '0ms' }}>
               <div className="feature-icon feature-icon--purple"><IconClock /></div>
-              <h3>Save Time</h3>
-              <p>Know exactly how many minutes you can safely skip before you even start reading.</p>
+              <h3>{t('home.feat1Title')}</h3>
+              <p>{t('home.feat1Desc')}</p>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="feature-icon feature-icon--amber"><IconTarget /></div>
-              <h3>Clear Decisions</h3>
-              <p>Get a definitive verdict: Must Read, Skim Only, or Skip It, backed by TimeCut Analysis.</p>
+              <h3>{t('home.feat2Title')}</h3>
+              <p>{t('home.feat2Desc')}</p>
             </div>
             <div className="feature-card fade-up" style={{ transitionDelay: '240ms' }}>
               <div className="feature-icon feature-icon--green"><IconShieldCheck /></div>
-              <h3>Protect Attention</h3>
-              <p>Identify fluff, repetition, and low-value filler so you only absorb what matters.</p>
+              <h3>{t('home.feat3Title')}</h3>
+              <p>{t('home.feat3Desc')}</p>
             </div>
           </div>
         </div>
@@ -171,34 +175,31 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Demo Section ── */}
       <section className="demo">
         <div className="container">
-          <p className="section-eyebrow fade-up">Live Example</p>
-          <h2 className="demo-title fade-up" style={{ transitionDelay: '60ms' }}>See TimeCut in Action</h2>
+          <p className="section-eyebrow fade-up">{t('home.demoEyebrow')}</p>
+          <h2 className="demo-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.demoTitle')}</h2>
           <div className="demo-card fade-up" style={{ transitionDelay: '120ms' }}>
             <div className="demo-input">
-              <p className="demo-label">INPUT</p>
-              <p className="demo-field-label">Paste Text</p>
-              <p className="demo-url demo-url--text">
-                "Most people waste 2 to 3 hours daily on content that adds no real value to their work or life.
-                Here are 10 productivity habits that will change everything..."
-              </p>
+              <p className="demo-label">{t('home.demoInput')}</p>
+              <p className="demo-field-label">{t('home.demoPasteText')}</p>
+              <p className="demo-url demo-url--text">{t('home.demoQuote')}</p>
             </div>
             <div className="demo-output">
-              <p className="demo-label">RESULT PREVIEW</p>
+              <p className="demo-label">{t('home.demoResultPreview')}</p>
               <div className="demo-results">
                 <span className="verdict-badge verdict-badge--skim">SKIM ONLY</span>
                 <div className="demo-stat">
-                  <span className="demo-stat-label">Time Saved</span>
+                  <span className="demo-stat-label">{t('home.demoTimeSaved')}</span>
                   <span className="demo-stat-value">18 mins</span>
                 </div>
                 <div className="demo-stat">
-                  <span className="demo-stat-label">Value Score</span>
+                  <span className="demo-stat-label">{t('home.demoValueScore')}</span>
                   <span className="demo-stat-value">6.5 <span className="demo-stat-sub">/ 10</span></span>
                 </div>
               </div>
             </div>
           </div>
           <div className="demo-cta fade-up" style={{ transitionDelay: '200ms' }}>
-            <Link to="/examples" className="btn-outline">View Full Examples</Link>
+            <Link to="/examples" className="btn-outline">{t('home.viewExamples')}</Link>
           </div>
         </div>
       </section>
@@ -209,22 +210,22 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
           <div className="stats-row">
             <div className="stat-item fade-up" style={{ transitionDelay: '0ms' }}>
               <p className="stat-value">12,847</p>
-              <p className="stat-label">Time Intelligence Reports Generated</p>
+              <p className="stat-label">{t('home.stat1Label')}</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '100ms' }}>
               <p className="stat-value">3,420</p>
-              <p className="stat-label">Attention Hours Saved</p>
+              <p className="stat-label">{t('home.stat2Label')}</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '200ms' }}>
               <p className="stat-value">12</p>
-              <p className="stat-label">Languages Supported</p>
+              <p className="stat-label">{t('home.stat3Label')}</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '300ms' }}>
               <p className="stat-value">~10 sec</p>
-              <p className="stat-label">Average Analysis Time</p>
+              <p className="stat-label">{t('home.stat4Label')}</p>
             </div>
           </div>
         </div>
@@ -233,9 +234,9 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
       {/* ── Philosophy ── */}
       <section className="philosophy-section">
         <div className="container philosophy-inner">
-          <p className="philosophy-line">Nobody notices life disappearing.</p>
-          <p className="philosophy-line philosophy-line--accent">Because it leaves… minute by minute.</p>
-          <p className="philosophy-question">Where is your life going?</p>
+          <p className="philosophy-line">{t('home.philoLine1')}</p>
+          <p className="philosophy-line philosophy-line--accent">{t('home.philoLine2')}</p>
+          <p className="philosophy-question">{t('home.philoQuestion')}</p>
         </div>
       </section>
 

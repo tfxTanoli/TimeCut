@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 
 export default function ProfilePage() {
   const { user, userData, displayName, updateDisplayName, reauthAndChangePassword } = useAuth()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
-  // Name form
   const [name, setName]             = useState('')
   const [nameSaving, setNameSaving] = useState(false)
   const [nameStatus, setNameStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [nameError, setNameError]   = useState('')
 
-  // Password form
   const [currentPw, setCurrentPw] = useState('')
   const [newPw, setNewPw]         = useState('')
   const [confirmPw, setConfirmPw] = useState('')
@@ -21,12 +21,10 @@ export default function ProfilePage() {
   const [pwStatus, setPwStatus]   = useState<'idle' | 'success' | 'error'>('idle')
   const [pwError, setPwError]     = useState('')
 
-  // Redirect if not logged in
   useEffect(() => {
     if (!user) navigate('/', { replace: true })
   }, [user, navigate])
 
-  // Pre-fill name from context (fires when displayName is ready)
   useEffect(() => {
     if (displayName) setName(displayName)
     else if (user?.email) setName('')
@@ -51,7 +49,7 @@ export default function ProfilePage() {
       setNameStatus('success')
       setTimeout(() => setNameStatus('idle'), 3000)
     } catch {
-      setNameError('Failed to update name. Please try again.')
+      setNameError(t('profile.nameError'))
       setNameStatus('error')
     } finally {
       setNameSaving(false)
@@ -61,9 +59,9 @@ export default function ProfilePage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
     setPwError('')
-    if (newPw.length < 6) { setPwError('New password must be at least 6 characters.'); return }
-    if (newPw !== confirmPw) { setPwError('Passwords do not match.'); return }
-    if (!currentPw) { setPwError('Please enter your current password.'); return }
+    if (newPw.length < 6) { setPwError(t('profile.pwTooShort')); return }
+    if (newPw !== confirmPw) { setPwError(t('profile.pwNoMatch')); return }
+    if (!currentPw) { setPwError(t('profile.pwMissing')); return }
     setPwSaving(true)
     try {
       await reauthAndChangePassword(currentPw, newPw)
@@ -73,12 +71,12 @@ export default function ProfilePage() {
     } catch (err: any) {
       const msg =
         err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
-          ? 'Current password is incorrect.'
+          ? t('profile.pwWrong')
           : err.code === 'auth/weak-password'
-          ? 'New password must be at least 6 characters.'
+          ? t('profile.pwTooShort')
           : err.code === 'auth/too-many-requests'
-          ? 'Too many attempts. Please try again later.'
-          : 'Failed to update password. Please try again.'
+          ? t('profile.pwTooMany')
+          : t('profile.pwError')
       setPwError(msg)
       setPwStatus('error')
     } finally {
@@ -92,8 +90,6 @@ export default function ProfilePage() {
     <>
       <div className="profile-page">
         <div className="container profile-container">
-
-          {/* Hero */}
           <div className="profile-hero">
             <div className="profile-hero-avatar">
               {user.photoURL
@@ -101,57 +97,54 @@ export default function ProfilePage() {
                 : <span>{initials}</span>}
             </div>
             <div className="profile-hero-info">
-              <h1 className="profile-hero-name">{resolvedName || 'Your Account'}</h1>
+              <h1 className="profile-hero-name">{resolvedName || t('profile.yourAccount')}</h1>
               <p className="profile-hero-email">{user.email}</p>
             </div>
             {userData && (
               <div className="profile-hero-stats">
                 <div className="profile-stat">
                   <span className="profile-stat-val">{userData.totalAnalyses}</span>
-                  <span className="profile-stat-label">Analyses</span>
+                  <span className="profile-stat-label">{t('profile.analyses')}</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
                   <span className="profile-stat-val">{userData.totalTimeSaved}</span>
-                  <span className="profile-stat-label">Mins Saved</span>
+                  <span className="profile-stat-label">{t('profile.minsSaved')}</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Cards grid */}
           <div className="profile-grid">
-
-            {/* Personal Info */}
             <div className="profile-card">
               <div className="profile-card-header">
                 <IconUser />
-                <h2 className="profile-card-title">Personal Info</h2>
+                <h2 className="profile-card-title">{t('profile.personalInfo')}</h2>
               </div>
 
               <form onSubmit={handleSaveName} className="profile-form">
                 <div className="form-group">
-                  <label className="form-label">Full name</label>
+                  <label className="form-label">{t('profile.fullName')}</label>
                   <input
                     className="form-input"
                     type="text"
                     value={name}
                     onChange={e => setName(e.target.value)}
-                    placeholder="Your name"
+                    placeholder={t('profile.namePlaceholder')}
                     disabled={nameSaving}
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Email address</label>
+                  <label className="form-label">{t('profile.emailAddress')}</label>
                   <div className="profile-readonly-field">
                     <span>{user.email}</span>
-                    <span className="profile-readonly-badge">Cannot change</span>
+                    <span className="profile-readonly-badge">{t('profile.cannotChange')}</span>
                   </div>
                 </div>
 
                 {nameStatus === 'success' && (
-                  <p className="profile-msg profile-msg--success">Name updated successfully.</p>
+                  <p className="profile-msg profile-msg--success">{t('profile.nameSuccess')}</p>
                 )}
                 {nameError && (
                   <p className="profile-msg profile-msg--error">{nameError}</p>
@@ -162,60 +155,59 @@ export default function ProfilePage() {
                   className="btn-primary btn-cta profile-btn"
                   disabled={nameSaving || !name.trim() || name.trim() === resolvedName}
                 >
-                  {nameSaving ? <><span className="btn-spinner" />Saving…</> : 'Save Name'}
+                  {nameSaving ? <><span className="btn-spinner" />{t('profile.saving')}</> : t('profile.saveName')}
                 </button>
               </form>
             </div>
 
-            {/* Change Password */}
             <div className="profile-card">
               <div className="profile-card-header">
                 <IconLock />
-                <h2 className="profile-card-title">Change Password</h2>
+                <h2 className="profile-card-title">{t('profile.changePassword')}</h2>
               </div>
 
               <form onSubmit={handleChangePassword} className="profile-form">
                 <div className="form-group">
-                  <label className="form-label">Current password</label>
+                  <label className="form-label">{t('profile.currentPassword')}</label>
                   <input
                     className="form-input"
                     type="password"
                     value={currentPw}
                     onChange={e => setCurrentPw(e.target.value)}
-                    placeholder="Enter current password"
+                    placeholder={t('profile.currentPasswordPlaceholder')}
                     disabled={pwSaving}
                     autoComplete="current-password"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">New password</label>
+                  <label className="form-label">{t('profile.newPassword')}</label>
                   <input
                     className="form-input"
                     type="password"
                     value={newPw}
                     onChange={e => setNewPw(e.target.value)}
-                    placeholder="Min 6 characters"
+                    placeholder={t('profile.newPasswordPlaceholder')}
                     disabled={pwSaving}
                     autoComplete="new-password"
                   />
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Confirm new password</label>
+                  <label className="form-label">{t('profile.confirmPassword')}</label>
                   <input
                     className="form-input"
                     type="password"
                     value={confirmPw}
                     onChange={e => setConfirmPw(e.target.value)}
-                    placeholder="Repeat new password"
+                    placeholder={t('profile.confirmPasswordPlaceholder')}
                     disabled={pwSaving}
                     autoComplete="new-password"
                   />
                 </div>
 
                 {pwStatus === 'success' && (
-                  <p className="profile-msg profile-msg--success">Password updated successfully.</p>
+                  <p className="profile-msg profile-msg--success">{t('profile.pwSuccess')}</p>
                 )}
                 {pwError && (
                   <p className="profile-msg profile-msg--error">{pwError}</p>
@@ -226,11 +218,10 @@ export default function ProfilePage() {
                   className="btn-primary btn-cta profile-btn"
                   disabled={pwSaving || !currentPw || !newPw || !confirmPw}
                 >
-                  {pwSaving ? <><span className="btn-spinner" />Updating…</> : 'Update Password'}
+                  {pwSaving ? <><span className="btn-spinner" />{t('profile.updating')}</> : t('profile.updatePassword')}
                 </button>
               </form>
             </div>
-
           </div>
         </div>
       </div>

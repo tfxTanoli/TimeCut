@@ -1,81 +1,61 @@
 import { Link } from 'react-router-dom'
 import Footer from '../components/Footer'
-
-const STEPS = [
-  {
-    num: '01',
-    title: 'Input Your Content',
-    desc: 'Paste any text (articles, emails, newsletters, reports, video scripts) or upload a PDF document up to 10 MB.',
-    details: [
-      'Copy and paste from any source',
-      'Upload PDF documents directly',
-      'Supports up to ~15,000 characters of text',
-      'Works with any language',
-    ],
-  },
-  {
-    num: '02',
-    title: 'TimeCut Intelligence Analyzes',
-    desc: 'TimeCut intelligence performs a deep analysis of the content across multiple dimensions.',
-    details: [
-      'Information density and originality scoring',
-      'Attention quality assessment',
-      'Key insights vs. filler content detection',
-      'Audience fit and readability evaluation',
-    ],
-  },
-  {
-    num: '03',
-    title: 'Get Your Report',
-    desc: 'Receive a complete Time Intelligence Report in seconds, giving you everything you need to decide whether the content deserves your time.',
-    details: [
-      'Verdict: MUST READ / SKIM ONLY / SKIP IT',
-      'Overall Value Score (0 to 10)',
-      'Estimated time you can save',
-      'Key insights, what to skip, and final decision',
-    ],
-  },
-]
-
-const FAQS = [
-  {
-    q: 'How accurate is the analysis?',
-    a: 'TimeCut intelligence delivers consistent, reliable verdicts for most content types. Results may vary for highly technical or niche subjects.',
-  },
-  {
-    q: 'What types of content can I analyze?',
-    a: 'Any text-based content: articles, blog posts, emails, newsletters, reports, book excerpts, video scripts, research papers, PDFs, and more.',
-  },
-  {
-    q: 'How long does analysis take?',
-    a: 'Most analyses complete within 10 to 20 seconds depending on content length and server load.',
-  },
-  {
-    q: 'What languages are supported?',
-    a: 'TimeCut supports 10 languages: English, Spanish, French, German, Arabic, Portuguese, Chinese, Japanese, Turkish, and Italian.',
-  },
-  {
-    q: 'Is there a content length limit?',
-    a: 'The analysis is optimized for up to 15,000 characters (roughly 2,500 words). Longer content is trimmed to this limit automatically.',
-  },
-]
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function HowItWorksPage() {
+  const { t } = useTranslation()
+
+  const STEPS = [
+    {
+      num: t('hiw.step1Num'),
+      title: t('hiw.step1Title'),
+      desc: t('hiw.step1Desc'),
+      details: [t('hiw.step1Detail1'), t('hiw.step1Detail2'), t('hiw.step1Detail3'), t('hiw.step1Detail4')],
+    },
+    {
+      num: t('hiw.step2Num'),
+      title: t('hiw.step2Title'),
+      desc: t('hiw.step2Desc'),
+      details: [t('hiw.step2Detail1'), t('hiw.step2Detail2'), t('hiw.step2Detail3'), t('hiw.step2Detail4')],
+    },
+    {
+      num: t('hiw.step3Num'),
+      title: t('hiw.step3Title'),
+      desc: t('hiw.step3Desc'),
+      details: [t('hiw.step3Detail1'), t('hiw.step3Detail2'), t('hiw.step3Detail3'), t('hiw.step3Detail4')],
+    },
+  ]
+
+  const ANATOMY = [
+    { icon: '⚖️', label: t('hiw.anatomyVerdict'), desc: t('hiw.anatomyVerdictDesc') },
+    { icon: '⭐', label: t('hiw.anatomyValueScore'), desc: t('hiw.anatomyValueScoreDesc') },
+    { icon: '⏱', label: t('hiw.anatomyTimeSaved'), desc: t('hiw.anatomyTimeSavedDesc') },
+    { icon: '📊', label: t('hiw.anatomyAttention'), desc: t('hiw.anatomyAttentionDesc') },
+    { icon: '💡', label: t('hiw.anatomyKeyInsights'), desc: t('hiw.anatomyKeyInsightsDesc') },
+    { icon: '🚫', label: t('hiw.anatomyWhatSkip'), desc: t('hiw.anatomyWhatSkipDesc') },
+    { icon: '👥', label: t('hiw.anatomyBestFor'), desc: t('hiw.anatomyBestForDesc') },
+    { icon: '✅', label: t('hiw.anatomyFinalDecision'), desc: t('hiw.anatomyFinalDecisionDesc') },
+  ]
+
+  const FAQS = [
+    { q: t('hiw.faq1Q'), a: t('hiw.faq1A') },
+    { q: t('hiw.faq2Q'), a: t('hiw.faq2A') },
+    { q: t('hiw.faq3Q'), a: t('hiw.faq3A') },
+    { q: t('hiw.faq4Q'), a: t('hiw.faq4A') },
+    { q: t('hiw.faq5Q'), a: t('hiw.faq5A') },
+  ]
+
   return (
     <>
-      {/* Hero */}
       <section className="page-hero">
         <div className="container page-hero-inner">
-          <span className="hero-badge">Simple Process</span>
-          <h1 className="page-hero-title">How TimeCut Works</h1>
-          <p className="page-hero-sub">
-            Save your time in 3 simple steps powered by TimeCut intelligence.
-          </p>
-          <Link to="/" className="btn-primary btn-cta">Try It Free</Link>
+          <span className="hero-badge">{t('hiw.badge')}</span>
+          <h1 className="page-hero-title">{t('hiw.title')}</h1>
+          <p className="page-hero-sub">{t('hiw.subtitle')}</p>
+          <Link to="/" className="btn-primary btn-cta">{t('hiw.tryFree')}</Link>
         </div>
       </section>
 
-      {/* Steps */}
       <section className="hiw-steps">
         <div className="container">
           {STEPS.map((step, i) => (
@@ -97,22 +77,12 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* Report Anatomy */}
       <section className="report-anatomy">
         <div className="container">
-          <p className="section-eyebrow">What You Get</p>
-          <h2 className="section-title">Inside Your Time Intelligence Report</h2>
+          <p className="section-eyebrow">{t('hiw.whatYouGet')}</p>
+          <h2 className="section-title">{t('hiw.insideReport')}</h2>
           <div className="anatomy-grid">
-            {[
-              { icon: '⚖️', label: 'Verdict', desc: 'MUST READ, SKIM ONLY, or SKIP IT. A clear, decisive recommendation.' },
-              { icon: '⭐', label: 'Value Score', desc: 'A 0 to 10 score based on originality, density, and usefulness.' },
-              { icon: '⏱', label: 'Time Saved', desc: 'Estimated minutes you can skip without missing anything important.' },
-              { icon: '📊', label: 'Attention Quality', desc: 'High, Medium, or Low. How much focus the content actually deserves.' },
-              { icon: '💡', label: 'Key Insights', desc: 'The most valuable ideas extracted from the content.' },
-              { icon: '🚫', label: 'What to Skip', desc: 'Specific sections, repetition, or filler to ignore.' },
-              { icon: '👥', label: 'Best For', desc: 'The audience that would get the most from this content.' },
-              { icon: '✅', label: 'Final Decision', desc: 'A clear, human-readable summary of what to do.' },
-            ].map((item, i) => (
+            {ANATOMY.map((item, i) => (
               <div key={i} className="anatomy-card">
                 <span className="anatomy-emoji">{item.icon}</span>
                 <p className="anatomy-label">{item.label}</p>
@@ -123,10 +93,9 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="faq-section">
         <div className="container faq-inner">
-          <h2 className="section-title">Frequently Asked Questions</h2>
+          <h2 className="section-title">{t('hiw.faqTitle')}</h2>
           <div className="faq-list">
             {FAQS.map((faq, i) => (
               <div key={i} className="faq-item">
@@ -138,12 +107,11 @@ export default function HowItWorksPage() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="page-cta-section">
         <div className="container page-cta-inner">
-          <h2>Ready to Save Your Time?</h2>
-          <p>Start analyzing content instantly. No account required.</p>
-          <Link to="/" className="btn-primary btn-cta">Start for Free</Link>
+          <h2>{t('hiw.ctaTitle')}</h2>
+          <p>{t('hiw.ctaSub')}</p>
+          <Link to="/" className="btn-primary btn-cta">{t('hiw.ctaBtn')}</Link>
         </div>
       </section>
 

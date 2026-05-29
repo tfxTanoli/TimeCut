@@ -1,51 +1,53 @@
 import { Link } from 'react-router-dom'
+import { useTranslation } from '../hooks/useTranslation'
 
 export default function Footer() {
+  const { t } = useTranslation()
   return (
     <footer className="footer">
       <div className="container footer-inner">
         <div className="footer-brand-block">
           <img src="/timecut-logo.webp" alt="TimeCut" className="footer-logo-img" />
-          <p className="footer-tagline">Know the value before you spend your time.</p>
+          <p className="footer-tagline">{t('footer.tagline')}</p>
         </div>
         <div className="footer-links-grid">
           <div>
-            <p className="footer-col-title">Product</p>
+            <p className="footer-col-title">{t('footer.product')}</p>
             <ul className="footer-col-links">
-              <li><Link to="/how-it-works">How it Works</Link></li>
-              <li><Link to="/features">Features</Link></li>
-              <li><Link to="/examples">Examples</Link></li>
-              <li><Link to="/pricing">Pricing</Link></li>
+              <li><Link to="/how-it-works">{t('footer.howItWorks')}</Link></li>
+              <li><Link to="/features">{t('footer.features')}</Link></li>
+              <li><Link to="/examples">{t('footer.examples')}</Link></li>
+              <li><Link to="/pricing">{t('footer.pricing')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="footer-col-title">Company</p>
+            <p className="footer-col-title">{t('footer.company')}</p>
             <ul className="footer-col-links">
-              <li><Link to="/blog">Blog</Link></li>
-              <li><a href="#">About</a></li>
-              <li><a href="#">Privacy</a></li>
-              <li><a href="#">Terms</a></li>
+              <li><Link to="/blog">{t('footer.blog')}</Link></li>
+              <li><a href="#">{t('footer.about')}</a></li>
+              <li><a href="#">{t('footer.privacy')}</a></li>
+              <li><a href="#">{t('footer.terms')}</a></li>
             </ul>
           </div>
           <div>
-            <p className="footer-col-title">Account</p>
+            <p className="footer-col-title">{t('footer.account')}</p>
             <ul className="footer-col-links">
-              <li><Link to="/login">Log in</Link></li>
-              <li><Link to="/get-started">Get Started</Link></li>
+              <li><Link to="/login">{t('footer.logIn')}</Link></li>
+              <li><Link to="/get-started">{t('footer.getStarted')}</Link></li>
             </ul>
           </div>
           <div>
-            <p className="footer-col-title">Contact</p>
+            <p className="footer-col-title">{t('footer.contact')}</p>
             <ul className="footer-col-links">
-              <li><Link to="/contact">Send a Message</Link></li>
-              <li><Link to="/contact">Feature Request</Link></li>
-              <li><Link to="/contact">Leave Feedback</Link></li>
+              <li><Link to="/contact">{t('footer.sendMessage')}</Link></li>
+              <li><Link to="/contact">{t('footer.featureRequest')}</Link></li>
+              <li><Link to="/contact">{t('footer.leaveFeedback')}</Link></li>
             </ul>
           </div>
         </div>
       </div>
       <div className="footer-bottom container">
-        <p>© {new Date().getFullYear()} TimeCut. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} TimeCut. {t('footer.copyright').replace('© {year} TimeCut. ', '')}</p>
       </div>
     </footer>
   )
