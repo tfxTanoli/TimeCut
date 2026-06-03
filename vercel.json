@@ -5,6 +5,9 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/analyze-pdf.ts": { "maxDuration": 30 }
+    "api/analyze-pdf.ts":        { "maxDuration": 30 },
+    "api/create-subscription.ts": { "maxDuration": 15 },
+    "api/activate-plan.ts":       { "maxDuration": 15 },
+    "api/stripe-webhook.ts":      { "maxDuration": 15 }
   }
 }
