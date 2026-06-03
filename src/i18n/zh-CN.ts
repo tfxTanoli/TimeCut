@@ -29,6 +29,7 @@ const zhCN: Record<string, string> = {
   'footer.featureRequest': '功能建议',
   'footer.leaveFeedback': '留下反馈',
   'footer.copyright': '© {year} TimeCut. 保留所有权利。',
+  'footer.poweredBy': '由 TimeCut 决策引擎™ 驱动',
 
   // ── Home / LandingPage ──
   'home.badge': 'TimeCut 智能',
@@ -116,6 +117,13 @@ const zhCN: Record<string, string> = {
   'result.verdictOverrated': '被高估',
   'result.verdictSkipIt': '跳过',
   'result.verdictTimeWaster': '浪费时间',
+
+  // ── Result Page — Analysis Breakdown ──
+  'result.analysisBreakdown': '分析明细',
+  'result.contentQuality': '内容质量',
+  'result.actionability': '可操作性',
+  'result.informationDensity': '信息密度',
+  'result.timeWorthiness': '时间价值',
 
   // ── Auth Modal ──
   'auth.logo': '⏱ TIMECUT',

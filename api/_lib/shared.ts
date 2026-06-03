@@ -16,12 +16,14 @@ For FICTION / NARRATIVE, evaluate:
 - Character depth and authenticity
 - Writing quality and originality (do NOT penalize fiction for "low information density" — that is not the goal of this content type)
 
-For INFORMATIONAL content, evaluate:
-- Information density (useful information per paragraph)
-- Originality (fresh ideas vs recycled talking points)
-- Practical value (actionable takeaways)
-- Clarity and structure
-- Evidence quality (data, examples, logic)
+For INFORMATIONAL content, score each of these FIVE core dimensions (0.0 to 10.0):
+1. Content Quality — Writing clarity, structure, flow, and overall production quality
+2. Originality — Fresh ideas vs. recycled talking points; novel insights vs. derivative rehashing
+3. Actionability — Practical, usable takeaways the reader can apply immediately
+4. Information Density — Useful signal per paragraph; ratio of substance to filler
+5. Time Worthiness — Overall: is the time investment genuinely worth it for a smart, busy person?
+
+The overall_value_score must reflect the weighted average of these five dimensions, with Time Worthiness and Information Density weighted slightly higher.
 
 STEP 3 — ASSIGN A VERDICT
 
@@ -51,16 +53,27 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
 {
   "verdict": <one of the 12 verdicts above>,
   "verdict_description": "One clear sentence explaining the verdict",
-  "overall_value_score": <number 0.0 to 10.0>,
+  "overall_value_score": <number 0.0 to 10.0, weighted average of the 5 dimensions>,
   "time_saved_minutes": <integer, estimated minutes the user can safely skip>,
-  "value_score": <number 0.0 to 10.0>,
+  "value_score": <same as overall_value_score>,
   "attention_quality": "High" | "Medium" | "Low",
   "attention_quality_description": "One sentence describing the quality of attention this content deserves",
   "what_this_is_about": "2 to 3 sentences describing what the content actually covers",
   "key_insights": ["insight 1", "insight 2", "insight 3", "insight 4"],
   "what_to_skip": ["element to skip 1", "element to skip 2", "element to skip 3"],
   "best_for": ["audience type 1", "audience type 2", "audience type 3"],
-  "final_decision": "2 to 3 sentences with a clear, actionable final recommendation"
+  "final_decision": "2 to 3 sentences with a clear, actionable final recommendation",
+  "originality_score": <number 0.0 to 10.0>,
+  "evidence_density": <number 0.0 to 10.0>,
+  "repetition_score": <number 0.0 to 10.0, where higher = more repetitive = worse>,
+  "insight_uniqueness": <number 0.0 to 10.0>,
+  "breakdown": {
+    "contentQuality": <number 0.0 to 10.0>,
+    "originality": <number 0.0 to 10.0>,
+    "actionability": <number 0.0 to 10.0>,
+    "informationDensity": <number 0.0 to 10.0>,
+    "timeWorthiness": <number 0.0 to 10.0>
+  }
 }
 
 Generate ALL text fields in the user's selected language.`

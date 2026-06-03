@@ -29,6 +29,7 @@ const en: Record<string, string> = {
   'footer.featureRequest': 'Feature Request',
   'footer.leaveFeedback': 'Leave Feedback',
   'footer.copyright': '© {year} TimeCut. All rights reserved.',
+  'footer.poweredBy': 'Powered by the TimeCut Decision Engine™',
 
   // ── Home / LandingPage ──
   'home.badge': 'TimeCut Intelligence',
@@ -116,6 +117,13 @@ const en: Record<string, string> = {
   'result.verdictOverrated': 'OVERRATED',
   'result.verdictSkipIt': 'SKIP IT',
   'result.verdictTimeWaster': 'TIME WASTER',
+
+  // ── Result Page — Analysis Breakdown ──
+  'result.analysisBreakdown': 'ANALYSIS BREAKDOWN',
+  'result.contentQuality': 'CONTENT QUALITY',
+  'result.actionability': 'ACTIONABILITY',
+  'result.informationDensity': 'INFORMATION DENSITY',
+  'result.timeWorthiness': 'TIME WORTHINESS',
 
   // ── Auth Modal ──
   'auth.logo': '⏱ TIMECUT',

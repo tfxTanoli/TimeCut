@@ -52,6 +52,7 @@ export default function Footer() {
       <div className="footer-bottom container">
         <p>© {new Date().getFullYear()} TimeCut. {t('footer.copyright').replace('© {year} TimeCut. ', '')}</p>
       </div>
+      <p className="footer-powered-by">{t('footer.poweredBy')}</p>
     </footer>
   )
 }

@@ -14,6 +14,14 @@ export type Verdict =
 export type AttentionQuality = 'High' | 'Medium' | 'Low'
 export type InputTab = 'text' | 'pdf'
 
+export interface TimeCutBreakdown {
+  contentQuality: number
+  originality: number
+  actionability: number
+  informationDensity: number
+  timeWorthiness: number
+}
+
 export interface TimeCutReport {
   verdict: Verdict
   verdict_description: string
@@ -31,6 +39,7 @@ export interface TimeCutReport {
   evidence_density: number
   repetition_score: number
   insight_uniqueness: number
+  breakdown?: TimeCutBreakdown
 }
 
 export interface AnalyzeResponse {

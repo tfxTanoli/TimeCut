@@ -132,7 +132,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                   {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                 </select>
-                <button type="submit" className="btn-primary btn-cta" disabled={!canSubmit}>
+                <button type="submit" className="btn-primary btn-cta save-cta" disabled={!canSubmit}>
                   {isLoading ? <><span className="btn-spinner" />{t('home.analyzing')}</> : t('home.saveMyTime')}
                 </button>
               </div>
@@ -189,7 +189,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 <span className="verdict-badge verdict-badge--skim">SKIM ONLY</span>
                 <div className="demo-stat">
                   <span className="demo-stat-label">{t('home.demoTimeSaved')}</span>
-                  <span className="demo-stat-value">18 mins</span>
+                  <span className="demo-stat-value">18 {t('result.timeSavedMins')}</span>
                 </div>
                 <div className="demo-stat">
                   <span className="demo-stat-label">{t('home.demoValueScore')}</span>

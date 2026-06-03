@@ -42,6 +42,42 @@ const VERDICT_KEY: Record<string, string> = {
   'TIME WASTER':        'result.verdictTimeWaster',
 }
 
+function barColor(value: number, isInverse = false): string {
+  if (isInverse) {
+    return value <= 3 ? '#22c55e' : value <= 6 ? '#f59e0b' : '#ef4444'
+  }
+  return value >= 7.5 ? '#22c55e' : value >= 4.5 ? '#6366f1' : '#ef4444'
+}
+
+interface BreakdownItemProps {
+  label: string
+  value: number
+  hint?: string
+  isInverse?: boolean
+}
+
+function BreakdownItem({ label, value, hint, isInverse }: BreakdownItemProps) {
+  const pct = Math.min(Math.max(value, 0), 10) * 10
+  const color = barColor(value, isInverse)
+  return (
+    <div className="breakdown-item">
+      <div className="breakdown-item-header">
+        <span className="breakdown-label">{label}</span>
+        <span className="breakdown-value">
+          {value.toFixed(1)}<span className="breakdown-denom">/10</span>
+        </span>
+      </div>
+      <div className="breakdown-bar-track">
+        <div
+          className="breakdown-bar-fill"
+          style={{ width: `${pct}%`, background: color }}
+        />
+      </div>
+      {hint && <span className="breakdown-hint">{hint}</span>}
+    </div>
+  )
+}
+
 export default function ResultPage({ report, onBack }: Props) {
   const { user } = useAuth()
   const { openSignup } = useAuthModal()
@@ -112,7 +148,8 @@ export default function ResultPage({ report, onBack }: Props) {
       )}
 
       <div className="container result-content">
-        {/* ── Verdict Card ── */}
+
+        {/* ── 1. Verdict Card ── */}
         <div className="verdict-card">
           <div className="verdict-icon">
             <IconDoc />
@@ -122,11 +159,22 @@ export default function ResultPage({ report, onBack }: Props) {
             <h2 className={`verdict-title verdict-badge ${verdictClass}`}>{verdictDisplay}</h2>
             <p className="verdict-desc">{report.verdict_description}</p>
           </div>
-          <ScoreGauge score={report.overall_value_score} label={t('result.overallValueScore')} />
         </div>
 
-        {/* ── Metrics Row ── */}
-        <div className="metrics-row">
+        {/* ── 2. Value Score Card (separated from verdict) ── */}
+        <div className="value-score-card">
+          <ScoreGauge score={report.overall_value_score} label={t('result.overallValueScore')} />
+          <div className="value-score-right">
+            <p className="metric-label">{t('result.valueScore')}</p>
+            <p className="metric-value">
+              {report.value_score.toFixed(1)} <span className="metric-denom">/ 10</span>
+            </p>
+            <p className="metric-sub">{t('result.valueSub')}</p>
+          </div>
+        </div>
+
+        {/* ── 3. Time Saved + Attention Quality ── */}
+        <div className="metrics-row metrics-row--2col">
           <div className="metric-card">
             <div className="metric-icon metric-icon--purple"><IconClock /></div>
             <div>
@@ -134,14 +182,6 @@ export default function ResultPage({ report, onBack }: Props) {
               <p className="metric-value">{report.time_saved_minutes} {t('result.timeSavedMins')}</p>
               <p className="metric-sub">{t('result.timeSavedSub')}</p>
               <p className="metric-enough">{t('result.enoughTime')}</p>
-            </div>
-          </div>
-          <div className="metric-card">
-            <div className="metric-icon metric-icon--amber"><IconStar /></div>
-            <div>
-              <p className="metric-label">{t('result.valueScore')}</p>
-              <p className="metric-value">{report.value_score.toFixed(1)} <span className="metric-denom">/ 10</span></p>
-              <p className="metric-sub">{t('result.valueSub')}</p>
             </div>
           </div>
           <div className="metric-card">
@@ -154,28 +194,41 @@ export default function ResultPage({ report, onBack }: Props) {
           </div>
         </div>
 
-        {/* ── Content Analysis Metrics ── */}
-        <div className="content-analysis-row">
-          <div className="ca-card">
-            <p className="ca-label">{t('result.originalityDetected')}</p>
-            <p className="ca-score">{(report.originality_score ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
+        {/* ── 4. Analysis Breakdown ── */}
+        <div className="analysis-breakdown-section">
+          <p className="breakdown-section-title">{t('result.analysisBreakdown')}</p>
+          <div className="breakdown-grid">
+            <BreakdownItem
+              label={t('result.originalityDetected')}
+              value={report.originality_score ?? 0}
+            />
+            <BreakdownItem
+              label={t('result.evidenceDensity')}
+              value={report.evidence_density ?? 0}
+            />
+            <BreakdownItem
+              label={t('result.repetitionScore')}
+              value={report.repetition_score ?? 0}
+              hint={t('result.repetitionHint')}
+              isInverse
+            />
+            <BreakdownItem
+              label={t('result.insightUniqueness')}
+              value={report.insight_uniqueness ?? 0}
+            />
           </div>
-          <div className="ca-card">
-            <p className="ca-label">{t('result.evidenceDensity')}</p>
-            <p className="ca-score">{(report.evidence_density ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
-          </div>
-          <div className="ca-card">
-            <p className="ca-label">{t('result.repetitionScore')}</p>
-            <p className="ca-score">{(report.repetition_score ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
-            <p className="ca-hint">{t('result.repetitionHint')}</p>
-          </div>
-          <div className="ca-card">
-            <p className="ca-label">{t('result.insightUniqueness')}</p>
-            <p className="ca-score">{(report.insight_uniqueness ?? 0).toFixed(1)}<span className="ca-denom"> / 10</span></p>
-          </div>
+
+          {report.breakdown && (
+            <div className="breakdown-grid breakdown-grid--mt">
+              <BreakdownItem label={t('result.contentQuality')} value={report.breakdown.contentQuality} />
+              <BreakdownItem label={t('result.actionability')} value={report.breakdown.actionability} />
+              <BreakdownItem label={t('result.informationDensity')} value={report.breakdown.informationDensity} />
+              <BreakdownItem label={t('result.timeWorthiness')} value={report.breakdown.timeWorthiness} />
+            </div>
+          )}
         </div>
 
-        {/* ── Analysis Grid ── */}
+        {/* ── 5. Analysis Grid ── */}
         <div className="analysis-grid">
           <div className="analysis-card">
             <div className="analysis-header">
@@ -204,7 +257,7 @@ export default function ResultPage({ report, onBack }: Props) {
           </div>
         </div>
 
-        {/* ── Best For + Final Decision ── */}
+        {/* ── 6. Best For + Final Decision ── */}
         <div className="bottom-section">
           <div className="bottom-card">
             <div className="analysis-header">
@@ -237,6 +290,7 @@ export default function ResultPage({ report, onBack }: Props) {
             {t('result.analyzeAnother')}
           </button>
         </div>
+
       </div>
     </div>
   )
@@ -256,13 +310,6 @@ function IconClock() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
-  )
-}
-function IconStar() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   )
 }
