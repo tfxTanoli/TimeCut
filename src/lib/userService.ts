@@ -7,10 +7,25 @@ import {
   collection,
   serverTimestamp,
   increment,
+  runTransaction,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User } from 'firebase/auth'
 import type { InputTab, TimeCutReport } from '../types'
+
+export type PlanType = 'free' | 'starter' | 'pro' | 'custom'
+
+export const PLAN_LIMITS: Record<PlanType, number> = {
+  free: 5,
+  starter: 500,
+  pro: 300,
+  custom: 999999,
+}
+
+export function getCurrentMonthKey(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
 
 export type ActivityType =
   | 'signup'
@@ -44,9 +59,31 @@ export async function createUserDocument(user: User, name?: string) {
       lastLoginAt: serverTimestamp(),
       totalAnalyses: 0,
       totalTimeSaved: 0,
+      plan: 'free',
     },
     { merge: true },
   )
+}
+
+export async function getMonthlyUsage(uid: string): Promise<number> {
+  const monthKey = getCurrentMonthKey()
+  const snap = await getDoc(doc(db, 'users', uid, 'usage', monthKey))
+  return snap.exists() ? (snap.data().count as number) : 0
+}
+
+export async function checkAndIncrementUsage(uid: string, plan: PlanType): Promise<void> {
+  const limit = PLAN_LIMITS[plan]
+  const monthKey = getCurrentMonthKey()
+  const usageRef = doc(db, 'users', uid, 'usage', monthKey)
+
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(usageRef)
+    const current: number = snap.exists() ? (snap.data().count as number) : 0
+    if (current >= limit) {
+      throw new Error(`LIMIT_EXCEEDED:${limit}`)
+    }
+    tx.set(usageRef, { count: current + 1, updatedAt: serverTimestamp() }, { merge: true })
+  })
 }
 
 export async function updateLastLogin(uid: string) {
@@ -111,6 +148,7 @@ export interface UserData {
   provider: string
   totalAnalyses: number
   totalTimeSaved: number
+  plan: PlanType
 }
 
 export async function getUserData(uid: string): Promise<UserData | null> {

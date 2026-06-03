@@ -26,3 +26,9 @@ dist-ssr
 
 .vercel
 .claude
+
+# Firebase service account — NEVER commit
+serviceAccountKey.json
+
+# Local dev utilities
+verify-screenshots.mjs

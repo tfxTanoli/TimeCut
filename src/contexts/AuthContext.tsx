@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from 'react'
 import {
@@ -17,14 +18,17 @@ import {
   EmailAuthProvider,
   type User,
 } from 'firebase/auth'
-import { auth, googleProvider } from '../lib/firebase'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { auth, db, googleProvider } from '../lib/firebase'
 import {
   createUserDocument,
   updateLastLogin,
   logActivity,
   updateUserName,
-  getUserData,
+  getCurrentMonthKey,
   type UserData,
+  type PlanType,
+  PLAN_LIMITS,
 } from '../lib/userService'
 
 interface AuthContextValue {
@@ -32,6 +36,10 @@ interface AuthContextValue {
   userData: UserData | null
   displayName: string
   loading: boolean
+  plan: PlanType
+  planLimit: number
+  monthlyUsage: number
+  refreshUsage: () => void
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
   loginWithGoogle: () => Promise<void>
@@ -44,34 +52,74 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]         = useState<User | null>(null)
-  const [userData, setUserData] = useState<UserData | null>(null)
-  const [loading, setLoading]   = useState(true)
+  const [user, setUser]                 = useState<User | null>(null)
+  const [userData, setUserData]         = useState<UserData | null>(null)
+  const [loading, setLoading]           = useState(true)
+  const [monthlyUsage, setMonthlyUsage] = useState(0)
 
-  // Fetch Firestore profile as soon as auth state is known
+  // Keep refs to active Firestore unsubscribers so we can clean up on sign-out
+  const unsubUserRef  = useRef<(() => void) | null>(null)
+  const unsubUsageRef = useRef<(() => void) | null>(null)
+
+  function detachListeners() {
+    unsubUserRef.current?.()
+    unsubUserRef.current = null
+    unsubUsageRef.current?.()
+    unsubUsageRef.current = null
+  }
+
+  function attachListeners(uid: string) {
+    detachListeners()
+
+    // Real-time user document (plan, totalAnalyses, etc.)
+    unsubUserRef.current = onSnapshot(
+      doc(db, 'users', uid),
+      snap => {
+        setUserData(snap.exists() ? (snap.data() as UserData) : null)
+        setLoading(false)
+      },
+      () => setLoading(false),
+    )
+
+    // Real-time monthly usage counter for the current month
+    const monthKey = getCurrentMonthKey()
+    unsubUsageRef.current = onSnapshot(
+      doc(db, 'users', uid, 'usage', monthKey),
+      snap => setMonthlyUsage(snap.exists() ? (snap.data().count as number) : 0),
+    )
+  }
+
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async firebaseUser => {
+    const unsubAuth = onAuthStateChanged(auth, firebaseUser => {
       setUser(firebaseUser)
       if (firebaseUser) {
-        const data = await getUserData(firebaseUser.uid)
-        setUserData(data)
+        attachListeners(firebaseUser.uid)
       } else {
+        detachListeners()
         setUserData(null)
+        setMonthlyUsage(0)
+        setLoading(false)
       }
-      setLoading(false)
     })
-    return unsub
-  }, [])
 
-  // Best available name: Firebase Auth displayName > Firestore name > ''
+    return () => {
+      unsubAuth()
+      detachListeners()
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const displayName = user?.displayName || userData?.name || ''
+  const plan: PlanType = (userData?.plan as PlanType) ?? 'free'
+  const planLimit = PLAN_LIMITS[plan]
+
+  // No-op — onSnapshot keeps monthlyUsage live automatically
+  function refreshUsage() {}
 
   async function login(email: string, password: string) {
     const cred = await signInWithEmailAndPassword(auth, email, password)
     await updateLastLogin(cred.user.uid)
     await logActivity(cred.user.uid, 'login', { provider: 'email' })
-    const data = await getUserData(cred.user.uid)
-    setUserData(data)
+    // Snapshot listener attached by onAuthStateChanged above; no manual setUserData needed
   }
 
   async function signup(email: string, password: string, name: string) {
@@ -79,8 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateProfile(cred.user, { displayName: name })
     await createUserDocument(cred.user, name)
     await logActivity(cred.user.uid, 'signup', { provider: 'email' })
-    const data = await getUserData(cred.user.uid)
-    setUserData(data)
   }
 
   async function loginWithGoogle() {
@@ -93,16 +139,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await updateLastLogin(cred.user.uid)
       await logActivity(cred.user.uid, 'login', { provider: 'google' })
     }
-    const data = await getUserData(cred.user.uid)
-    setUserData(data)
   }
 
   async function logout() {
-    if (auth.currentUser) {
-      await logActivity(auth.currentUser.uid, 'logout')
-    }
+    if (auth.currentUser) await logActivity(auth.currentUser.uid, 'logout')
     await signOut(auth)
     setUserData(null)
+    setMonthlyUsage(0)
   }
 
   async function updateDisplayName(name: string) {
@@ -129,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, userData, displayName, loading,
+      plan, planLimit, monthlyUsage, refreshUsage,
       login, signup, loginWithGoogle, logout,
       updateDisplayName, changePassword, reauthAndChangePassword,
     }}>

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { InputTab } from '../types'
+import type { PlanType } from '../lib/userService'
 import Footer from './Footer'
 import { useTranslation } from '../hooks/useTranslation'
 
@@ -13,15 +14,39 @@ interface Props {
   onSubmit: (tab: InputTab, value: string | File, language: string) => void
   isLoading: boolean
   error: string | null
+  plan?: PlanType
+  planLimit?: number
+  monthlyUsage?: number
+  remaining?: number
+  isLoggedIn?: boolean
+  onOpenAuth?: () => void
+  isAtLimit?: boolean
 }
 
-export default function LandingPage({ onSubmit, isLoading, error }: Props) {
+export default function LandingPage({
+  onSubmit, isLoading, error,
+  plan = 'free', planLimit = 5, monthlyUsage = 0, remaining = 5,
+  isLoggedIn = false, onOpenAuth, isAtLimit = false,
+}: Props) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<InputTab>('text')
   const [textValue, setTextValue] = useState('')
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [language, setLanguage] = useState('English')
+  const [showPdfUpgrade, setShowPdfUpgrade] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
+
+  function handlePdfTabClick() {
+    if (!canUsePdf) {
+      setShowPdfUpgrade(true)
+      return
+    }
+    setShowPdfUpgrade(false)
+    setActiveTab('pdf')
+  }
 
   useEffect(() => {
     const els = document.querySelectorAll<Element>('.fade-up')
@@ -41,13 +66,15 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (activeTab === 'text' && textValue.trim()) onSubmit('text', textValue.trim(), language)
-    if (activeTab === 'pdf' && pdfFile) onSubmit('pdf', pdfFile, language)
+    if (activeTab === 'pdf' && pdfFile && canUsePdf) onSubmit('pdf', pdfFile, language)
   }
 
   const canSubmit =
     !isLoading &&
+    !showPdfUpgrade &&
+    !isAtLimit &&
     ((activeTab === 'text' && textValue.trim().length > 0) ||
-      (activeTab === 'pdf' && pdfFile !== null))
+      (activeTab === 'pdf' && pdfFile !== null && canUsePdf))
 
   return (
     <>
@@ -56,6 +83,7 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
         <div className="container hero-inner">
           <div className="hero-text">
             <span className="hero-badge">{t('home.badge')}</span>
+            <p className="hero-worth-question">{t('home.worthQuestion')}</p>
             <h1 className="hero-title">
               {t('home.title').split(t('home.titleAccent'))[0]}
               <br />
@@ -80,16 +108,17 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
               </button>
               <button
                 type="button"
-                className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''}`}
-                onClick={() => setActiveTab('pdf')}
+                className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''} ${!canUsePdf ? 'tab-btn--locked' : ''}`}
+                onClick={handlePdfTabClick}
               >
                 <IconUpload /> {t('home.uploadPDF')}
+                {!canUsePdf && <span className="tab-lock-icon">🔒</span>}
               </button>
             </div>
 
             <div className="input-body">
               <div key={activeTab} className="tab-fade">
-                {activeTab === 'text' && (
+                {activeTab === 'text' && !showPdfUpgrade && (
                   <>
                     <textarea
                       className="text-area"
@@ -104,7 +133,33 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                     </p>
                   </>
                 )}
-                {activeTab === 'pdf' && (
+
+                {showPdfUpgrade && (
+                  <div className="pdf-upgrade-prompt">
+                    <span className="pdf-upgrade-icon">🔒</span>
+                    <p className="pdf-upgrade-title">PDF Upload is a paid feature</p>
+                    <p className="pdf-upgrade-sub">Upgrade to Starter or Pro to analyze PDF documents.</p>
+                    <div className="pdf-upgrade-actions">
+                      {!isLoggedIn && (
+                        <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>
+                          Sign up free
+                        </button>
+                      )}
+                      <a href="/pricing" className="btn-primary btn-sm">
+                        View Plans
+                      </a>
+                      <button
+                        type="button"
+                        className="pdf-upgrade-dismiss"
+                        onClick={() => setShowPdfUpgrade(false)}
+                      >
+                        Back to text
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'pdf' && canUsePdf && (
                   <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
                     <IconUpload className="pdf-drop-icon" />
                     {pdfFile ? (
@@ -132,13 +187,54 @@ export default function LandingPage({ onSubmit, isLoading, error }: Props) {
                 <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                   {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                 </select>
-                <button type="submit" className="btn-primary btn-cta save-cta" disabled={!canSubmit}>
-                  {isLoading ? <><span className="btn-spinner" />{t('home.analyzing')}</> : t('home.saveMyTime')}
-                </button>
+                {isAtLimit ? (
+                  <button
+                    type="button"
+                    className="btn-primary btn-cta save-cta save-cta--limit"
+                    onClick={() => navigate('/pricing')}
+                  >
+                    🔒 Limit Reached — Upgrade
+                  </button>
+                ) : (
+                  <button
+                    type="submit"
+                    className="btn-primary btn-cta save-cta"
+                    disabled={isLoading || showPdfUpgrade || !canSubmit}
+                  >
+                    {isLoading
+                      ? <><span className="btn-spinner" />{t('home.analyzing')}</>
+                      : t('home.saveMyTime')}
+                  </button>
+                )}
               </div>
             </div>
 
             {error && <p className="error-banner">{error}</p>}
+
+            {/* Plan usage indicator */}
+            <div className="plan-usage-bar">
+              <div className="plan-usage-left">
+                <span className={`plan-badge plan-badge--${plan}`}>
+                  {plan.toUpperCase()}
+                </span>
+                <span className="plan-usage-text">
+                  {monthlyUsage} / {planLimit} used this month
+                </span>
+                {remaining === 0 && (
+                  <span className="plan-usage-limit-tag">Limit reached</span>
+                )}
+              </div>
+              {!isLoggedIn && (
+                <button className="plan-usage-upgrade" onClick={onOpenAuth} type="button">
+                  Sign up for more →
+                </button>
+              )}
+              {isLoggedIn && remaining === 0 && (
+                <Link to="/pricing" className="plan-usage-upgrade">
+                  Upgrade →
+                </Link>
+              )}
+            </div>
 
             <p className="trust-line">
               <IconShield /> {t('home.trustLine')}

@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 
 export default function ProfilePage() {
-  const { user, userData, displayName, updateDisplayName, reauthAndChangePassword } = useAuth()
+  const { user, userData, displayName, updateDisplayName, reauthAndChangePassword, plan, planLimit, monthlyUsage } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -103,13 +103,25 @@ export default function ProfilePage() {
             {userData && (
               <div className="profile-hero-stats">
                 <div className="profile-stat">
-                  <span className="profile-stat-val">{userData.totalAnalyses}</span>
-                  <span className="profile-stat-label">{t('profile.analyses')}</span>
+                  <span className="profile-stat-val">{monthlyUsage}</span>
+                  <span className="profile-stat-label">Used This Month</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
-                  <span className="profile-stat-val">{userData.totalTimeSaved}</span>
-                  <span className="profile-stat-label">{t('profile.minsSaved')}</span>
+                  <span className="profile-stat-val">{planLimit}</span>
+                  <span className="profile-stat-label">Monthly Limit</span>
+                </div>
+                <div className="profile-stat-divider" />
+                <div className="profile-stat">
+                  <span className="profile-stat-val">{userData.totalAnalyses}</span>
+                  <span className="profile-stat-label">Total All Time</span>
+                </div>
+                <div className="profile-stat-divider" />
+                <div className="profile-stat">
+                  <span className={`plan-badge plan-badge--${plan}`} style={{ fontSize: 13, padding: '4px 12px' }}>
+                    {plan.toUpperCase()}
+                  </span>
+                  <span className="profile-stat-label">Your Plan</span>
                 </div>
               </div>
             )}
