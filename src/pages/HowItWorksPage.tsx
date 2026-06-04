@@ -47,7 +47,7 @@ export default function HowItWorksPage() {
 
   return (
     <>
-      <section className="page-hero">
+      <section className="page-hero page-hero--green">
         <div className="container page-hero-inner">
           <span className="hero-badge">{t('hiw.badge')}</span>
           <h1 className="page-hero-title">{t('hiw.title')}</h1>

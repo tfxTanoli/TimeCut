@@ -35,7 +35,9 @@ export default function LandingPage({
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [language, setLanguage] = useState('English')
   const [showPdfUpgrade, setShowPdfUpgrade] = useState(false)
+  const [activeCard, setActiveCard] = useState<number | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const seenFadeEls = useRef<Set<Element>>(new Set())
 
   const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
 
@@ -50,10 +52,12 @@ export default function LandingPage({
 
   useEffect(() => {
     const els = document.querySelectorAll<Element>('.fade-up')
+    const seen = seenFadeEls.current
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => {
         if (e.isIntersecting) {
           e.target.classList.add('is-visible')
+          seen.add(e.target)
           observer.unobserve(e.target)
         }
       }),
@@ -62,6 +66,11 @@ export default function LandingPage({
     els.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [])
+
+  // Re-apply is-visible after React re-renders wipe DOM-mutated classes
+  useEffect(() => {
+    seenFadeEls.current.forEach(el => el.classList.add('is-visible'))
+  })
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -249,17 +258,29 @@ export default function LandingPage({
           <p className="section-eyebrow fade-up">{t('home.whyBadge')}</p>
           <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.whyTitle')}</h2>
           <div className="features-grid">
-            <div className="feature-card fade-up" style={{ transitionDelay: '0ms' }}>
+            <div
+              className={`feature-card fade-up${activeCard === 0 ? ' feature-card--active' : ''}`}
+              style={{ transitionDelay: '0ms' }}
+              onClick={() => setActiveCard(activeCard === 0 ? null : 0)}
+            >
               <div className="feature-icon feature-icon--purple"><IconClock /></div>
               <h3>{t('home.feat1Title')}</h3>
               <p>{t('home.feat1Desc')}</p>
             </div>
-            <div className="feature-card fade-up" style={{ transitionDelay: '120ms' }}>
+            <div
+              className={`feature-card fade-up${activeCard === 1 ? ' feature-card--active' : ''}`}
+              style={{ transitionDelay: '120ms' }}
+              onClick={() => setActiveCard(activeCard === 1 ? null : 1)}
+            >
               <div className="feature-icon feature-icon--amber"><IconTarget /></div>
               <h3>{t('home.feat2Title')}</h3>
               <p>{t('home.feat2Desc')}</p>
             </div>
-            <div className="feature-card fade-up" style={{ transitionDelay: '240ms' }}>
+            <div
+              className={`feature-card fade-up${activeCard === 2 ? ' feature-card--active' : ''}`}
+              style={{ transitionDelay: '240ms' }}
+              onClick={() => setActiveCard(activeCard === 2 ? null : 2)}
+            >
               <div className="feature-icon feature-icon--green"><IconShieldCheck /></div>
               <h3>{t('home.feat3Title')}</h3>
               <p>{t('home.feat3Desc')}</p>

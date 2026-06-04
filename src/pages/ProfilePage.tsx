@@ -92,9 +92,7 @@ export default function ProfilePage() {
         <div className="container profile-container">
           <div className="profile-hero">
             <div className="profile-hero-avatar">
-              {user.photoURL
-                ? <img src={user.photoURL} alt={initials} className="profile-hero-avatar-img" />
-                : <span>{initials}</span>}
+              <span>{initials}</span>
             </div>
             <div className="profile-hero-info">
               <h1 className="profile-hero-name">{resolvedName || t('profile.yourAccount')}</h1>
