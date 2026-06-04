@@ -42,12 +42,12 @@ export default function LandingPage({
   const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
 
   function handlePdfTabClick() {
+    setActiveTab('pdf')
     if (!canUsePdf) {
       setShowPdfUpgrade(true)
       return
     }
     setShowPdfUpgrade(false)
-    setActiveTab('pdf')
   }
 
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function LandingPage({
                       <button
                         type="button"
                         className="pdf-upgrade-dismiss"
-                        onClick={() => setShowPdfUpgrade(false)}
+                        onClick={() => { setShowPdfUpgrade(false); setActiveTab('text') }}
                       >
                         Back to text
                       </button>

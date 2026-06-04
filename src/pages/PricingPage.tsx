@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams, useNavigate } from 'react-router-dom'
 import Footer from '../components/Footer'
 import PaymentModal from '../components/PaymentModal'
 import { useTranslation } from '../hooks/useTranslation'
@@ -13,6 +13,7 @@ export default function PricingPage() {
   const [searchParams] = useSearchParams()
   const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | null>(null)
   const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') setBanner('success')
@@ -77,7 +78,7 @@ export default function PricingPage() {
           <div className="pricing-grid pricing-grid--4col">
 
             {/* FREE */}
-            <div className="pricing-card">
+            <div className="pricing-card" onClick={() => navigate('/get-started')}>
               {planBadge('free')}
               <p className="pricing-plan-name">{t('pricing.free')}</p>
               <p className="pricing-plan-tagline">{t('pricing.freeTagline')}</p>
@@ -104,7 +105,7 @@ export default function PricingPage() {
             </div>
 
             {/* STARTER */}
-            <div className="pricing-card">
+            <div className="pricing-card" onClick={() => handlePaidPlan('starter')}>
               {planBadge('starter')}
               <p className="pricing-plan-name">{t('pricing.starter')}</p>
               <p className="pricing-plan-tagline">{t('pricing.starterTagline')}</p>
@@ -130,7 +131,7 @@ export default function PricingPage() {
             </div>
 
             {/* PRO */}
-            <div className="pricing-card pricing-card--highlight">
+            <div className="pricing-card pricing-card--highlight" onClick={() => handlePaidPlan('pro')}>
               <span className="pricing-badge">{t('pricing.mostPopular')}</span>
               {planBadge('pro')}
               <p className="pricing-plan-name">{t('pricing.pro')}</p>
@@ -157,7 +158,7 @@ export default function PricingPage() {
             </div>
 
             {/* CUSTOM */}
-            <div className="pricing-card">
+            <div className="pricing-card" onClick={() => navigate('/contact')}>
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
               <div className="pricing-price-row">
