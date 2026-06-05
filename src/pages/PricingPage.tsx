@@ -157,20 +157,21 @@ export default function PricingPage() {
               </ul>
             </div>
 
-            {/* CUSTOM */}
+            {/* BUSINESS (formerly CUSTOM) */}
             <div className="pricing-card" onClick={() => navigate('/contact')}>
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price pricing-price--custom">{t('pricing.customPrice')}</span>
+                <span className="pricing-price">{t('pricing.customPrice')}</span>
+                <span className="pricing-period">{t('pricing.customPeriod')}</span>
               </div>
-              <Link to="/contact" className="pricing-cta btn-outline">
+              <Link to="/contact" className="pricing-cta btn-outline" onClick={e => e.stopPropagation()}>
                 {t('pricing.customCta')}
               </Link>
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['customF1','customF2','customF3'] as const).map(k => (
+                {(['customF1','customF2','customF3','customF4','customF5'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
                   </li>

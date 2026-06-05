@@ -13,14 +13,14 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   starter: {
     label: 'STARTER',
     price: '$9/month',
-    tagline: 'For smarter daily reading',
-    features: ['500 analyses/month', 'PDF Analysis', 'Multi-language Analysis', 'Save Analysis History', 'Advanced Insights'],
+    tagline: 'Build better information habits',
+    features: ['60 analyses/month', 'Everything in Free', 'PDF Upload & Analysis', 'Analysis History', 'Multi-language Support', 'Advanced Insights', 'Download Reports'],
   },
   pro: {
     label: 'PRO',
     price: '$29/month',
-    tagline: 'For professionals and power users',
-    features: ['300 analyses/month', 'Everything in Starter', 'Batch Analysis', 'Long-form Reports', 'Priority Queue', 'Export Reports'],
+    tagline: 'Make faster decisions at scale',
+    features: ['500 analyses/month', 'Everything in Starter', 'Advanced Analysis Reports', 'Priority Processing', 'Detailed Breakdown Analysis', 'Export Reports (PDF)', 'Premium Support'],
   },
 }
 
