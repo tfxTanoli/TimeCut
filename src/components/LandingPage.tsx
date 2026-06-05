@@ -111,7 +111,7 @@ export default function LandingPage({
               <button
                 type="button"
                 className={`tab-btn ${activeTab === 'text' ? 'tab-btn--active' : ''}`}
-                onClick={() => setActiveTab('text')}
+                onClick={() => { setActiveTab('text'); setShowPdfUpgrade(false) }}
               >
                 <IconDoc /> {t('home.pasteText')}
               </button>
