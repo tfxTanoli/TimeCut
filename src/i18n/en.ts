@@ -393,7 +393,7 @@ const en: Record<string, string> = {
   'pricing.customPrice': '$149',
   'pricing.customPeriod': '/month',
   'pricing.customSubtitle': 'For power teams & growing organizations',
-  'pricing.customCta': 'Contact Sales',
+  'pricing.customCta': 'Get Business',
   'pricing.customF1': '2,000 analyses/month',
   'pricing.customF2': 'Everything in Pro',
   'pricing.customF3': 'Team Workspace (up to 10 users)',

@@ -9,19 +9,25 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
 export const STRIPE_PLANS: Record<string, { name: string; description: string; amount: number }> = {
   starter: {
     name: 'TimeCut Starter',
-    description: 'For smarter daily reading — 500 analyses/month',
+    description: 'Build better information habits — 60 analyses/month',
     amount: 900,
   },
   pro: {
     name: 'TimeCut Pro',
-    description: 'For professionals and power users — 300 analyses/month',
+    description: 'Make faster decisions at scale — 500 analyses/month',
     amount: 2900,
+  },
+  business: {
+    name: 'TimeCut Business',
+    description: 'Scale your content intelligence — 2,000 analyses/month',
+    amount: 14900,
   },
 }
 
 export const STRIPE_PLAN_MAP: Record<string, string> = {
   timecutstarter: 'starter',
   timecutpro: 'pro',
+  timecutbusiness: 'business',
 }
 
 // ── Firebase Admin ───────────────────────────────────────────────────────────

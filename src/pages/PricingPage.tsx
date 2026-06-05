@@ -11,7 +11,7 @@ export default function PricingPage() {
   const { user, userData, plan: currentPlan } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const [searchParams] = useSearchParams()
-  const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | null>(null)
+  const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | 'business' | null>(null)
   const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
   const navigate = useNavigate()
 
@@ -20,7 +20,7 @@ export default function PricingPage() {
     if (searchParams.get('canceled') === 'true') setBanner('canceled')
   }, [searchParams])
 
-  function handlePaidPlan(plan: 'starter' | 'pro') {
+  function handlePaidPlan(plan: 'starter' | 'pro' | 'business') {
     if (!user) { openAuthModal(); return }
     setPaymentPlan(plan)
   }
@@ -157,17 +157,21 @@ export default function PricingPage() {
               </ul>
             </div>
 
-            {/* BUSINESS (formerly CUSTOM) */}
-            <div className="pricing-card" onClick={() => navigate('/contact')}>
+            {/* BUSINESS */}
+            <div className="pricing-card" onClick={() => handlePaidPlan('business')}>
+              {planBadge('business')}
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
               <div className="pricing-price-row">
                 <span className="pricing-price">{t('pricing.customPrice')}</span>
                 <span className="pricing-period">{t('pricing.customPeriod')}</span>
               </div>
-              <Link to="/contact" className="pricing-cta btn-outline" onClick={e => e.stopPropagation()}>
+              <button
+                className="pricing-cta btn-outline"
+                onClick={e => { e.stopPropagation(); handlePaidPlan('business') }}
+              >
                 {t('pricing.customCta')}
-              </Link>
+              </button>
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">

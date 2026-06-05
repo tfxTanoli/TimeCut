@@ -22,11 +22,17 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
     tagline: 'Make faster decisions at scale',
     features: ['500 analyses/month', 'Everything in Starter', 'Advanced Analysis Reports', 'Priority Processing', 'Detailed Breakdown Analysis', 'Export Reports (PDF)', 'Premium Support'],
   },
+  business: {
+    label: 'BUSINESS',
+    price: '$149/month',
+    tagline: 'Scale your content intelligence',
+    features: ['2,000 analyses/month', 'Everything in Pro', 'Team Workspace (up to 10 users)', 'Priority Dedicated Support', 'Custom Report Branding'],
+  },
 }
 
 /* ─── Inner checkout form (must be inside <Elements>) ─── */
 interface FormProps {
-  plan: 'starter' | 'pro'
+  plan: 'starter' | 'pro' | 'business'
   uid: string
   subscriptionId: string
   onSuccess: () => void
@@ -151,7 +157,7 @@ function SuccessScreen({ plan, onClose }: { plan: string; onClose: () => void })
 
 /* ─── Outer modal (fetches client_secret, renders Elements) ─── */
 interface PaymentModalProps {
-  plan: 'starter' | 'pro'
+  plan: 'starter' | 'pro' | 'business'
   uid: string
   email?: string
   name?: string
