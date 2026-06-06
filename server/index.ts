@@ -345,6 +345,57 @@ app.post('/api/send-verification-email', express.json(), async (req, res) => {
   }
 })
 
+app.post('/api/send-contact-email', express.json(), async (req, res) => {
+  const { name, email, subject, message } = req.body
+  if (!name || !email || !message) { res.status(400).json({ error: 'Missing required fields' }); return }
+  try {
+    await resend.emails.send({
+      from: 'TimeCut Contact <support@timecut.online>',
+      to: 'support@timecut.online',
+      replyTo: email,
+      subject: `[Contact] ${subject || 'General Inquiry'} — from ${name}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e5e5;border-radius:12px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <h1 style="color:#d4af37;font-size:24px;margin:0;">TimeCut</h1>
+            <p style="color:#888;margin:4px 0 0;font-size:13px;">New message from Contact Form</p>
+          </div>
+          <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px;margin-bottom:20px;">
+            <table style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="padding:8px 0;color:#888;font-size:13px;width:80px;border-bottom:1px solid #222;">Name</td>
+                <td style="padding:8px 0;color:#fff;font-size:14px;border-bottom:1px solid #222;">${name}</td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#888;font-size:13px;border-bottom:1px solid #222;">Email</td>
+                <td style="padding:8px 0;font-size:14px;border-bottom:1px solid #222;">
+                  <a href="mailto:${email}" style="color:#d4af37;">${email}</a>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#888;font-size:13px;">Subject</td>
+                <td style="padding:8px 0;color:#fff;font-size:14px;">${subject || 'General Inquiry'}</td>
+              </tr>
+            </table>
+          </div>
+          <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px;">
+            <p style="color:#888;font-size:12px;margin:0 0 10px;text-transform:uppercase;letter-spacing:1px;">Message</p>
+            <p style="color:#e5e5e5;line-height:1.7;margin:0;white-space:pre-wrap;">${message}</p>
+          </div>
+          <p style="color:#555;font-size:12px;text-align:center;margin-top:24px;">
+            Reply directly to this email to respond to ${name}.
+          </p>
+        </div>
+      `,
+    })
+    console.log(`[resend] Contact email sent from ${email}`)
+    res.json({ success: true })
+  } catch (err) {
+    console.error('[send-contact-email] Error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to send contact email' })
+  }
+})
+
 app.post('/api/send-welcome-email', express.json(), async (req, res) => {
   const { email, name } = req.body
   if (!email) { res.status(400).json({ error: 'Missing email' }); return }

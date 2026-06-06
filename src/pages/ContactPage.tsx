@@ -31,13 +31,20 @@ export default function ContactPage() {
     setIsSubmitting(true)
     setSubmitError(null)
     try {
-      await addDoc(collection(db, 'contacts'), {
+      const payload = {
         name: name.trim(),
         email: email.trim(),
         subject: currentSubject,
         message: message.trim(),
-        createdAt: serverTimestamp(),
-      })
+      }
+      await Promise.all([
+        addDoc(collection(db, 'contacts'), { ...payload, createdAt: serverTimestamp() }),
+        fetch('/api/send-contact-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        }).then(r => { if (!r.ok) throw new Error('Email send failed') }),
+      ])
       setSent(true)
     } catch {
       setSubmitError(t('contact.sendError'))
