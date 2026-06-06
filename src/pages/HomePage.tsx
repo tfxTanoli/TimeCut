@@ -205,7 +205,7 @@ export default function HomePage() {
         isLoading={isLoading}
         error={error}
         plan={plan}
-        planLimit={planLimit}
+        planLimit={user ? planLimit : ANON_LIMIT}
         monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
         isLoggedIn={!!user}
         onOpenAuth={openAuthModal}

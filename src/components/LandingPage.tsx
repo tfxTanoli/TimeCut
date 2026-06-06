@@ -326,12 +326,12 @@ export default function LandingPage({
         <div className="container">
           <div className="stats-row">
             <div className="stat-item fade-up" style={{ transitionDelay: '0ms' }}>
-              <p className="stat-value">12,847</p>
+              <p className="stat-value">1,827</p>
               <p className="stat-label">{t('home.stat1Label')}</p>
             </div>
             <div className="stat-divider" />
             <div className="stat-item fade-up" style={{ transitionDelay: '100ms' }}>
-              <p className="stat-value">3,420</p>
+              <p className="stat-value">8,961</p>
               <p className="stat-label">{t('home.stat2Label')}</p>
             </div>
             <div className="stat-divider" />

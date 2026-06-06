@@ -6,6 +6,7 @@ import OpenAI from 'openai'
 import PDFParser from 'pdf2json'
 import Stripe from 'stripe'
 import admin from 'firebase-admin'
+import { Resend } from 'resend'
 
 function extractPDFText(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -101,9 +102,103 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT_BASE64) {
   console.warn('[firebase-admin] FIREBASE_SERVICE_ACCOUNT_BASE64 not set — plan updates via webhook disabled')
 }
 
+// ── Resend email client ──
+const resend = new Resend(process.env.RESEND_API_KEY)
+
+const PLAN_LABELS: Record<string, string> = {
+  starter: 'TimeCut Starter',
+  pro: 'TimeCut Pro',
+  business: 'TimeCut Business',
+}
+
+const PLAN_LIMITS: Record<string, string> = {
+  starter: '60 analyses/month',
+  pro: '300 analyses/month',
+  business: '2,000 analyses/month',
+}
+
+async function sendVerificationEmail(to: string, name: string, verificationLink: string) {
+  try {
+    await resend.emails.send({
+      from: 'TimeCut <support@timecut.online>',
+      to,
+      subject: 'Verify your TimeCut email address',
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e5e5;border-radius:12px;">
+          <div style="text-align:center;margin-bottom:32px;">
+            <h1 style="color:#d4af37;font-size:28px;margin:0;">TimeCut</h1>
+            <p style="color:#888;margin:4px 0 0;">Cut through the noise.</p>
+          </div>
+          <h2 style="color:#ffffff;font-size:22px;">Welcome${name ? `, ${name}` : ''}!</h2>
+          <p style="color:#aaa;line-height:1.6;">
+            Thanks for signing up for <strong style="color:#d4af37;">TimeCut</strong>. Please verify your email address to get started.
+          </p>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="${verificationLink}" style="background:#d4af37;color:#0a0a0a;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">Verify Email Address</a>
+          </div>
+          <p style="color:#666;font-size:13px;line-height:1.6;">
+            If you did not create a TimeCut account, you can safely ignore this email.
+            This link will expire in 24 hours.
+          </p>
+          <p style="color:#555;font-size:13px;text-align:center;margin-top:32px;">
+            Questions? <a href="mailto:support@timecut.online" style="color:#d4af37;">support@timecut.online</a>
+          </p>
+        </div>
+      `,
+    })
+    console.log(`[resend] Verification email sent to ${to}`)
+  } catch (err) {
+    console.error('[resend] Failed to send verification email:', err)
+  }
+}
+
+async function sendPlanConfirmationEmail(to: string, name: string, plan: string) {
+  const planLabel = PLAN_LABELS[plan] ?? plan
+  const planLimit = PLAN_LIMITS[plan] ?? ''
+  try {
+    await resend.emails.send({
+      from: 'TimeCut <support@timecut.online>',
+      to,
+      subject: `Welcome to ${planLabel} — You're all set!`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e5e5;border-radius:12px;">
+          <div style="text-align:center;margin-bottom:32px;">
+            <h1 style="color:#d4af37;font-size:28px;margin:0;">TimeCut</h1>
+            <p style="color:#888;margin:4px 0 0;">Cut through the noise.</p>
+          </div>
+          <h2 style="color:#ffffff;font-size:22px;">Hey ${name || 'there'}, your subscription is active!</h2>
+          <p style="color:#aaa;line-height:1.6;">
+            You've successfully subscribed to <strong style="color:#d4af37;">${planLabel}</strong>.
+            You now have <strong style="color:#22c55e;">${planLimit}</strong> to help you make smarter reading decisions.
+          </p>
+          <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px;margin:24px 0;">
+            <h3 style="color:#d4af37;margin:0 0 12px;">What's included:</h3>
+            <ul style="color:#aaa;line-height:1.8;padding-left:20px;margin:0;">
+              <li>${planLimit}</li>
+              <li>PDF, URL &amp; text analysis</li>
+              <li>Verdict, key insights &amp; time-save estimates</li>
+              <li>Multi-language support</li>
+            </ul>
+          </div>
+          <div style="text-align:center;margin:32px 0;">
+            <a href="https://timecut.online" style="background:#d4af37;color:#0a0a0a;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">Start Analyzing</a>
+          </div>
+          <p style="color:#555;font-size:13px;text-align:center;margin-top:32px;">
+            Questions? Reply to this email or contact us at <a href="mailto:support@timecut.online" style="color:#d4af37;">support@timecut.online</a>
+          </p>
+        </div>
+      `,
+    })
+    console.log(`[resend] Confirmation email sent to ${to}`)
+  } catch (err) {
+    console.error('[resend] Failed to send email:', err)
+  }
+}
+
 const STRIPE_PLAN_MAP: Record<string, string> = {
   'timecutstarter': 'starter',
   'timecutpro': 'pro',
+  'timecutbusiness': 'business',
 }
 
 const app = express()
@@ -116,13 +211,18 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '20
 const STRIPE_PLANS: Record<string, { name: string; description: string; amount: number }> = {
   starter: {
     name: 'TimeCut Starter',
-    description: 'For smarter daily reading — 500 analyses/month',
+    description: 'Build better information habits — 60 analyses/month',
     amount: 900,
   },
   pro: {
     name: 'TimeCut Pro',
-    description: 'For professionals and power users — 300 analyses/month',
+    description: 'Make faster decisions at scale — 300 analyses/month',
     amount: 2900,
+  },
+  business: {
+    name: 'TimeCut Business',
+    description: 'Scale your content intelligence — 2,000 analyses/month',
+    amount: 14900,
   },
 }
 
@@ -164,6 +264,21 @@ async function generateReport(content: string, language: string) {
   const raw = completion.choices[0]?.message?.content ?? '{}'
   return JSON.parse(raw)
 }
+
+// ── Send verification email via Resend ──
+app.post('/api/send-verification-email', express.json(), async (req, res) => {
+  const { email, name } = req.body
+  if (!email) { res.status(400).json({ error: 'Missing email' }); return }
+  try {
+    const continueUrl = process.env.FRONTEND_URL ?? 'https://timecut.online'
+    const verificationLink = await admin.auth().generateEmailVerificationLink(email, { url: continueUrl })
+    await sendVerificationEmail(email, name ?? '', verificationLink)
+    res.json({ success: true })
+  } catch (err) {
+    console.error('[send-verification-email] Error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to send verification email' })
+  }
+})
 
 // ── Custom subscription flow (in-app payment modal) ──
 
@@ -238,7 +353,7 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
 
 // Step 2: verify payment and activate plan in Firestore
 app.post('/api/activate-plan', express.json(), async (req, res) => {
-  const { subscriptionId, uid, plan, paymentIntentId } = req.body
+  const { subscriptionId, uid, plan, paymentIntentId, email, name } = req.body
   if (!uid || !plan) {
     res.status(400).json({ error: 'Missing required fields' })
     return
@@ -280,6 +395,9 @@ app.post('/api/activate-plan', express.json(), async (req, res) => {
           { merge: true },
         )
         console.log(`[activate-plan] ✓ uid=${uid} → plan=${plan}`)
+      }
+      if (email) {
+        await sendPlanConfirmationEmail(email, name ?? '', plan)
       }
       res.json({ success: true, plan })
     } else {

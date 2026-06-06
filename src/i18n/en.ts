@@ -378,7 +378,7 @@ const en: Record<string, string> = {
   'pricing.proPeriod': '/month',
   'pricing.proSubtitle': 'Analyze more. Decide faster.',
   'pricing.proCta': 'Get Pro',
-  'pricing.proF1': '500 analyses/month',
+  'pricing.proF1': '300 analyses/month',
   'pricing.proF2': 'Everything in Starter',
   'pricing.proF3': 'Advanced Analysis Reports',
   'pricing.proF4': 'Priority Processing',

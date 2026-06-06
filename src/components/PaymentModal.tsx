@@ -35,11 +35,13 @@ interface FormProps {
   plan: 'starter' | 'pro' | 'business'
   uid: string
   subscriptionId: string
+  email?: string
+  name?: string
   onSuccess: () => void
   onClose: () => void
 }
 
-function CheckoutForm({ plan, uid, subscriptionId, onSuccess, onClose }: FormProps) {
+function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess, onClose }: FormProps) {
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -77,6 +79,8 @@ function CheckoutForm({ plan, uid, subscriptionId, onSuccess, onClose }: FormPro
           uid,
           plan,
           paymentIntentId: paymentIntent?.id ?? null,
+          email,
+          name,
         }),
       })
       const data = await res.json()
@@ -245,6 +249,8 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
               plan={plan}
               uid={uid}
               subscriptionId={subscriptionId}
+              email={email}
+              name={name}
               onSuccess={() => setPaid(true)}
               onClose={onClose}
             />

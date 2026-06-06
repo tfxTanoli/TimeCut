@@ -28,8 +28,8 @@ export default function Footer() {
             <ul className="footer-col-links">
               <li><Link to="/blog">{t('footer.blog')}</Link></li>
               <li><a href="#">{t('footer.about')}</a></li>
-              <li><a href="#">{t('footer.privacy')}</a></li>
-              <li><a href="#">{t('footer.terms')}</a></li>
+              <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
+              <li><Link to="/terms">{t('footer.terms')}</Link></li>
             </ul>
           </div>
           <div>

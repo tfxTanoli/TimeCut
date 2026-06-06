@@ -127,6 +127,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateProfile(cred.user, { displayName: name })
     await createUserDocument(cred.user, name)
     await logActivity(cred.user.uid, 'signup', { provider: 'email' })
+    fetch('/api/send-verification-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, name }),
+    }).catch(e => console.warn('[verify-email] send failed:', e))
   }
 
   async function loginWithGoogle() {

@@ -95,7 +95,7 @@ export default function AuthModal() {
         <div className="auth-modal-glow" />
 
         <div className="auth-modal-header">
-          <span className="auth-modal-logo">⏱ TIMECUT</span>
+          <span className="auth-modal-logo">TIMECUT</span>
           <button className="auth-modal-close" onClick={handleClose} aria-label="Close">
             <IconX />
           </button>
@@ -143,7 +143,7 @@ export default function AuthModal() {
             </div>
 
             <div className={`auth-modal-body ${switching ? 'auth-modal-body--fade' : ''}`}>
-              <form className="auth-modal-form" onSubmit={handleSubmit} noValidate>
+              <form className="auth-modal-form" onSubmit={handleSubmit} noValidate autoComplete="off">
                 {tab === 'signup' && (
                   <div className="form-group">
                     <label className="form-label">{t('auth.fullName')}</label>
@@ -170,7 +170,9 @@ export default function AuthModal() {
                     onChange={e => setEmail(e.target.value)}
                     required
                     disabled={loading}
-                    autoComplete="email"
+                    autoComplete="off"
+                    readOnly
+                    onFocus={e => e.currentTarget.removeAttribute('readonly')}
                   />
                 </div>
 
@@ -192,7 +194,9 @@ export default function AuthModal() {
                     required
                     minLength={tab === 'signup' ? 6 : undefined}
                     disabled={loading}
-                    autoComplete={tab === 'login' ? 'current-password' : 'new-password'}
+                    autoComplete="new-password"
+                    readOnly
+                    onFocus={e => e.currentTarget.removeAttribute('readonly')}
                   />
                 </div>
 
