@@ -152,6 +152,71 @@ async function sendVerificationEmail(to: string, name: string, verificationLink:
   }
 }
 
+async function sendWelcomeEmail(to: string, name: string) {
+  const firstName = name ? name.split(' ')[0] : 'there'
+  try {
+    await resend.emails.send({
+      from: 'TimeCut <support@timecut.online>',
+      to,
+      subject: `Welcome to TimeCut, ${firstName}! 🎯`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e5e5;border-radius:12px;">
+          <div style="text-align:center;margin-bottom:32px;">
+            <h1 style="color:#d4af37;font-size:28px;margin:0;">TimeCut</h1>
+            <p style="color:#888;margin:4px 0 0;">Cut through the noise.</p>
+          </div>
+
+          <h2 style="color:#ffffff;font-size:22px;">Welcome aboard, ${firstName}!</h2>
+          <p style="color:#aaa;line-height:1.6;">
+            You've just unlocked smarter content decisions. TimeCut analyzes any article, email, PDF, or book chapter and tells you exactly whether it's worth your time — before you read a single word.
+          </p>
+
+          <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px;margin:24px 0;">
+            <h3 style="color:#d4af37;margin:0 0 16px;">What you can do with TimeCut:</h3>
+            <table style="width:100%;border-collapse:collapse;">
+              <tr>
+                <td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;">
+                  <span style="color:#d4af37;margin-right:8px;">✓</span> Paste text or upload a PDF
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;">
+                  <span style="color:#d4af37;margin-right:8px;">✓</span> Get a verdict: Must Read, Skim Only, or Skip It
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;">
+                  <span style="color:#d4af37;margin-right:8px;">✓</span> See exactly how many minutes you can safely skip
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:8px 0;color:#aaa;font-size:14px;">
+                  <span style="color:#d4af37;margin-right:8px;">✓</span> Supports 12 languages
+                </td>
+              </tr>
+            </table>
+          </div>
+
+          <p style="color:#aaa;line-height:1.6;">
+            Your free plan includes <strong style="color:#ffffff;">5 analyses per month</strong>. Need more? Upgrade anytime from your dashboard.
+          </p>
+
+          <div style="text-align:center;margin:32px 0;">
+            <a href="https://timecut.online" style="background:#d4af37;color:#0a0a0a;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">Start Your First Analysis</a>
+          </div>
+
+          <p style="color:#555;font-size:13px;text-align:center;margin-top:32px;">
+            Questions? <a href="mailto:support@timecut.online" style="color:#d4af37;">support@timecut.online</a>
+          </p>
+        </div>
+      `,
+    })
+    console.log(`[resend] Welcome email sent to ${to}`)
+  } catch (err) {
+    console.error('[resend] Failed to send welcome email:', err)
+  }
+}
+
 async function sendPlanConfirmationEmail(to: string, name: string, plan: string) {
   const planLabel = PLAN_LABELS[plan] ?? plan
   const planLimit = PLAN_LIMITS[plan] ?? ''
@@ -277,6 +342,18 @@ app.post('/api/send-verification-email', express.json(), async (req, res) => {
   } catch (err) {
     console.error('[send-verification-email] Error:', err)
     res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to send verification email' })
+  }
+})
+
+app.post('/api/send-welcome-email', express.json(), async (req, res) => {
+  const { email, name } = req.body
+  if (!email) { res.status(400).json({ error: 'Missing email' }); return }
+  try {
+    await sendWelcomeEmail(email, name ?? '')
+    res.json({ success: true })
+  } catch (err) {
+    console.error('[send-welcome-email] Error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to send welcome email' })
   }
 })
 

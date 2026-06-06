@@ -131,11 +131,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updateProfile(cred.user, { displayName: name })
     await createUserDocument(cred.user, name)
     await logActivity(cred.user.uid, 'signup', { provider: 'email' })
+    const emailPayload = JSON.stringify({ email, name })
     fetch('/api/send-verification-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, name }),
+      body: emailPayload,
     }).catch(e => console.warn('[verify-email] send failed:', e))
+    fetch('/api/send-welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: emailPayload,
+    }).catch(e => console.warn('[welcome-email] send failed:', e))
     // Sign out immediately — user must verify email before accessing the app
     await signOut(auth)
   }
@@ -146,6 +152,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await createUserDocument(cred.user)
     if (isNew) {
       await logActivity(cred.user.uid, 'signup', { provider: 'google' })
+      fetch('/api/send-welcome-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: cred.user.email, name: cred.user.displayName ?? '' }),
+      }).catch(e => console.warn('[welcome-email] send failed:', e))
     } else {
       await updateLastLogin(cred.user.uid)
       await logActivity(cred.user.uid, 'login', { provider: 'google' })
