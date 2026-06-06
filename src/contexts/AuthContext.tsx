@@ -117,6 +117,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email: string, password: string) {
     const cred = await signInWithEmailAndPassword(auth, email, password)
+    if (!cred.user.emailVerified) {
+      await signOut(auth)
+      throw Object.assign(new Error('Email not verified'), { code: 'auth/email-not-verified' })
+    }
     await updateLastLogin(cred.user.uid)
     await logActivity(cred.user.uid, 'login', { provider: 'email' })
     // Snapshot listener attached by onAuthStateChanged above; no manual setUserData needed
@@ -132,6 +136,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, name }),
     }).catch(e => console.warn('[verify-email] send failed:', e))
+    // Sign out immediately — user must verify email before accessing the app
+    await signOut(auth)
   }
 
   async function loginWithGoogle() {

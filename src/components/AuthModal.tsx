@@ -18,13 +18,19 @@ export default function AuthModal() {
   const [error, setError]         = useState<string | null>(null)
   const [loading, setLoading]     = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
-  const [success, setSuccess]     = useState(false)
+  const [success, setSuccess]       = useState(false)
+  const [verifyScreen, setVerifyScreen] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [resendSent, setResendSent]   = useState(false)
+  const [signupEmail, setSignupEmail] = useState('')
 
   useEffect(() => {
     if (mode) {
       setTab(mode)
       setError(null)
       setSuccess(false)
+      setVerifyScreen(false)
+      setResendSent(false)
       setName(''); setEmail(''); setPassword('')
     }
   }, [mode])
@@ -60,15 +66,33 @@ export default function AuthModal() {
     try {
       if (tab === 'login') {
         await login(email, password)
+        setSuccess(true)
+        setTimeout(handleClose, 900)
       } else {
         await signup(email, password, name)
+        setSignupEmail(email)
+        setVerifyScreen(true)
       }
-      setSuccess(true)
-      setTimeout(handleClose, 900)
     } catch (err: any) {
       setError(authErrorMessage(err.code, tab, t))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleResendVerification() {
+    setResendLoading(true)
+    try {
+      await fetch('/api/send-verification-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: signupEmail }),
+      })
+      setResendSent(true)
+    } catch {
+      // silently fail — user can try again
+    } finally {
+      setResendLoading(false)
     }
   }
 
@@ -101,14 +125,38 @@ export default function AuthModal() {
           </button>
         </div>
 
-        {success ? (
+        {verifyScreen ? (
+          <div className="auth-modal-success">
+            <div className="auth-modal-success-ring" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
+              <IconMail />
+            </div>
+            <p className="auth-modal-success-title">Check your inbox</p>
+            <p className="auth-modal-success-sub">
+              We sent a verification link to <strong>{signupEmail}</strong>.<br />
+              Click it to activate your account.
+            </p>
+            <button
+              type="button"
+              className="btn-primary btn-cta btn-full"
+              style={{ marginTop: 20 }}
+              onClick={resendSent ? undefined : handleResendVerification}
+              disabled={resendLoading || resendSent}
+            >
+              {resendLoading ? <><span className="btn-spinner" />Sending…</> : resendSent ? '✓ Email resent!' : 'Resend verification email'}
+            </button>
+            <p className="auth-modal-switch" style={{ marginTop: 12 }}>
+              Already verified?{' '}
+              <button className="form-link" type="button" onClick={() => { setVerifyScreen(false); setTab('login') }}>
+                Log in
+              </button>
+            </p>
+          </div>
+        ) : success ? (
           <div className="auth-modal-success">
             <div className="auth-modal-success-ring">
               <IconCheck />
             </div>
-            <p className="auth-modal-success-title">
-              {tab === 'login' ? t('auth.successLogin') : t('auth.successSignup')}
-            </p>
+            <p className="auth-modal-success-title">{t('auth.successLogin')}</p>
             <p className="auth-modal-success-sub">{t('auth.takingYouIn')}</p>
           </div>
         ) : (
@@ -264,6 +312,7 @@ function authErrorMessage(code: string, tab: 'login' | 'signup', t: (k: string) 
     case 'auth/weak-password':         return t('auth.errWeakPassword')
     case 'auth/too-many-requests':     return t('auth.errTooManyRequests')
     case 'auth/popup-closed-by-user':  return t('auth.errPopupClosed')
+    case 'auth/email-not-verified':    return 'Please verify your email before logging in. Check your inbox for the verification link.'
     default: return tab === 'login' ? t('auth.errLoginFailed') : t('auth.errSignupFailed')
   }
 }
@@ -280,6 +329,15 @@ function IconCheck() {
   return (
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="20 6 9 17 4 12"/>
+    </svg>
+  )
+}
+
+function IconMail() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="4" width="20" height="16" rx="2"/>
+      <polyline points="2,4 12,13 22,4"/>
     </svg>
   )
 }
