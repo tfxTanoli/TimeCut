@@ -38,7 +38,6 @@ export default function Navbar({ onLogoClick }: Props) {
       <div className="navbar-inner container">
         {/* Logo */}
         <button className="navbar-logo" onClick={handleLogo}>
-          <img src="/timecut-logo.webp" alt="TimeCut" className="navbar-logo-img" />
           <span className="navbar-logo-text">TIMECUT</span>
         </button>
 

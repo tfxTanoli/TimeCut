@@ -4,9 +4,13 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import Footer from '../components/Footer'
 import { useTranslation } from '../hooks/useTranslation'
+import { useAuth } from '../contexts/AuthContext'
+import { useAuthModal } from '../contexts/AuthModalContext'
 
 export default function ContactPage() {
   const { t } = useTranslation()
+  const { user } = useAuth()
+  const { openLogin } = useAuthModal()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState('')
@@ -28,6 +32,10 @@ export default function ContactPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!user) {
+      openLogin()
+      return
+    }
     setIsSubmitting(true)
     setSubmitError(null)
     try {
