@@ -15,7 +15,7 @@ import {
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
 
-const ANON_LIMIT = 3
+const ANON_LIMIT = 1
 const ANON_KEY = 'tc_anon_usage'
 
 function getAnonUsage(): { month: string; count: number } {
