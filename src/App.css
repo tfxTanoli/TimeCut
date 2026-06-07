@@ -541,7 +541,7 @@
 .hero-inner { display: flex; flex-direction: column; align-items: center; }
 .hero-text { display: flex; flex-direction: column; align-items: center; }
 
-/* "Is it worth your time?" — prominent hero question */
+/* "Is it worth your time?":prominent hero question */
 .hero-worth-question {
   font-size: 48px;
   font-weight: 900;
@@ -1177,7 +1177,7 @@
 }
 .limit-banner-dismiss:hover { opacity: 1; }
 
-/* ── Pricing "Your plan" badge — floats above the card ── */
+/* ── Pricing "Your plan" badge:floats above the card ── */
 .pricing-current-badge {
   position: absolute;
   top: -13px;
@@ -3207,7 +3207,7 @@
   }
 }
 
-/* Short screens — ensure modal never clips */
+/* Short screens:ensure modal never clips */
 @media (max-height: 700px) {
   .auth-modal-heading { padding-top: 10px; }
   .auth-modal-tabs    { padding-top: 10px; }
@@ -3216,7 +3216,7 @@
 }
 
 /* ════════════════════════════════════════
-   TIME SAVED — "ENOUGH TIME TO" LINE
+   TIME SAVED:"ENOUGH TIME TO" LINE
    ════════════════════════════════════════ */
 .metric-enough {
   font-size: 11px;
@@ -3365,7 +3365,7 @@
 }
 
 /* ════════════════════════════════════════
-   FOOTER — POWERED BY (inline right of copyright)
+   FOOTER:POWERED BY (inline right of copyright)
    ════════════════════════════════════════ */
 .footer-powered-by {
   font-size: 11px;
@@ -3567,7 +3567,7 @@
 }
 
 /* ════════════════════════════════════════
-   PRICING — CONSISTENT PAGE HEADING LEVEL
+   PRICING:CONSISTENT PAGE HEADING LEVEL
    ════════════════════════════════════════ */
 .page-hero-title {
   font-size: 38px;
@@ -3579,7 +3579,7 @@
 }
 
 /* ════════════════════════════════════════
-   MOBILE METRIC CARDS — NO OVERLAP
+   MOBILE METRIC CARDS:NO OVERLAP
    ════════════════════════════════════════ */
 @media (max-width: 600px) {
   .metrics-row--2col {

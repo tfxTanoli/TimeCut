@@ -125,9 +125,9 @@ export default function Navbar({ onLogoClick }: Props) {
               value={lang}
               onChange={e => setLang(e.target.value)}
             >
-              <option value="English">EN — English</option>
-              <option value="Chinese (Simplified)">简体 — Simplified Chinese</option>
-              <option value="Chinese (Traditional)">繁體 — Traditional Chinese</option>
+              <option value="English">EN English</option>
+              <option value="Chinese (Simplified)">简体 Simplified Chinese</option>
+              <option value="Chinese (Traditional)">繁體 Traditional Chinese</option>
             </select>
           </div>
         </div>

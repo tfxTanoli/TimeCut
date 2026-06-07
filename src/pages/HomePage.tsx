@@ -69,7 +69,7 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth }: Upgr
               className="btn-primary btn-cta upgrade-modal-cta"
               onClick={() => { onClose(); onOpenAuth() }}
             >
-              Sign up free — get 5/month
+              Sign up free, get 5/month
             </button>
           ) : (
             <Link

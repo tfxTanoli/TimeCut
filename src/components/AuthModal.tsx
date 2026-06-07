@@ -90,7 +90,7 @@ export default function AuthModal() {
       })
       setResendSent(true)
     } catch {
-      // silently fail — user can try again
+      // silently fail:user can try again
     } finally {
       setResendLoading(false)
     }

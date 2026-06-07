@@ -119,7 +119,7 @@ const zhTW: Record<string, string> = {
   'result.verdictSkipIt': '跳過',
   'result.verdictTimeWaster': '浪費時間',
 
-  // ── Result Page — Analysis Breakdown ──
+  // ── Result Page: Analysis Breakdown ──
   'result.analysisBreakdown': '分析明細',
   'result.contentQuality': '內容品質',
   'result.actionability': '可操作性',

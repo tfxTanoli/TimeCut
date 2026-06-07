@@ -18,8 +18,8 @@ export default function AboutPage() {
 
             <h2>Why We Built TimeCut</h2>
             <p>We created TimeCut because of a simple realization: the amount of content demanding our attention grows every year, but the number of hours in a day stays the same.</p>
-            <p>Articles, newsletters, reports, emails, PDFs — the volume is endless. And most of it isn't worth your time. But you only find that out after you've already spent 20 minutes reading it.</p>
-            <p>That gap — between "should I read this?" and "I just wasted 30 minutes finding out I shouldn't have" — is exactly what TimeCut is designed to eliminate.</p>
+            <p>Articles, newsletters, reports, emails, PDFs. The volume is endless. And most of it isn't worth your time. But you only find that out after you've already spent 20 minutes reading it.</p>
+            <p>TimeCut is designed to eliminate that gap between "should I read this?" and "I just wasted 30 minutes finding out I shouldn't have."</p>
 
             <h2>Our Mission</h2>
             <p>TimeCut's mission is to give every person a clear, honest signal before they commit their attention. Know the value before you spend your time.</p>
@@ -35,20 +35,20 @@ export default function AboutPage() {
               <li>Specific sections to skip</li>
               <li>A final, plain-language decision</li>
             </ul>
-            <p>It's not a summary. It's a decision tool — designed to tell you whether to engage, not to replace the reading itself.</p>
+            <p>It's not a summary. It's a decision tool designed to tell you whether to engage, not to replace the reading itself.</p>
 
             <h2>What We Stand For</h2>
             <p>We believe:</p>
             <ul>
-              <li>Your attention is finite and precious — it deserves to be protected.</li>
+              <li>Your attention is finite and precious, and it deserves to be protected.</li>
               <li>Most content is not worth your full focus. That's not cynical; it's honest.</li>
               <li>The right tool gives you clarity in seconds, not after you've already committed your time.</li>
-              <li>Transparency matters — we tell you exactly what we do with your data and why.</li>
+              <li>Transparency matters: we tell you exactly what we do with your data and why.</li>
             </ul>
 
             <h2>Who We're For</h2>
-            <p>TimeCut is built for people who take their time seriously: knowledge workers, researchers, professionals, students, and anyone who reads a lot and wants to read smarter — not more.</p>
-            <p>Whether you're sorting through your morning newsletter stack, evaluating a research paper, or deciding if a long report is worth your afternoon — TimeCut gives you the answer in under 20 seconds.</p>
+            <p>TimeCut is built for people who take their time seriously: knowledge workers, researchers, professionals, students, and anyone who reads a lot and wants to read smarter, not more.</p>
+            <p>Whether you're sorting through your morning newsletter stack, evaluating a research paper, or deciding if a long report is worth your afternoon, TimeCut gives you the answer in under 20 seconds.</p>
 
             <h2>Get In Touch</h2>
             <p>We're a small, focused team and we care about every piece of feedback. If you have ideas, questions, or just want to tell us how TimeCut is saving you time, we'd love to hear from you.</p>

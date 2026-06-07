@@ -32,10 +32,10 @@ export default function TermsPage() {
             <h2>4. Plans & Billing</h2>
             <p>TimeCut offers a Free plan and paid subscription plans (Starter, Pro, Business). Paid plans are billed monthly through Stripe. You may cancel your subscription at any time. No refunds are provided for partial billing periods unless required by applicable law.</p>
             <ul>
-              <li><strong>Free</strong> — 5 analyses/month, no credit card required</li>
-              <li><strong>Starter</strong> — 60 analyses/month at $9/month</li>
-              <li><strong>Pro</strong> — 300 analyses/month at $29/month</li>
-              <li><strong>Business</strong> — 2,000 analyses/month at $149/month</li>
+              <li><strong>Free</strong>:5 analyses/month, no credit card required</li>
+              <li><strong>Starter</strong>:60 analyses/month at $9/month</li>
+              <li><strong>Pro</strong>:300 analyses/month at $29/month</li>
+              <li><strong>Business</strong>:2,000 analyses/month at $149/month</li>
             </ul>
 
             <h2>5. Acceptable Use</h2>

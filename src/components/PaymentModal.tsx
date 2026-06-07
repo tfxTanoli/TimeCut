@@ -55,7 +55,7 @@ function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: For
     setLoading(true)
     setError(null)
 
-    // Confirm the payment — get paymentIntent back (redirect:'if_required' keeps us in-app)
+    // Confirm the payment:get paymentIntent back (redirect:'if_required' keeps us in-app)
     const { error: stripeError, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.href },
@@ -68,7 +68,7 @@ function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: For
       return
     }
 
-    // paymentIntent.status is already 'succeeded' at this point — pass its ID to the
+    // paymentIntent.status is already 'succeeded' at this point:pass its ID to the
     // server so activation doesn't depend on Stripe's async subscription status update
     try {
       const res = await fetch('/api/activate-plan', {
@@ -87,12 +87,12 @@ function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: For
       if (data.success) {
         onSuccess()
       } else {
-        // Extremely unlikely now — show success anyway since Stripe confirmed the payment
+        // Extremely unlikely now:show success anyway since Stripe confirmed the payment
         console.warn('[activate-plan] server returned not-ready:', data)
         onSuccess()
       }
     } catch {
-      // Network error — webhook will catch it, treat as success
+      // Network error:webhook will catch it, treat as success
       onSuccess()
     }
   }
@@ -132,7 +132,7 @@ function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: For
       >
         {loading
           ? <><span className="btn-spinner" /> Processing…</>
-          : `Subscribe — ${details.price}`}
+          : `Subscribe ${details.price}`}
       </button>
 
       <p className="pm-secure-note">

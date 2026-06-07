@@ -119,7 +119,7 @@ const en: Record<string, string> = {
   'result.verdictSkipIt': 'SKIP IT',
   'result.verdictTimeWaster': 'TIME WASTER',
 
-  // ── Result Page — Analysis Breakdown ──
+  // ── Result Page: Analysis Breakdown ──
   'result.analysisBreakdown': 'ANALYSIS BREAKDOWN',
   'result.contentQuality': 'CONTENT QUALITY',
   'result.actionability': 'ACTIONABILITY',

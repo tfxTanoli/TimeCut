@@ -119,7 +119,7 @@ const zhCN: Record<string, string> = {
   'result.verdictSkipIt': '跳过',
   'result.verdictTimeWaster': '浪费时间',
 
-  // ── Result Page — Analysis Breakdown ──
+  // ── Result Page: Analysis Breakdown ──
   'result.analysisBreakdown': '分析明细',
   'result.contentQuality': '内容质量',
   'result.actionability': '可操作性',

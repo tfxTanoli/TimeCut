@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const plan: PlanType = (userData?.plan as PlanType) ?? 'free'
   const planLimit = PLAN_LIMITS[plan]
 
-  // No-op — onSnapshot keeps monthlyUsage live automatically
+  // No-op:onSnapshot keeps monthlyUsage live automatically
   function refreshUsage() {}
 
   async function login(email: string, password: string) {
@@ -142,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: emailPayload,
     }).catch(e => console.warn('[welcome-email] send failed:', e))
-    // Sign out immediately — user must verify email before accessing the app
+    // Sign out immediately:user must verify email before accessing the app
     await signOut(auth)
   }
 

@@ -206,7 +206,7 @@ export default function LandingPage({
                     className="btn-primary btn-cta save-cta save-cta--limit"
                     onClick={() => navigate('/pricing')}
                   >
-                    🔒 Limit Reached — Upgrade
+                    🔒 Limit Reached: Upgrade
                   </button>
                 ) : (
                   <button
