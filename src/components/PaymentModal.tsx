@@ -41,7 +41,7 @@ interface FormProps {
   onClose: () => void
 }
 
-function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess, onClose }: FormProps) {
+function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: FormProps) {
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)

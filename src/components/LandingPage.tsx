@@ -74,6 +74,10 @@ export default function LandingPage({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!isLoggedIn) {
+      onOpenAuth?.()
+      return
+    }
     if (activeTab === 'text' && textValue.trim()) onSubmit('text', textValue.trim(), language)
     if (activeTab === 'pdf' && pdfFile && canUsePdf) onSubmit('pdf', pdfFile, language)
   }

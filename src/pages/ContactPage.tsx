@@ -68,37 +68,30 @@ export default function ContactPage() {
       <section className="contact-section">
         <div className="container contact-inner">
           <div className="contact-info">
-            <div className="contact-info-block">
-              <span className="contact-info-icon">💬</span>
-              <div>
-                <p className="contact-info-title">{t('contact.infoSend')}</p>
-                <p className="contact-info-desc">{t('contact.infoSendDesc')}</p>
+            {[
+              { icon: '💬', title: t('contact.infoSend'), desc: t('contact.infoSendDesc') },
+              { icon: '💡', title: t('contact.infoFeature'), desc: t('contact.infoFeatureDesc') },
+              { icon: '🐛', title: t('contact.infoBug'), desc: t('contact.infoBugDesc') },
+              { icon: '🤝', title: t('contact.infoPartnership'), desc: t('contact.infoPartnershipDesc') },
+            ].map(item => (
+              <div
+                key={item.title}
+                className="contact-info-block contact-info-block--clickable"
+                onClick={() => document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => e.key === 'Enter' && document.getElementById('contact-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                <span className="contact-info-icon">{item.icon}</span>
+                <div>
+                  <p className="contact-info-title">{item.title}</p>
+                  <p className="contact-info-desc">{item.desc}</p>
+                </div>
               </div>
-            </div>
-            <div className="contact-info-block">
-              <span className="contact-info-icon">💡</span>
-              <div>
-                <p className="contact-info-title">{t('contact.infoFeature')}</p>
-                <p className="contact-info-desc">{t('contact.infoFeatureDesc')}</p>
-              </div>
-            </div>
-            <div className="contact-info-block">
-              <span className="contact-info-icon">🐛</span>
-              <div>
-                <p className="contact-info-title">{t('contact.infoBug')}</p>
-                <p className="contact-info-desc">{t('contact.infoBugDesc')}</p>
-              </div>
-            </div>
-            <div className="contact-info-block">
-              <span className="contact-info-icon">🤝</span>
-              <div>
-                <p className="contact-info-title">{t('contact.infoPartnership')}</p>
-                <p className="contact-info-desc">{t('contact.infoPartnershipDesc')}</p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          <div className="contact-form-card">
+          <div className="contact-form-card" id="contact-form">
             {sent ? (
               <div className="contact-success">
                 <span className="contact-success-icon">✓</span>

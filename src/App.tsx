@@ -19,6 +19,7 @@ const ProfilePage = lazy(() => import('./pages/ProfilePage'))
 const ContactPage = lazy(() => import('./pages/ContactPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage   = lazy(() => import('./pages/TermsPage'))
+const AboutPage   = lazy(() => import('./pages/AboutPage'))
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms"   element={<TermsPage />} />
+              <Route path="/about"   element={<AboutPage />} />
             </Routes>
           </Suspense>
           <AuthModal />

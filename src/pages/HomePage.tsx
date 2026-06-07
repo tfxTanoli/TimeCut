@@ -11,7 +11,6 @@ import {
   incrementAnalysisStats,
   saveAnalysis,
   checkAndIncrementUsage,
-  PLAN_LIMITS,
 } from '../lib/userService'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
