@@ -85,6 +85,18 @@ export default function Navbar({ onLogoClick }: Props) {
           )}
         </div>
 
+        {/* Mobile-only language switcher (always visible next to hamburger) */}
+        <select
+          className="lang-switcher lang-switcher--mobile-nav"
+          value={lang}
+          onChange={e => setLang(e.target.value)}
+          title="UI Language"
+        >
+          <option value="English">EN</option>
+          <option value="Chinese (Simplified)">简体</option>
+          <option value="Chinese (Traditional)">繁體</option>
+        </select>
+
         {/* Mobile hamburger button */}
         <button
           className="hamburger-btn"
@@ -120,15 +132,6 @@ export default function Navbar({ onLogoClick }: Props) {
                 </button>
               </>
             )}
-            <select
-              className="lang-switcher"
-              value={lang}
-              onChange={e => setLang(e.target.value)}
-            >
-              <option value="English">EN English</option>
-              <option value="Chinese (Simplified)">简体 Simplified Chinese</option>
-              <option value="Chinese (Traditional)">繁體 Traditional Chinese</option>
-            </select>
           </div>
         </div>
       )}

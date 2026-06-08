@@ -373,7 +373,7 @@ const zhTW: Record<string, string> = {
 
   // 專業版
   'pricing.pro': '專業版',
-  'pricing.proTagline': '更快速地做出決策',
+  'pricing.proTagline': '告別浪費，更快決策',
   'pricing.proPrice': '$29',
   'pricing.proPeriod': '/月',
   'pricing.proSubtitle': '分析更多，決策更快。',

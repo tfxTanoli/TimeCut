@@ -373,7 +373,7 @@ const zhCN: Record<string, string> = {
 
   // 专业版
   'pricing.pro': '专业版',
-  'pricing.proTagline': '更快速地做出决策',
+  'pricing.proTagline': '告别浪费，更快决策',
   'pricing.proPrice': '$29',
   'pricing.proPeriod': '/月',
   'pricing.proSubtitle': '分析更多，决策更快。',

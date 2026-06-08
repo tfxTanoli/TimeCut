@@ -172,6 +172,7 @@
 }
 .lang-switcher:hover { border-color: var(--accent); }
 .lang-switcher:focus { border-color: var(--accent); }
+.lang-switcher--mobile-nav { display: none; }
 
 /* ── Avatar button ── */
 .navbar-avatar-wrap {
@@ -1574,13 +1575,14 @@
 }
 .mobile-menu-user { padding: 4px 0; font-size: 14px; color: var(--text); }
 .mobile-menu-email { font-weight: 500; color: var(--text-h); }
-.mobile-menu .lang-switcher { width: 100%; }
+.mobile-menu .lang-switcher--mobile-nav { display: none; }
 
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .navbar-links { display: none; }
   .navbar-actions { display: none; }
   .hamburger-btn { display: flex; }
+  .lang-switcher--mobile-nav { display: block; }
   .hero-title { font-size: 38px; }
   .hero-worth-question { font-size: 36px; }
   .features-grid { grid-template-columns: 1fr; }
