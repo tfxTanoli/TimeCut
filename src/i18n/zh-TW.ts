@@ -389,7 +389,7 @@ const zhTW: Record<string, string> = {
 
   // 商業版
   'pricing.custom': '商業版',
-  'pricing.customTagline': '擴展您的內容智能',
+  'pricing.customTagline': '告別浪費，擴展內容智能',
   'pricing.customPrice': '$149',
   'pricing.customPeriod': '/月',
   'pricing.customSubtitle': '適合專業團隊和成長中的組織',

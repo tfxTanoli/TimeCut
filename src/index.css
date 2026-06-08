@@ -4,13 +4,13 @@
   --text: #4d4658;
   --text-h: #08060d;
   --bg: #fff;
-  --border: #d6e9d6;
-  --code-bg: #e0f2e0;
+  --border: #bfdbfe;
+  --code-bg: #dbeafe;
   --accent: #6366f1;
   --accent-bg: rgba(99, 102, 241, 0.08);
   --accent-border: rgba(99, 102, 241, 0.35);
-  --social-bg: rgba(224, 242, 224, 0.6);
-  --page-bg: #eaf7ea;
+  --social-bg: rgba(219, 234, 254, 0.6);
+  --page-bg: #eff6ff;
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 

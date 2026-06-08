@@ -389,7 +389,7 @@ const zhCN: Record<string, string> = {
 
   // 商业版
   'pricing.custom': '商业版',
-  'pricing.customTagline': '扩展您的内容智能',
+  'pricing.customTagline': '告别浪费，扩展内容智能',
   'pricing.customPrice': '$149',
   'pricing.customPeriod': '/月',
   'pricing.customSubtitle': '适合专业团队和成长中的组织',
