@@ -69,7 +69,7 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth }: Upgr
               className="btn-primary btn-cta upgrade-modal-cta"
               onClick={() => { onClose(); onOpenAuth() }}
             >
-              Sign up free, get 5/month
+              Sign up free — get 3 free analyses
             </button>
           ) : (
             <Link
@@ -193,7 +193,7 @@ export default function HomePage() {
       {showUpgradeModal && (
         <UpgradeModal
           plan={plan}
-          planLimit={user ? planLimit : ANON_LIMIT}
+          planLimit={user ? planLimit : 4}
           isLoggedIn={!!user}
           onClose={() => setShowUpgradeModal(false)}
           onOpenAuth={openAuthModal}
@@ -204,7 +204,7 @@ export default function HomePage() {
         isLoading={isLoading}
         error={error}
         plan={plan}
-        planLimit={user ? planLimit : ANON_LIMIT}
+        planLimit={user ? planLimit : 4}
         monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
         isLoggedIn={!!user}
         onOpenAuth={openAuthModal}

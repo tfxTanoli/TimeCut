@@ -133,7 +133,7 @@ const en: Record<string, string> = {
   'auth.welcomeBack': 'Welcome back',
   'auth.startProtecting': 'Start protecting your time',
   'auth.signInSub': 'Sign in to your TimeCut account.',
-  'auth.signUpSub': 'Free. No credit card required.',
+  'auth.signUpSub': 'Get 3 free analyses per month. No credit card required.',
   'auth.fullName': 'Full name',
   'auth.namePlaceholder': 'Your name',
   'auth.emailAddress': 'Email address',

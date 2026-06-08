@@ -133,7 +133,7 @@ const zhCN: Record<string, string> = {
   'auth.welcomeBack': '欢迎回来',
   'auth.startProtecting': '开始保护您的时间',
   'auth.signInSub': '登录您的 TimeCut 账户。',
-  'auth.signUpSub': '免费。无需信用卡。',
+  'auth.signUpSub': '每月获得3次免费分析。无需信用卡。',
   'auth.fullName': '全名',
   'auth.namePlaceholder': '您的姓名',
   'auth.emailAddress': '电子邮件地址',

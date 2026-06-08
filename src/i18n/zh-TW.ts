@@ -133,7 +133,7 @@ const zhTW: Record<string, string> = {
   'auth.welcomeBack': '歡迎回來',
   'auth.startProtecting': '開始保護您的時間',
   'auth.signInSub': '登入您的 TimeCut 帳戶。',
-  'auth.signUpSub': '免費。無需信用卡。',
+  'auth.signUpSub': '每月獲得3次免費分析。無需信用卡。',
   'auth.fullName': '全名',
   'auth.namePlaceholder': '您的姓名',
   'auth.emailAddress': '電子郵件地址',
