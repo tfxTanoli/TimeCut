@@ -1953,14 +1953,7 @@
 }
 .hiw-home-step-title { font-size: 16px; font-weight: 700; color: var(--text-h); margin: 0 0 8px; }
 .hiw-home-step-desc { font-size: 14px; color: var(--text); line-height: 1.55; margin: 0; }
-.hiw-home-arrow {
-  font-size: 24px;
-  color: #94a3b8;
-  margin-top: 14px;
-  flex-shrink: 0;
-  align-self: flex-start;
-  padding-top: 10px;
-}
+.hiw-home-arrow { display: none; }
 
 /* ── Social Proof ── */
 .social-proof {

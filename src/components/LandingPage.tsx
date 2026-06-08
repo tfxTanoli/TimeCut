@@ -239,12 +239,12 @@ export default function LandingPage({
               </div>
               {!isLoggedIn && (
                 <button className="plan-usage-upgrade" onClick={onOpenAuth} type="button">
-                  Sign up — 3 free analyses →
+                  Sign up - 3 free analyses
                 </button>
               )}
               {isLoggedIn && remaining === 0 && (
                 <Link to="/pricing" className="plan-usage-upgrade">
-                  Upgrade →
+                  Upgrade
                 </Link>
               )}
             </div>
@@ -297,7 +297,7 @@ export default function LandingPage({
 
             {/* MUST READ card */}
             <div className="rpc rpc--read fade-up" style={{ transitionDelay: '240ms' }}>
-              <div className="rpc-article">"Deep Work — Cal Newport"</div>
+              <div className="rpc-article">"Deep Work - Cal Newport"</div>
               <div className="rpc-header">
                 <span className="rpc-verdict rpc-verdict--read">MUST READ</span>
                 <div className="rpc-scores">
@@ -336,17 +336,17 @@ export default function LandingPage({
               <h3 className="hiw-home-step-title">Paste Content</h3>
               <p className="hiw-home-step-desc">Copy any article, email, book chapter, or report and paste it into the box.</p>
             </div>
-            <div className="hiw-home-arrow">→</div>
+            <div className="hiw-home-arrow" />
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="hiw-home-num">02</div>
               <h3 className="hiw-home-step-title">AI Analysis</h3>
               <p className="hiw-home-step-desc">TimeCut analyzes quality, originality, information density, actionability, and time worthiness.</p>
             </div>
-            <div className="hiw-home-arrow">→</div>
+            <div className="hiw-home-arrow" />
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '240ms' }}>
               <div className="hiw-home-num">03</div>
               <h3 className="hiw-home-step-title">Get Your Verdict</h3>
-              <p className="hiw-home-step-desc">Receive a clear verdict: <strong>READ IT</strong> · <strong>SKIM IT</strong> · <strong>SKIP IT</strong> — in seconds.</p>
+              <p className="hiw-home-step-desc">Receive a clear verdict: <strong>READ IT</strong> · <strong>SKIM IT</strong> · <strong>SKIP IT</strong>, in seconds.</p>
             </div>
           </div>
         </div>
