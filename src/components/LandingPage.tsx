@@ -101,6 +101,7 @@ export default function LandingPage({
               {t('home.title').split(t('home.titleAccent'))[0]}
               <br />
               <span className="hero-accent">{t('home.titleAccent')}</span>
+              {t('home.title').split(t('home.titleAccent'))[1]}
             </h1>
             <p className="hero-subtitle">
               {t('home.subtitle').split('\n').map((line, i) => (
