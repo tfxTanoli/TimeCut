@@ -85,26 +85,26 @@ export default function Navbar({ onLogoClick }: Props) {
           )}
         </div>
 
-        {/* Mobile-only language switcher (always visible next to hamburger) */}
-        <select
-          className="lang-switcher lang-switcher--mobile-nav"
-          value={lang}
-          onChange={e => setLang(e.target.value)}
-          title="UI Language"
-        >
-          <option value="English">EN</option>
-          <option value="Chinese (Simplified)">简体</option>
-          <option value="Chinese (Traditional)">繁體</option>
-        </select>
-
-        {/* Mobile hamburger button */}
-        <button
-          className="hamburger-btn"
-          onClick={() => setMenuOpen(prev => !prev)}
-          aria-label={menuOpen ? 'Close menu' : 'Open menu'}
-        >
-          {menuOpen ? <IconX /> : <IconMenu />}
-        </button>
+        {/* Mobile right group: lang switcher + hamburger tightly together */}
+        <div className="navbar-mobile-right">
+          <select
+            className="lang-switcher lang-switcher--mobile-nav"
+            value={lang}
+            onChange={e => setLang(e.target.value)}
+            title="UI Language"
+          >
+            <option value="English">EN</option>
+            <option value="Chinese (Simplified)">简体</option>
+            <option value="Chinese (Traditional)">繁體</option>
+          </select>
+          <button
+            className="hamburger-btn"
+            onClick={() => setMenuOpen(prev => !prev)}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+          >
+            {menuOpen ? <IconX /> : <IconMenu />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile dropdown menu */}

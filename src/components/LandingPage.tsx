@@ -91,11 +91,12 @@ export default function LandingPage({
 
   return (
     <>
-      {/* ── Hero ── */}
-      <section className="hero">
-        <div className="container hero-inner">
-          <div className="hero-text">
+      {/* ── Hero (text only) ── */}
+      <section className="hero hero--text-only">
+        <div className="container hero-inner hero-inner--center">
+          <div className="hero-text hero-text--center">
             <p className="hero-worth-question">{t('home.worthQuestion')}</p>
+            <p className="hero-find-out">Find out before you spend another minute.</p>
             <h1 className="hero-title">
               {t('home.title').split(t('home.titleAccent'))[0]}
               <br />
@@ -108,8 +109,89 @@ export default function LandingPage({
               ))}
             </p>
           </div>
+        </div>
+      </section>
 
-          {/* Input card */}
+      {/* ── Example Analysis Preview (now first, above input) ── */}
+      <section className="examples-preview">
+        <div className="container">
+          <div className="examples-preview-grid">
+            {/* SKIP IT card */}
+            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
+              <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Reading Time</span>
+                    <span className="rpc-score-value">24 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Time Saved</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Originality</span>
+                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Info Density</span>
+                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
+                <span className="rpc-tag rpc-tag--bad">Low originality</span>
+                <span className="rpc-tag rpc-tag--bad">Low information density</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">Final Decision</span>
+                <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
+              </div>
+            </div>
+
+            {/* MUST READ card */}
+            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
+              <div className="rpc-article">"Deep Work - Cal Newport"</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Reading Time</span>
+                    <span className="rpc-score-value">24 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Time Saved</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Attention Quality</span>
+                    <span className="rpc-score-value">High</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Value Score</span>
+                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--good">Original thinking</span>
+                <span className="rpc-tag rpc-tag--good">Research-backed</span>
+                <span className="rpc-tag rpc-tag--good">High information density</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">Final Decision</span>
+                <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Input Section ── */}
+      <section className="input-section">
+        <div className="container input-section-inner">
           <form className="input-card" onSubmit={handleSubmit}>
             <div className="input-tabs">
               <button
@@ -239,7 +321,7 @@ export default function LandingPage({
               </div>
               {!isLoggedIn && (
                 <button className="plan-usage-upgrade" onClick={onOpenAuth} type="button">
-                  Sign up - 3 free analyses
+                  🎁 1 Free Analysis Available. Sign up to unlock 3 more.
                 </button>
               )}
               {isLoggedIn && remaining === 0 && (
@@ -253,75 +335,6 @@ export default function LandingPage({
               <IconShield /> {t('home.trustLine')}
             </p>
           </form>
-        </div>
-      </section>
-
-      {/* ── Example Analysis Preview ── */}
-      <section className="examples-preview">
-        <div className="container">
-          <p className="section-eyebrow fade-up">See It In Action</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>
-            Understand What TimeCut Does In 5 Seconds
-          </h2>
-          <div className="examples-preview-grid">
-            {/* SKIP IT card */}
-            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '120ms' }}>
-              <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--skip">SKIP IT</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Reading Time</span>
-                    <span className="rpc-score-value">24 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Time Saved</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Value Score</span>
-                    <span className="rpc-score-value">2.8<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
-                <span className="rpc-tag rpc-tag--bad">Low originality</span>
-                <span className="rpc-tag rpc-tag--bad">Low information density</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
-              </div>
-            </div>
-
-            {/* MUST READ card */}
-            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '240ms' }}>
-              <div className="rpc-article">"Deep Work - Cal Newport"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--read">MUST READ</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Attention Quality</span>
-                    <span className="rpc-score-value">High</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Value Score</span>
-                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--good">Original thinking</span>
-                <span className="rpc-tag rpc-tag--good">Research-backed</span>
-                <span className="rpc-tag rpc-tag--good">High information density</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
@@ -339,7 +352,7 @@ export default function LandingPage({
             <div className="hiw-home-arrow" />
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="hiw-home-num">02</div>
-              <h3 className="hiw-home-step-title">AI Analysis</h3>
+              <h3 className="hiw-home-step-title">TimeCut Analysis</h3>
               <p className="hiw-home-step-desc">TimeCut analyzes quality, originality, information density, actionability, and time worthiness.</p>
             </div>
             <div className="hiw-home-arrow" />

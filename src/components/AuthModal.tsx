@@ -15,6 +15,7 @@ export default function AuthModal() {
   const [name, setName]         = useState('')
   const [email, setEmail]       = useState('')
   const [password, setPassword] = useState('')
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [error, setError]         = useState<string | null>(null)
   const [loading, setLoading]     = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
@@ -31,6 +32,7 @@ export default function AuthModal() {
       setSuccess(false)
       setVerifyScreen(false)
       setResendSent(false)
+      setTermsAccepted(false)
       setName(''); setEmail(''); setPassword('')
     }
   }, [mode])
@@ -61,6 +63,7 @@ export default function AuthModal() {
       if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
       if (!/[A-Z]/.test(password)) { setError('Password must contain at least one uppercase letter.'); return }
       if (!/[0-9]/.test(password)) { setError('Password must contain at least one number.'); return }
+      if (!termsAccepted) { setError('Please accept the terms and conditions to continue.'); return }
     }
     setLoading(true)
     try {
@@ -248,6 +251,25 @@ export default function AuthModal() {
                   />
                 </div>
 
+                {tab === 'signup' && (
+                  <label className="auth-terms-row">
+                    <input
+                      type="checkbox"
+                      className="auth-terms-checkbox"
+                      checked={termsAccepted}
+                      onChange={e => setTermsAccepted(e.target.checked)}
+                      disabled={loading}
+                    />
+                    <span className="auth-terms-text">
+                      I accept the{' '}
+                      <a href="/terms" className="auth-terms-link" target="_blank" rel="noopener noreferrer">terms and conditions</a>
+                      {', '}
+                      <a href="/privacy" className="auth-terms-link" target="_blank" rel="noopener noreferrer">privacy policy</a>
+                      {' '}and agree to receive email communication.
+                    </span>
+                  </label>
+                )}
+
                 {error && (
                   <p className="error-banner" style={{ margin: 0 }}>{error}</p>
                 )}
@@ -255,7 +277,7 @@ export default function AuthModal() {
                 <button
                   type="submit"
                   className="btn-primary btn-cta btn-full auth-modal-submit"
-                  disabled={loading}
+                  disabled={loading || (tab === 'signup' && !termsAccepted)}
                 >
                   {loading
                     ? <><span className="btn-spinner" />{tab === 'login' ? t('auth.signingIn') : t('auth.creatingAccount')}</>
