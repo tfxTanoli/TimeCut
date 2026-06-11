@@ -6,7 +6,7 @@ const en: Record<string, string> = {
   'nav.pricing': 'Pricing',
   'nav.blog': 'Blog',
   'nav.logIn': 'Log in',
-  'nav.getStarted': 'Get Started',
+  'nav.getStarted': 'Try Free',
   'nav.accountMenu': 'Account menu',
 
   // ── Footer ──
@@ -46,7 +46,7 @@ const en: Record<string, string> = {
   'home.pdfRemove': 'Remove',
   'home.analyzing': 'Analyzing...',
   'home.saveMyTime': 'Save My Time',
-  'home.trustLine': 'Instant Time Intelligence Report',
+  'home.trustLine': 'Your content is never stored · Private & secure',
   'home.whyBadge': 'Why TimeCut?',
   'home.whyTitle': 'Save Time. Protect Attention.',
   'home.feat1Title': 'Save Time',
@@ -386,6 +386,7 @@ const en: Record<string, string> = {
   'pricing.proF6': 'Early Access Features',
   'pricing.proF7': 'Export Reports (PDF)',
   'pricing.proF8': 'Premium Support',
+  'pricing.proF9': 'Time Reclaimed Dashboard',
 
   // BUSINESS (formerly CUSTOM)
   'pricing.custom': 'BUSINESS',

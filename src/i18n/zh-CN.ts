@@ -386,6 +386,7 @@ const zhCN: Record<string, string> = {
   'pricing.proF6': '早期访问功能',
   'pricing.proF7': '导出报告（PDF）',
   'pricing.proF8': '高级支持',
+  'pricing.proF9': '时间回收仪表板',
 
   // 商业版
   'pricing.custom': '商业版',

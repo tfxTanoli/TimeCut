@@ -149,7 +149,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.proSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['proF1','proF2','proF3','proF4','proF5','proF6','proF7','proF8'] as const).map(k => (
+                {(['proF1','proF2','proF3','proF4','proF5','proF6','proF7','proF8','proF9'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
                   </li>

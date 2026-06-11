@@ -10,6 +10,16 @@ const LANGUAGES = [
   'Portuguese', 'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Turkish', 'Italian', 'Korean',
 ]
 
+/* ── Savings Calculator Constants ── */
+const CALC = {
+  weeksPerMonth: 4.33,
+  monthsPerYear: 12,
+  hoursPerDay: 24,
+  gymMinsPerSession: 48,
+  hoursPerBook: 6,
+  minsPerDinner: 60,
+}
+
 interface Props {
   onSubmit: (tab: InputTab, value: string | File, language: string) => void
   isLoading: boolean
@@ -39,6 +49,11 @@ export default function LandingPage({
   const fileRef = useRef<HTMLInputElement>(null)
   const seenFadeEls = useRef<Set<Element>>(new Set())
 
+  /* ── Savings Calculator State ── */
+  const [articlesPerWeek, setArticlesPerWeek] = useState(10)
+  const [avgReadingTime, setAvgReadingTime] = useState(12)
+  const [lowValuePct, setLowValuePct] = useState(60)
+
   const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
 
   function handlePdfTabClick() {
@@ -67,7 +82,6 @@ export default function LandingPage({
     return () => observer.disconnect()
   }, [])
 
-  // Re-apply is-visible after React re-renders wipe DOM-mutated classes
   useEffect(() => {
     seenFadeEls.current.forEach(el => el.classList.add('is-visible'))
   })
@@ -89,102 +103,79 @@ export default function LandingPage({
     ((activeTab === 'text' && textValue.trim().length > 0) ||
       (activeTab === 'pdf' && pdfFile !== null && canUsePdf))
 
+  /* ── Calculator computations ── */
+  const lowValueMinsPerWeek = articlesPerWeek * avgReadingTime * (lowValuePct / 100)
+  const hoursSavedPerMonth = parseFloat(((lowValueMinsPerWeek / 60) * CALC.weeksPerMonth).toFixed(1))
+  const hoursSavedPerYear = parseFloat((hoursSavedPerMonth * CALC.monthsPerYear).toFixed(0))
+  const daysSavedPerYear = parseFloat((hoursSavedPerYear / CALC.hoursPerDay).toFixed(1))
+  const familyDinners = Math.round(hoursSavedPerYear)
+  const gymSessions = Math.round(hoursSavedPerYear / (CALC.gymMinsPerSession / 60))
+  const booksRead = Math.round(hoursSavedPerYear / CALC.hoursPerBook)
+
+  /* ── Comparison chart values ── */
+  const totalHoursPerWeek = parseFloat(((articlesPerWeek * avgReadingTime) / 60).toFixed(1))
+  const savedHoursPerWeek = parseFloat((lowValueMinsPerWeek / 60).toFixed(1))
+  const withTimecutHoursPerWeek = parseFloat((totalHoursPerWeek - savedHoursPerWeek).toFixed(1))
+  const maxBarHours = Math.max(totalHoursPerWeek, 1)
+
   return (
     <>
-      {/* ── Hero (text only) ── */}
+      {/* ── Hero ── */}
       <section className="hero hero--text-only">
         <div className="container hero-inner hero-inner--center">
           <div className="hero-text hero-text--center">
             <p className="hero-worth-question">{t('home.worthQuestion')}</p>
-            <p className="hero-find-out">Find out before you spend another minute.</p>
             <h1 className="hero-title">
               {t('home.title').split(t('home.titleAccent'))[0]}
               <br />
               <span className="hero-accent">{t('home.titleAccent')}</span>
               {t('home.title').split(t('home.titleAccent'))[1]}
             </h1>
-            <p className="hero-subtitle">
-              {t('home.subtitle').split('\n').map((line, i) => (
-                <span key={i}>{line}{i === 0 ? <br /> : null}</span>
-              ))}
-            </p>
           </div>
         </div>
       </section>
 
-      {/* ── Example Analysis Preview (now first, above input) ── */}
-      <section className="examples-preview">
+      {/* ── Comparison Chart (below hero) ── */}
+      <section className="comparison-chart-section fade-up">
         <div className="container">
-          <div className="examples-preview-grid">
-            {/* SKIP IT card */}
-            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
-              <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Reading Time</span>
-                    <span className="rpc-score-value">24 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Time Saved</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Originality</span>
-                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Info Density</span>
-                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
+          <div className="comp-chart-inner">
+            <div className="comp-chart-header">
+              <p className="section-eyebrow">The Impact</p>
+              <h2 className="section-title">See Your Time, Reclaimed</h2>
+            </div>
+            <div className="comp-chart-bars">
+              <div className="comp-bar-row">
+                <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
+                <div className="comp-bar-track">
+                  <div
+                    className="comp-bar comp-bar--bad"
+                    style={{ width: `${Math.min((totalHoursPerWeek / maxBarHours) * 100, 100)}%` }}
+                  />
                 </div>
+                <span className="comp-bar-value">{totalHoursPerWeek}h/wk</span>
               </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
-                <span className="rpc-tag rpc-tag--bad">Low originality</span>
-                <span className="rpc-tag rpc-tag--bad">Low information density</span>
+              <div className="comp-bar-row">
+                <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
+                <div className="comp-bar-track">
+                  <div
+                    className="comp-bar comp-bar--good"
+                    style={{ width: `${Math.min((withTimecutHoursPerWeek / maxBarHours) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="comp-bar-value">{withTimecutHoursPerWeek}h/wk</span>
               </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
+              <div className="comp-bar-row">
+                <span className="comp-bar-label comp-bar-label--saved">Time Saved</span>
+                <div className="comp-bar-track">
+                  <div
+                    className="comp-bar comp-bar--saved"
+                    style={{ width: `${Math.min((savedHoursPerWeek / maxBarHours) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className="comp-bar-value comp-bar-value--saved">{savedHoursPerWeek}h/wk</span>
               </div>
             </div>
-
-            {/* MUST READ card */}
-            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
-              <div className="rpc-article">"Deep Work - Cal Newport"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Reading Time</span>
-                    <span className="rpc-score-value">24 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Time Saved</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Attention Quality</span>
-                    <span className="rpc-score-value">High</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Value Score</span>
-                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--good">Original thinking</span>
-                <span className="rpc-tag rpc-tag--good">Research-backed</span>
-                <span className="rpc-tag rpc-tag--good">High information density</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
-              </div>
-            </div>
+            <p className="comp-chart-note">Chart updates live as you adjust the calculator below.</p>
           </div>
         </div>
       </section>
@@ -220,7 +211,7 @@ export default function LandingPage({
                       placeholder={t('home.textPlaceholder')}
                       value={textValue}
                       onChange={e => setTextValue(e.target.value)}
-                      rows={6}
+                      rows={4}
                       disabled={isLoading}
                     />
                     <p className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
@@ -306,28 +297,42 @@ export default function LandingPage({
 
             {error && <p className="error-banner">{error}</p>}
 
-            {/* Plan usage indicator */}
+            {/* Plan usage / free analysis info */}
             <div className="plan-usage-bar">
-              <div className="plan-usage-left">
-                <span className={`plan-badge plan-badge--${plan}`}>
-                  {plan.toUpperCase()}
-                </span>
-                <span className="plan-usage-text">
-                  {monthlyUsage} / {planLimit} used this month
-                </span>
-                {remaining === 0 && (
-                  <span className="plan-usage-limit-tag">Limit reached</span>
-                )}
-              </div>
-              {!isLoggedIn && (
-                <button className="plan-usage-upgrade" onClick={onOpenAuth} type="button">
-                  🎁 1 Free Analysis Available. Sign up to unlock 3 more.
-                </button>
-              )}
-              {isLoggedIn && remaining === 0 && (
-                <Link to="/pricing" className="plan-usage-upgrade">
-                  Upgrade
-                </Link>
+              {isLoggedIn ? (
+                <>
+                  <div className="plan-usage-left">
+                    <span className={`plan-badge plan-badge--${plan}`}>
+                      {plan.toUpperCase()}
+                    </span>
+                    <span className="plan-usage-text">
+                      {monthlyUsage} / {planLimit} used this month
+                    </span>
+                    {remaining === 0 && (
+                      <span className="plan-usage-limit-tag">Limit reached</span>
+                    )}
+                  </div>
+                  {remaining === 0 && (
+                    <Link to="/pricing" className="plan-usage-upgrade">
+                      Upgrade
+                    </Link>
+                  )}
+                </>
+              ) : (
+                <div className="input-free-cta">
+                  <div className="input-free-cta-text">
+                    <span className="input-free-label">Free analysis available.</span>
+                    <span className="input-free-sub"> Sign up to unlock 3 more.</span>
+                    <span className="input-no-cc"> · No credit card required</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary btn-sm input-free-btn"
+                    onClick={onOpenAuth}
+                  >
+                    {t('nav.getStarted')}
+                  </button>
+                </div>
               )}
             </div>
 
@@ -335,6 +340,110 @@ export default function LandingPage({
               <IconShield /> {t('home.trustLine')}
             </p>
           </form>
+        </div>
+      </section>
+
+      {/* ── TimeCut Savings Calculator ── */}
+      <section className="savings-calc-section">
+        <div className="container">
+          <p className="section-eyebrow fade-up">TimeCut Savings Calculator</p>
+          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>
+            How Much of Your Life Can You Reclaim?
+          </h2>
+          <p className="savings-calc-intro fade-up" style={{ transitionDelay: '120ms' }}>
+            Adjust the sliders to see your personalized time savings.
+          </p>
+
+          <div className="savings-calc-grid fade-up" style={{ transitionDelay: '180ms' }}>
+            {/* Inputs */}
+            <div className="savings-inputs">
+              <div className="savings-input-group">
+                <div className="savings-input-header">
+                  <label className="savings-input-label">Articles read per week</label>
+                  <span className="savings-input-val">{articlesPerWeek}</span>
+                </div>
+                <input
+                  type="range" min={1} max={50} value={articlesPerWeek}
+                  onChange={e => setArticlesPerWeek(Number(e.target.value))}
+                  className="savings-slider"
+                />
+                <div className="savings-slider-ticks"><span>1</span><span>50</span></div>
+              </div>
+
+              <div className="savings-input-group">
+                <div className="savings-input-header">
+                  <label className="savings-input-label">Average reading time</label>
+                  <span className="savings-input-val">{avgReadingTime} min</span>
+                </div>
+                <input
+                  type="range" min={2} max={60} value={avgReadingTime}
+                  onChange={e => setAvgReadingTime(Number(e.target.value))}
+                  className="savings-slider"
+                />
+                <div className="savings-slider-ticks"><span>2 min</span><span>60 min</span></div>
+              </div>
+
+              <div className="savings-input-group">
+                <div className="savings-input-header">
+                  <label className="savings-input-label">Low-value content</label>
+                  <span className="savings-input-val">{lowValuePct}%</span>
+                </div>
+                <input
+                  type="range" min={10} max={90} value={lowValuePct}
+                  onChange={e => setLowValuePct(Number(e.target.value))}
+                  className="savings-slider"
+                />
+                <div className="savings-slider-ticks"><span>10%</span><span>90%</span></div>
+              </div>
+
+              <div className="savings-formula-note">
+                <IconInfo />
+                <span>Based on industry research: ~60% of online content contains no original insight.</span>
+              </div>
+            </div>
+
+            {/* Outputs */}
+            <div className="savings-outputs">
+              <div className="savings-headline">
+                <span className="savings-headline-num">{hoursSavedPerYear}</span>
+                <span className="savings-headline-unit"> hours saved per year</span>
+              </div>
+              <div className="savings-conversions">
+                <div className="savings-conv-row">
+                  <span className="savings-conv-eq">=</span>
+                  <span className="savings-conv-num">{daysSavedPerYear}</span>
+                  <span className="savings-conv-label">days of free time</span>
+                </div>
+                <div className="savings-conv-row">
+                  <span className="savings-conv-eq">=</span>
+                  <span className="savings-conv-num">{familyDinners}</span>
+                  <span className="savings-conv-label">family dinners</span>
+                </div>
+                <div className="savings-conv-row">
+                  <span className="savings-conv-eq">=</span>
+                  <span className="savings-conv-num">{gymSessions}</span>
+                  <span className="savings-conv-label">gym sessions</span>
+                </div>
+                <div className="savings-conv-row">
+                  <span className="savings-conv-eq">=</span>
+                  <span className="savings-conv-num">{booksRead}</span>
+                  <span className="savings-conv-label">books read</span>
+                </div>
+              </div>
+              <div className="savings-monthly">
+                <span className="savings-monthly-item">
+                  <strong>{hoursSavedPerMonth}h</strong> saved this month
+                </span>
+              </div>
+              <button
+                className="btn-primary btn-cta savings-cta"
+                onClick={onOpenAuth}
+                type="button"
+              >
+                Start Reclaiming Your Time
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -486,6 +595,13 @@ function IconShieldCheck() {
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <polyline points="9 12 11 14 15 10" />
+    </svg>
+  )
+}
+function IconInfo() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
     </svg>
   )
 }

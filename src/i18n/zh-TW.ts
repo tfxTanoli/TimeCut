@@ -386,6 +386,7 @@ const zhTW: Record<string, string> = {
   'pricing.proF6': '早期存取功能',
   'pricing.proF7': '匯出報告（PDF）',
   'pricing.proF8': '進階支援',
+  'pricing.proF9': '時間回收儀表板',
 
   // 商業版
   'pricing.custom': '商業版',
