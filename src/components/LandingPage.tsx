@@ -12,12 +12,10 @@ const LANGUAGES = [
 
 /* ── Savings Calculator Constants ── */
 const CALC = {
-  weeksPerMonth: 4.33,
-  monthsPerYear: 12,
+  weeksPerYear: 52.18,   // 365.25 / 7 — exact average
   hoursPerDay: 24,
   gymMinsPerSession: 48,
   hoursPerBook: 6,
-  minsPerDinner: 60,
 }
 
 interface Props {
@@ -49,19 +47,16 @@ export default function LandingPage({
   const fileRef = useRef<HTMLInputElement>(null)
   const seenFadeEls = useRef<Set<Element>>(new Set())
 
-  /* ── Savings Calculator State ── */
-  const [articlesPerWeek, setArticlesPerWeek] = useState(10)
-  const [avgReadingTime, setAvgReadingTime] = useState(12)
-  const [lowValuePct, setLowValuePct] = useState(60)
+  /* ── Savings Calculator State (defaults → ~317 hrs/year) ── */
+  const [articlesPerWeek, setArticlesPerWeek] = useState(20)
+  const [avgReadingTime, setAvgReadingTime] = useState(25)
+  const [lowValuePct, setLowValuePct] = useState(73)
 
   const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
 
   function handlePdfTabClick() {
     setActiveTab('pdf')
-    if (!canUsePdf) {
-      setShowPdfUpgrade(true)
-      return
-    }
+    if (!canUsePdf) { setShowPdfUpgrade(true); return }
     setShowPdfUpgrade(false)
   }
 
@@ -88,35 +83,29 @@ export default function LandingPage({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!isLoggedIn) {
-      onOpenAuth?.()
-      return
-    }
+    if (!isLoggedIn) { onOpenAuth?.(); return }
     if (activeTab === 'text' && textValue.trim()) onSubmit('text', textValue.trim(), language)
     if (activeTab === 'pdf' && pdfFile && canUsePdf) onSubmit('pdf', pdfFile, language)
   }
 
   const canSubmit =
-    !isLoading &&
-    !showPdfUpgrade &&
-    !isAtLimit &&
+    !isLoading && !showPdfUpgrade && !isAtLimit &&
     ((activeTab === 'text' && textValue.trim().length > 0) ||
       (activeTab === 'pdf' && pdfFile !== null && canUsePdf))
 
-  /* ── Calculator computations ── */
+  /* ── Calculator (yearly, using 52.18 wks/yr) ── */
   const lowValueMinsPerWeek = articlesPerWeek * avgReadingTime * (lowValuePct / 100)
-  const hoursSavedPerMonth = parseFloat(((lowValueMinsPerWeek / 60) * CALC.weeksPerMonth).toFixed(1))
-  const hoursSavedPerYear = parseFloat((hoursSavedPerMonth * CALC.monthsPerYear).toFixed(0))
+  const hoursSavedPerYear = Math.round((lowValueMinsPerWeek / 60) * CALC.weeksPerYear)
+  const hoursSavedPerMonth = parseFloat((hoursSavedPerYear / 12).toFixed(1))
   const daysSavedPerYear = parseFloat((hoursSavedPerYear / CALC.hoursPerDay).toFixed(1))
-  const familyDinners = Math.round(hoursSavedPerYear)
+  const familyDinners = hoursSavedPerYear
   const gymSessions = Math.round(hoursSavedPerYear / (CALC.gymMinsPerSession / 60))
   const booksRead = Math.round(hoursSavedPerYear / CALC.hoursPerBook)
 
-  /* ── Comparison chart values ── */
-  const totalHoursPerWeek = parseFloat(((articlesPerWeek * avgReadingTime) / 60).toFixed(1))
-  const savedHoursPerWeek = parseFloat((lowValueMinsPerWeek / 60).toFixed(1))
-  const withTimecutHoursPerWeek = parseFloat((totalHoursPerWeek - savedHoursPerWeek).toFixed(1))
-  const maxBarHours = Math.max(totalHoursPerWeek, 1)
+  /* ── Comparison chart (yearly) ── */
+  const totalHoursPerYear = Math.round((articlesPerWeek * avgReadingTime / 60) * CALC.weeksPerYear)
+  const withTimecutHoursPerYear = totalHoursPerYear - hoursSavedPerYear
+  const maxBarHours = Math.max(totalHoursPerYear, 1)
 
   return (
     <>
@@ -125,223 +114,272 @@ export default function LandingPage({
         <div className="container hero-inner hero-inner--center">
           <div className="hero-text hero-text--center">
             <p className="hero-worth-question">{t('home.worthQuestion')}</p>
-            <h1 className="hero-title">
-              {t('home.title').split(t('home.titleAccent'))[0]}
-              <br />
-              <span className="hero-accent">{t('home.titleAccent')}</span>
-              {t('home.title').split(t('home.titleAccent'))[1]}
+            <h1 className="hero-title hero-title--find-out">
+              Find out before you spend another minute.
             </h1>
           </div>
         </div>
       </section>
 
-      {/* ── Comparison Chart (below hero) ── */}
-      <section className="comparison-chart-section fade-up">
-        <div className="container">
-          <div className="comp-chart-inner">
-            <div className="comp-chart-header">
-              <p className="section-eyebrow">The Impact</p>
-              <h2 className="section-title">See Your Time, Reclaimed</h2>
+      {/* ── Reorderable middle block ── */}
+      {/* Desktop: Chart → Examples → Input  |  Mobile: Input → Examples → Chart */}
+      <div className="home-mid-wrap">
+
+        {/* 1 · Comparison Chart */}
+        <section className="comparison-chart-section mid-chart">
+          <div className="container">
+            <div className="comp-chart-inner">
+              <div className="comp-chart-header">
+                <p className="section-eyebrow">The Impact</p>
+                <h2 className="section-title">See Your Time, Reclaimed</h2>
+              </div>
+              <div className="comp-chart-bars">
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--bad"
+                      style={{ width: `${Math.min((totalHoursPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value">{totalHoursPerYear}h/yr</span>
+                </div>
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--good"
+                      style={{ width: `${Math.min((withTimecutHoursPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value">{withTimecutHoursPerYear}h/yr</span>
+                </div>
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--saved">Time Reclaimed</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--saved"
+                      style={{ width: `${Math.min((hoursSavedPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}h/yr</span>
+                </div>
+              </div>
+              <p className="comp-chart-note">Figures update live as you adjust the calculator below.</p>
             </div>
-            <div className="comp-chart-bars">
-              <div className="comp-bar-row">
-                <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
-                <div className="comp-bar-track">
-                  <div
-                    className="comp-bar comp-bar--bad"
-                    style={{ width: `${Math.min((totalHoursPerWeek / maxBarHours) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="comp-bar-value">{totalHoursPerWeek}h/wk</span>
-              </div>
-              <div className="comp-bar-row">
-                <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
-                <div className="comp-bar-track">
-                  <div
-                    className="comp-bar comp-bar--good"
-                    style={{ width: `${Math.min((withTimecutHoursPerWeek / maxBarHours) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="comp-bar-value">{withTimecutHoursPerWeek}h/wk</span>
-              </div>
-              <div className="comp-bar-row">
-                <span className="comp-bar-label comp-bar-label--saved">Time Saved</span>
-                <div className="comp-bar-track">
-                  <div
-                    className="comp-bar comp-bar--saved"
-                    style={{ width: `${Math.min((savedHoursPerWeek / maxBarHours) * 100, 100)}%` }}
-                  />
-                </div>
-                <span className="comp-bar-value comp-bar-value--saved">{savedHoursPerWeek}h/wk</span>
-              </div>
-            </div>
-            <p className="comp-chart-note">Chart updates live as you adjust the calculator below.</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ── Input Section ── */}
-      <section className="input-section">
-        <div className="container input-section-inner">
-          <form className="input-card" onSubmit={handleSubmit}>
-            <div className="input-tabs">
-              <button
-                type="button"
-                className={`tab-btn ${activeTab === 'text' ? 'tab-btn--active' : ''}`}
-                onClick={() => { setActiveTab('text'); setShowPdfUpgrade(false) }}
-              >
-                <IconDoc /> {t('home.pasteText')}
-              </button>
-              <button
-                type="button"
-                className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''} ${!canUsePdf ? 'tab-btn--locked' : ''}`}
-                onClick={handlePdfTabClick}
-              >
-                <IconUpload /> {t('home.uploadPDF')}
-                {!canUsePdf && <span className="tab-lock-icon">🔒</span>}
-              </button>
-            </div>
-
-            <div className="input-body">
-              <div key={activeTab} className="tab-fade">
-                {activeTab === 'text' && !showPdfUpgrade && (
-                  <>
-                    <textarea
-                      className="text-area"
-                      placeholder={t('home.textPlaceholder')}
-                      value={textValue}
-                      onChange={e => setTextValue(e.target.value)}
-                      rows={4}
-                      disabled={isLoading}
-                    />
-                    <p className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
-                      {textValue.length.toLocaleString()} / 15,000
-                    </p>
-                  </>
-                )}
-
-                {showPdfUpgrade && (
-                  <div className="pdf-upgrade-prompt">
-                    <span className="pdf-upgrade-icon">🔒</span>
-                    <p className="pdf-upgrade-title">PDF Upload is a paid feature</p>
-                    <p className="pdf-upgrade-sub">Upgrade to Starter or Pro to analyze PDF documents.</p>
-                    <div className="pdf-upgrade-actions">
-                      {!isLoggedIn && (
-                        <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>
-                          Sign up free
-                        </button>
-                      )}
-                      <a href="/pricing" className="btn-primary btn-sm">
-                        View Plans
-                      </a>
-                      <button
-                        type="button"
-                        className="pdf-upgrade-dismiss"
-                        onClick={() => { setShowPdfUpgrade(false); setActiveTab('text') }}
-                      >
-                        Back to text
-                      </button>
+        {/* 2 · Example Analysis Cards */}
+        <section className="examples-preview mid-examples">
+          <div className="container">
+            <div className="examples-preview-grid">
+              {/* SKIP IT card */}
+              <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
+                <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
+                <div className="rpc-header">
+                  <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
+                  <div className="rpc-scores">
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Reading Time</span>
+                      <span className="rpc-score-value">24 mins</span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Time Saved</span>
+                      <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Originality</span>
+                      <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Info Density</span>
+                      <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
                     </div>
                   </div>
-                )}
-
-                {activeTab === 'pdf' && canUsePdf && (
-                  <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
-                    <IconUpload className="pdf-drop-icon" />
-                    {pdfFile ? (
-                      <>
-                        <p className="pdf-name">{pdfFile.name}</p>
-                        <p className="pdf-size">
-                          {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
-                          <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
-                            {t('home.pdfRemove')}
-                          </span>
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p className="pdf-drop-title">{t('home.pdfClick')}</p>
-                        <p className="pdf-drop-hint">{t('home.pdfMax')}</p>
-                      </>
-                    )}
-                    <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
-                  </div>
-                )}
-              </div>
-
-              <div className="input-footer">
-                <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
-                  {LANGUAGES.map(l => <option key={l}>{l}</option>)}
-                </select>
-                {isAtLimit ? (
-                  <button
-                    type="button"
-                    className="btn-primary btn-cta save-cta save-cta--limit"
-                    onClick={() => navigate('/pricing')}
-                  >
-                    🔒 Limit Reached: Upgrade
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    className="btn-primary btn-cta save-cta"
-                    disabled={isLoading || showPdfUpgrade || !canSubmit}
-                  >
-                    {isLoading
-                      ? <><span className="btn-spinner" />{t('home.analyzing')}</>
-                      : t('home.saveMyTime')}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {error && <p className="error-banner">{error}</p>}
-
-            {/* Plan usage / free analysis info */}
-            <div className="plan-usage-bar">
-              {isLoggedIn ? (
-                <>
-                  <div className="plan-usage-left">
-                    <span className={`plan-badge plan-badge--${plan}`}>
-                      {plan.toUpperCase()}
-                    </span>
-                    <span className="plan-usage-text">
-                      {monthlyUsage} / {planLimit} used this month
-                    </span>
-                    {remaining === 0 && (
-                      <span className="plan-usage-limit-tag">Limit reached</span>
-                    )}
-                  </div>
-                  {remaining === 0 && (
-                    <Link to="/pricing" className="plan-usage-upgrade">
-                      Upgrade
-                    </Link>
-                  )}
-                </>
-              ) : (
-                <div className="input-free-cta">
-                  <div className="input-free-cta-text">
-                    <span className="input-free-label">Free analysis available.</span>
-                    <span className="input-free-sub"> Sign up to unlock 3 more.</span>
-                    <span className="input-no-cc"> · No credit card required</span>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn-primary btn-sm input-free-btn"
-                    onClick={onOpenAuth}
-                  >
-                    {t('nav.getStarted')}
-                  </button>
                 </div>
-              )}
-            </div>
+                <div className="rpc-tags">
+                  <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
+                  <span className="rpc-tag rpc-tag--bad">Low originality</span>
+                  <span className="rpc-tag rpc-tag--bad">Low information density</span>
+                </div>
+                <div className="rpc-final">
+                  <span className="rpc-final-label">Final Decision</span>
+                  <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
+                </div>
+              </div>
 
-            <p className="trust-line">
-              <IconShield /> {t('home.trustLine')}
-            </p>
-          </form>
-        </div>
-      </section>
+              {/* MUST READ card */}
+              <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
+                <div className="rpc-article">"Deep Work - Cal Newport"</div>
+                <div className="rpc-header">
+                  <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
+                  <div className="rpc-scores">
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Reading Time</span>
+                      <span className="rpc-score-value">24 mins</span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Time Saved</span>
+                      <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Attention Quality</span>
+                      <span className="rpc-score-value">High</span>
+                    </div>
+                    <div className="rpc-score-item">
+                      <span className="rpc-score-label">Value Score</span>
+                      <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
+                    </div>
+                  </div>
+                </div>
+                <div className="rpc-tags">
+                  <span className="rpc-tag rpc-tag--good">Original thinking</span>
+                  <span className="rpc-tag rpc-tag--good">Research-backed</span>
+                  <span className="rpc-tag rpc-tag--good">High information density</span>
+                </div>
+                <div className="rpc-final">
+                  <span className="rpc-final-label">Final Decision</span>
+                  <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 3 · Input Section */}
+        <section className="input-section mid-input">
+          <div className="container input-section-inner">
+            <form className="input-card" onSubmit={handleSubmit}>
+              <div className="input-tabs">
+                <button
+                  type="button"
+                  className={`tab-btn ${activeTab === 'text' ? 'tab-btn--active' : ''}`}
+                  onClick={() => { setActiveTab('text'); setShowPdfUpgrade(false) }}
+                >
+                  <IconDoc /> {t('home.pasteText')}
+                </button>
+                <button
+                  type="button"
+                  className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''} ${!canUsePdf ? 'tab-btn--locked' : ''}`}
+                  onClick={handlePdfTabClick}
+                >
+                  <IconUpload /> {t('home.uploadPDF')}
+                  {!canUsePdf && <span className="tab-lock-icon">🔒</span>}
+                </button>
+              </div>
+
+              <div className="input-body">
+                <div key={activeTab} className="tab-fade">
+                  {activeTab === 'text' && !showPdfUpgrade && (
+                    <>
+                      <textarea
+                        className="text-area"
+                        placeholder={t('home.textPlaceholder')}
+                        value={textValue}
+                        onChange={e => setTextValue(e.target.value)}
+                        rows={4}
+                        disabled={isLoading}
+                      />
+                      <p className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
+                        {textValue.length.toLocaleString()} / 15,000
+                      </p>
+                    </>
+                  )}
+
+                  {showPdfUpgrade && (
+                    <div className="pdf-upgrade-prompt">
+                      <span className="pdf-upgrade-icon">🔒</span>
+                      <p className="pdf-upgrade-title">PDF Upload is a paid feature</p>
+                      <p className="pdf-upgrade-sub">Upgrade to Starter or Pro to analyze PDF documents.</p>
+                      <div className="pdf-upgrade-actions">
+                        {!isLoggedIn && (
+                          <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>Sign up free</button>
+                        )}
+                        <a href="/pricing" className="btn-primary btn-sm">View Plans</a>
+                        <button type="button" className="pdf-upgrade-dismiss"
+                          onClick={() => { setShowPdfUpgrade(false); setActiveTab('text') }}>
+                          Back to text
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTab === 'pdf' && canUsePdf && (
+                    <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
+                      <IconUpload className="pdf-drop-icon" />
+                      {pdfFile ? (
+                        <>
+                          <p className="pdf-name">{pdfFile.name}</p>
+                          <p className="pdf-size">
+                            {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
+                            <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
+                              {t('home.pdfRemove')}
+                            </span>
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="pdf-drop-title">{t('home.pdfClick')}</p>
+                          <p className="pdf-drop-hint">{t('home.pdfMax')}</p>
+                        </>
+                      )}
+                      <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="input-footer">
+                  <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
+                    {LANGUAGES.map(l => <option key={l}>{l}</option>)}
+                  </select>
+                  {isAtLimit ? (
+                    <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
+                      onClick={() => navigate('/pricing')}>
+                      🔒 Limit Reached: Upgrade
+                    </button>
+                  ) : (
+                    <button type="submit" className="btn-primary btn-cta save-cta"
+                      disabled={isLoading || showPdfUpgrade || !canSubmit}>
+                      {isLoading
+                        ? <><span className="btn-spinner" />{t('home.analyzing')}</>
+                        : t('home.saveMyTime')}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {error && <p className="error-banner">{error}</p>}
+
+              {/* Plan usage / free CTA */}
+              <div className="plan-usage-bar">
+                {isLoggedIn ? (
+                  <>
+                    <div className="plan-usage-left">
+                      <span className={`plan-badge plan-badge--${plan}`}>{plan.toUpperCase()}</span>
+                      <span className="plan-usage-text">{monthlyUsage} / {planLimit} used this month</span>
+                      {remaining === 0 && <span className="plan-usage-limit-tag">Limit reached</span>}
+                    </div>
+                    {remaining === 0 && (
+                      <Link to="/pricing" className="plan-usage-upgrade">Upgrade</Link>
+                    )}
+                  </>
+                ) : (
+                  <div className="input-free-cta">
+                    <div className="input-free-cta-text">
+                      <span className="input-free-label">Free analysis available.</span>
+                      <span className="input-free-sub"> Sign up to unlock 3 more.</span>
+                      <span className="input-no-cc"> · No credit card required</span>
+                    </div>
+                    <button type="button" className="btn-primary btn-sm input-free-btn" onClick={onOpenAuth}>
+                      {t('nav.getStarted')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <p className="trust-line">
+                <IconShield /> {t('home.trustLine')}
+              </p>
+            </form>
+          </div>
+        </section>
+
+      </div>{/* /home-mid-wrap */}
 
       {/* ── TimeCut Savings Calculator ── */}
       <section className="savings-calc-section">
@@ -362,11 +400,9 @@ export default function LandingPage({
                   <label className="savings-input-label">Articles read per week</label>
                   <span className="savings-input-val">{articlesPerWeek}</span>
                 </div>
-                <input
-                  type="range" min={1} max={50} value={articlesPerWeek}
+                <input type="range" min={1} max={50} value={articlesPerWeek}
                   onChange={e => setArticlesPerWeek(Number(e.target.value))}
-                  className="savings-slider"
-                />
+                  className="savings-slider" />
                 <div className="savings-slider-ticks"><span>1</span><span>50</span></div>
               </div>
 
@@ -375,11 +411,9 @@ export default function LandingPage({
                   <label className="savings-input-label">Average reading time</label>
                   <span className="savings-input-val">{avgReadingTime} min</span>
                 </div>
-                <input
-                  type="range" min={2} max={60} value={avgReadingTime}
+                <input type="range" min={2} max={60} value={avgReadingTime}
                   onChange={e => setAvgReadingTime(Number(e.target.value))}
-                  className="savings-slider"
-                />
+                  className="savings-slider" />
                 <div className="savings-slider-ticks"><span>2 min</span><span>60 min</span></div>
               </div>
 
@@ -388,17 +422,15 @@ export default function LandingPage({
                   <label className="savings-input-label">Low-value content</label>
                   <span className="savings-input-val">{lowValuePct}%</span>
                 </div>
-                <input
-                  type="range" min={10} max={90} value={lowValuePct}
+                <input type="range" min={10} max={90} value={lowValuePct}
                   onChange={e => setLowValuePct(Number(e.target.value))}
-                  className="savings-slider"
-                />
+                  className="savings-slider" />
                 <div className="savings-slider-ticks"><span>10%</span><span>90%</span></div>
               </div>
 
               <div className="savings-formula-note">
                 <IconInfo />
-                <span>Based on industry research: ~60% of online content contains no original insight.</span>
+                <span>Based on industry research: ~73% of online content contains no original insight.</span>
               </div>
             </div>
 
@@ -435,11 +467,7 @@ export default function LandingPage({
                   <strong>{hoursSavedPerMonth}h</strong> saved this month
                 </span>
               </div>
-              <button
-                className="btn-primary btn-cta savings-cta"
-                onClick={onOpenAuth}
-                type="button"
-              >
+              <button className="btn-primary btn-cta savings-cta" onClick={onOpenAuth} type="button">
                 Start Reclaiming Your Time
               </button>
             </div>
@@ -480,33 +508,20 @@ export default function LandingPage({
           <p className="section-eyebrow fade-up">{t('home.whyBadge')}</p>
           <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.whyTitle')}</h2>
           <div className="features-grid">
-            <div
-              className={`feature-card fade-up${activeCard === 0 ? ' feature-card--active' : ''}`}
-              style={{ transitionDelay: '0ms' }}
-              onClick={() => setActiveCard(activeCard === 0 ? null : 0)}
-            >
-              <div className="feature-icon feature-icon--purple"><IconClock /></div>
-              <h3>{t('home.feat1Title')}</h3>
-              <p>{t('home.feat1Desc')}</p>
-            </div>
-            <div
-              className={`feature-card fade-up${activeCard === 1 ? ' feature-card--active' : ''}`}
-              style={{ transitionDelay: '120ms' }}
-              onClick={() => setActiveCard(activeCard === 1 ? null : 1)}
-            >
-              <div className="feature-icon feature-icon--amber"><IconTarget /></div>
-              <h3>{t('home.feat2Title')}</h3>
-              <p>{t('home.feat2Desc')}</p>
-            </div>
-            <div
-              className={`feature-card fade-up${activeCard === 2 ? ' feature-card--active' : ''}`}
-              style={{ transitionDelay: '240ms' }}
-              onClick={() => setActiveCard(activeCard === 2 ? null : 2)}
-            >
-              <div className="feature-icon feature-icon--green"><IconShieldCheck /></div>
-              <h3>{t('home.feat3Title')}</h3>
-              <p>{t('home.feat3Desc')}</p>
-            </div>
+            {[
+              { icon: <IconClock />, cls: 'feature-icon--purple', i: 0, title: t('home.feat1Title'), desc: t('home.feat1Desc') },
+              { icon: <IconTarget />, cls: 'feature-icon--amber', i: 1, title: t('home.feat2Title'), desc: t('home.feat2Desc') },
+              { icon: <IconShieldCheck />, cls: 'feature-icon--green', i: 2, title: t('home.feat3Title'), desc: t('home.feat3Desc') },
+            ].map(({ icon, cls, i, title, desc }) => (
+              <div key={i}
+                className={`feature-card fade-up${activeCard === i ? ' feature-card--active' : ''}`}
+                style={{ transitionDelay: `${i * 120}ms` }}
+                onClick={() => setActiveCard(activeCard === i ? null : i)}>
+                <div className={`feature-icon ${cls}`}>{icon}</div>
+                <h3>{title}</h3>
+                <p>{desc}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -515,25 +530,20 @@ export default function LandingPage({
       <section className="social-proof">
         <div className="container">
           <div className="stats-row">
-            <div className="stat-item fade-up" style={{ transitionDelay: '0ms' }}>
-              <p className="stat-value">527</p>
-              <p className="stat-label">{t('home.stat1Label')}</p>
-            </div>
-            <div className="stat-divider" />
-            <div className="stat-item fade-up" style={{ transitionDelay: '100ms' }}>
-              <p className="stat-value">8,961</p>
-              <p className="stat-label">{t('home.stat2Label')}</p>
-            </div>
-            <div className="stat-divider" />
-            <div className="stat-item fade-up" style={{ transitionDelay: '200ms' }}>
-              <p className="stat-value">12</p>
-              <p className="stat-label">{t('home.stat3Label')}</p>
-            </div>
-            <div className="stat-divider" />
-            <div className="stat-item fade-up" style={{ transitionDelay: '300ms' }}>
-              <p className="stat-value">~10 sec</p>
-              <p className="stat-label">{t('home.stat4Label')}</p>
-            </div>
+            {[
+              { v: '527',    l: t('home.stat1Label'), d: '0ms' },
+              { v: '8,961',  l: t('home.stat2Label'), d: '100ms' },
+              { v: '12',     l: t('home.stat3Label'), d: '200ms' },
+              { v: '~10 sec',l: t('home.stat4Label'), d: '300ms' },
+            ].map(({ v, l, d }, i, arr) => (
+              <>
+                <div key={v} className="stat-item fade-up" style={{ transitionDelay: d }}>
+                  <p className="stat-value">{v}</p>
+                  <p className="stat-label">{l}</p>
+                </div>
+                {i < arr.length - 1 && <div key={`div-${i}`} className="stat-divider" />}
+              </>
+            ))}
           </div>
         </div>
       </section>

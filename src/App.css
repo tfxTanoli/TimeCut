@@ -4082,3 +4082,102 @@
   .savings-headline-num { font-size: 44px; }
   .savings-conv-num { font-size: 18px; }
 }
+
+/* ════════════════════════════════════════
+   HERO TITLE VARIANT — "Find out before..."
+   ════════════════════════════════════════ */
+.hero-title--find-out {
+  font-size: 40px;
+  letter-spacing: -1px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+}
+@media (max-width: 768px) {
+  .hero-title--find-out { font-size: 28px; }
+}
+
+/* ════════════════════════════════════════
+   HOME MID-WRAP — reorderable flex column
+   Desktop: Chart → Examples → Input
+   Mobile:  Input → Examples → Chart
+   ════════════════════════════════════════ */
+.home-mid-wrap {
+  display: flex;
+  flex-direction: column;
+}
+/* desktop order is DOM order (Chart=1, Examples=2, Input=3) — no override needed */
+
+/* Input card narrower */
+.input-card {
+  max-width: 560px !important;
+}
+
+/* ════════════════════════════════════════
+   MOBILE REORDER + DENSITY OPTIMIZATION
+   ════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Reorder: Input first, Examples second, Chart last */
+  .mid-input   { order: 1; }
+  .mid-examples { order: 2; }
+  .mid-chart   { order: 3; }
+
+  /* Hero -40% */
+  .hero--text-only { padding: 28px 0 24px; }
+  .hero-worth-question { font-size: 30px; margin-bottom: 8px; }
+
+  /* Impact/Chart -50% */
+  .comparison-chart-section { padding: 24px 0 20px; }
+  .comp-chart-header { margin-bottom: 16px; }
+  .comp-chart-bars { gap: 10px; }
+  .comp-bar-row { grid-template-columns: 110px 1fr 52px; gap: 6px; }
+  .comp-bar-label { font-size: 11px; }
+  .comp-bar-value { font-size: 12px; }
+  .comp-chart-note { margin-top: 12px; font-size: 11px; }
+
+  /* Input section */
+  .input-section { padding: 20px 0 24px; }
+  .input-body { padding: 10px 12px; gap: 8px; }
+  .input-footer { gap: 8px; }
+  .text-area { font-size: 14px; }
+
+  /* Examples preview -40% spacing */
+  .examples-preview { padding: 16px 0 20px; }
+  .examples-preview-grid { gap: 12px; }
+  .rpc { padding: 14px 14px; }
+
+  /* Features -30% */
+  .features { padding: 36px 0; }
+  .features-grid { gap: 12px; }
+  .feature-card { padding: 18px; gap: 8px; }
+
+  /* How it Works */
+  .hiw-home { padding: 32px 0; }
+  .hiw-home-steps { gap: 16px; }
+  .hiw-home-step { padding: 0; }
+  .hiw-home-num { font-size: 28px; }
+  .hiw-home-step-title { font-size: 15px; }
+  .hiw-home-step-desc { font-size: 13px; }
+
+  /* Social proof */
+  .social-proof { padding: 28px 0; }
+  .stats-row { gap: 0; flex-wrap: wrap; }
+  .stat-value { font-size: 26px; }
+  .stat-label { font-size: 11px; }
+
+  /* Philosophy */
+  .philosophy-section { padding: 28px 0; }
+  .philosophy-line { font-size: 16px; }
+  .philosophy-question { font-size: 18px; }
+
+  /* Savings calculator */
+  .savings-calc-section { padding: 36px 0 44px; }
+  .savings-calc-intro { margin-bottom: 24px; }
+
+  /* Section titles -30% */
+  .section-title { font-size: 20px; }
+  .section-eyebrow { margin-bottom: 4px; }
+
+  /* General container padding tightening */
+  .container { padding: 0 16px; }
+}
