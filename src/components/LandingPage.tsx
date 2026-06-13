@@ -102,141 +102,20 @@ export default function LandingPage({
 
   return (
     <>
-      {/* ── Hero ── */}
-      <section className="hero hero--text-only">
-        <div className="container hero-inner hero-inner--center">
-          <div className="hero-text hero-text--center">
+      {/* ── Hero: headline left · paste box right ── */}
+      <section className="hero hero--split">
+        <div className="container hero-split-grid">
+          {/* LEFT · headline + supporting text */}
+          <div className="hero-text-col">
             <p className="hero-worth-question">{t('home.worthQuestion')}</p>
             <h1 className="hero-title hero-title--find-out">
               Find out before you spend another minute.
             </h1>
+            <p className="hero-support">{t('home.subtitle')}</p>
           </div>
-        </div>
-      </section>
 
-      {/* ── Reorderable middle block ── */}
-      {/* Desktop: Chart → Examples → Input  |  Mobile: Input → Examples → Chart */}
-      <div className="home-mid-wrap">
-
-        {/* 1 · Comparison Chart */}
-        <section className="comparison-chart-section mid-chart">
-          <div className="container">
-            <div className="comp-chart-inner">
-              <div className="comp-chart-header">
-                <p className="section-eyebrow">The Impact</p>
-                <h2 className="section-title">See Your Time, Reclaimed</h2>
-              </div>
-              <div className="comp-chart-bars">
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--bad"
-                      style={{ width: `${Math.min((totalHoursPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value">{totalHoursPerYear}h/yr</span>
-                </div>
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--good"
-                      style={{ width: `${Math.min((withTimecutHoursPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value">{withTimecutHoursPerYear}h/yr</span>
-                </div>
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--saved">Time Reclaimed</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--saved"
-                      style={{ width: `${Math.min((hoursSavedPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}h/yr</span>
-                </div>
-              </div>
-              <p className="comp-chart-note">Figures update live as you adjust the calculator below.</p>
-            </div>
-          </div>
-        </section>
-
-        {/* 2 · Example Analysis Cards */}
-        <section className="examples-preview mid-examples">
-          <div className="container">
-            <div className="examples-preview-grid">
-              {/* SKIP IT card */}
-              <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
-                <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
-                <div className="rpc-header">
-                  <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
-                  <div className="rpc-scores">
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Reading Time</span>
-                      <span className="rpc-score-value">24 mins</span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Time Saved</span>
-                      <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Originality</span>
-                      <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Info Density</span>
-                      <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
-                    </div>
-                  </div>
-                </div>
-                <div className="rpc-tags">
-                  <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
-                  <span className="rpc-tag rpc-tag--bad">Low originality</span>
-                  <span className="rpc-tag rpc-tag--bad">Low information density</span>
-                </div>
-                <div className="rpc-final">
-                  <span className="rpc-final-label">Final Decision</span>
-                  <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
-                </div>
-              </div>
-
-              {/* MUST READ card */}
-              <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
-                <div className="rpc-article">"Deep Work - Cal Newport"</div>
-                <div className="rpc-header">
-                  <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
-                  <div className="rpc-scores">
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Reading Time</span>
-                      <span className="rpc-score-value">24 mins</span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Time Saved</span>
-                      <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Attention Quality</span>
-                      <span className="rpc-score-value">High</span>
-                    </div>
-                    <div className="rpc-score-item">
-                      <span className="rpc-score-label">Value Score</span>
-                      <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                    </div>
-                  </div>
-                </div>
-                <div className="rpc-tags">
-                  <span className="rpc-tag rpc-tag--good">Original thinking</span>
-                  <span className="rpc-tag rpc-tag--good">Research-backed</span>
-                  <span className="rpc-tag rpc-tag--good">High information density</span>
-                </div>
-                <div className="rpc-final">
-                  <span className="rpc-final-label">Final Decision</span>
-                  <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* 3 · Input Section */}
-        <section className="input-section mid-input">
-          <div className="container input-section-inner">
+          {/* RIGHT · paste box + analysis CTA */}
+          <div className="hero-input-col">
             <form className="input-card" onSubmit={handleSubmit}>
               <div className="input-tabs">
                 <button
@@ -375,24 +254,135 @@ export default function LandingPage({
               </p>
             </form>
           </div>
-        </section>
+        </div>
+      </section>
 
-      </div>{/* /home-mid-wrap */}
-
-      {/* ── TimeCut Savings Calculator ── */}
-      <section className="savings-calc-section">
+      {/* ── Result Card · directly below hero ── */}
+      <section className="examples-preview">
         <div className="container">
-          <p className="section-eyebrow fade-up">TimeCut Savings Calculator</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>
-            How Much of Your Life Can You Reclaim?
-          </h2>
-          <p className="savings-calc-intro fade-up" style={{ transitionDelay: '120ms' }}>
-            Adjust the sliders to see your personalized time savings.
-          </p>
+          <div className="examples-preview-grid">
+            {/* SKIP IT card */}
+            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
+              <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Reading Time</span>
+                    <span className="rpc-score-value">24 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Time Saved</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Originality</span>
+                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Info Density</span>
+                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
+                <span className="rpc-tag rpc-tag--bad">Low originality</span>
+                <span className="rpc-tag rpc-tag--bad">Low information density</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">Final Decision</span>
+                <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
+              </div>
+            </div>
 
-          <div className="savings-calc-grid fade-up" style={{ transitionDelay: '180ms' }}>
-            {/* Inputs */}
-            <div className="savings-inputs">
+            {/* MUST READ card */}
+            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
+              <div className="rpc-article">"Deep Work - Cal Newport"</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Reading Time</span>
+                    <span className="rpc-score-value">24 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Time Saved</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Attention Quality</span>
+                    <span className="rpc-score-value">High</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">Value Score</span>
+                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--good">Original thinking</span>
+                <span className="rpc-tag rpc-tag--good">Research-backed</span>
+                <span className="rpc-tag rpc-tag--good">High information density</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">Final Decision</span>
+                <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Impact Chart (left) + Savings Calculator (right) ── */}
+      <section className="impact-savings-section">
+        <div className="container">
+          <div className="impact-savings-grid">
+
+            {/* LEFT · Impact Chart */}
+            <div className="impact-col fade-up">
+              <div className="comp-chart-header">
+                <p className="section-eyebrow">The Impact</p>
+                <h2 className="section-title">See Your Time, Reclaimed</h2>
+              </div>
+              <div className="comp-chart-bars">
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--bad"
+                      style={{ width: `${Math.min((totalHoursPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value">{totalHoursPerYear}h/yr</span>
+                </div>
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--good"
+                      style={{ width: `${Math.min((withTimecutHoursPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value">{withTimecutHoursPerYear}h/yr</span>
+                </div>
+                <div className="comp-bar-row">
+                  <span className="comp-bar-label comp-bar-label--saved">Time Reclaimed</span>
+                  <div className="comp-bar-track">
+                    <div className="comp-bar comp-bar--saved"
+                      style={{ width: `${Math.min((hoursSavedPerYear / maxBarHours) * 100, 100)}%` }} />
+                  </div>
+                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}h/yr</span>
+                </div>
+              </div>
+              <p className="comp-chart-note">Figures update live as you adjust the calculator.</p>
+            </div>
+
+            {/* RIGHT · Savings Calculator */}
+            <div className="savings-col fade-up" style={{ transitionDelay: '120ms' }}>
+              <div className="comp-chart-header">
+                <p className="section-eyebrow">Savings Calculator</p>
+                <h2 className="section-title">How Much Can You Reclaim?</h2>
+              </div>
+
+              {/* Inputs */}
+              <div className="savings-inputs">
               <div className="savings-input-group">
                 <div className="savings-input-header">
                   <label className="savings-input-label">Articles read per week</label>
@@ -447,7 +437,9 @@ export default function LandingPage({
                 Start Reclaiming Your Time
               </button>
             </div>
-          </div>
+            </div>{/* /savings-col */}
+
+          </div>{/* /impact-savings-grid */}
         </div>
       </section>
 

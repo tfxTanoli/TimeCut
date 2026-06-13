@@ -43,6 +43,7 @@ export default function Navbar({ onLogoClick }: Props) {
 
         {/* Desktop nav links */}
         <ul className="navbar-links">
+          <li><Link to="/">{t('nav.home')}</Link></li>
           <li><Link to="/how-it-works">{t('nav.howItWorks')}</Link></li>
           <li><Link to="/features">{t('nav.features')}</Link></li>
           <li><Link to="/examples">{t('nav.examples')}</Link></li>
@@ -111,6 +112,7 @@ export default function Navbar({ onLogoClick }: Props) {
       {menuOpen && (
         <div className="mobile-menu">
           <ul className="mobile-menu-links">
+            <li><Link to="/" onClick={closeMenu}>{t('nav.home')}</Link></li>
             <li><Link to="/how-it-works" onClick={closeMenu}>{t('nav.howItWorks')}</Link></li>
             <li><Link to="/features" onClick={closeMenu}>{t('nav.features')}</Link></li>
             <li><Link to="/examples" onClick={closeMenu}>{t('nav.examples')}</Link></li>

@@ -1,5 +1,6 @@
 const zhTW: Record<string, string> = {
   // ── Navbar ──
+  'nav.home': '首頁',
   'nav.howItWorks': '使用方法',
   'nav.features': '功能特色',
   'nav.examples': '範例',

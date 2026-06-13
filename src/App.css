@@ -1654,8 +1654,10 @@
   .demo-card { flex-direction: column; }
   .demo-input { border-right: none; border-bottom: 1px solid var(--border); }
   .result-nav-actions { display: none; }
-  .input-footer { flex-direction: column; }
-  .input-footer .btn-cta { width: 100%; }
+  /* Keep language select (small, left) and Start Analysis (right) on ONE line */
+  .input-footer { flex-direction: row; align-items: center; gap: 8px; }
+  .input-footer .lang-select { flex: 0 0 auto; min-width: 0; padding: 10px 28px 10px 10px; font-size: 13px; }
+  .input-footer .btn-cta { width: auto; flex: 1; }
 }
 
 /* ── Demo text variant ── */
@@ -3883,7 +3885,7 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 .input-free-cta-text {
   font-size: 12.5px;
@@ -3891,6 +3893,8 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
 .input-free-label {
   font-weight: 700;
@@ -4206,4 +4210,136 @@
 
   /* General container padding tightening */
   .container { padding: 0 16px; }
+}
+
+/* ════════════════════════════════════════
+   SPLIT HERO — headline left · paste box right
+   (Client restructure: titles left, input right)
+   ════════════════════════════════════════ */
+.hero--split {
+  padding: 44px 0 40px;
+  text-align: left;
+}
+.hero-split-grid {
+  display: grid;
+  grid-template-columns: 1.05fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+.hero-text-col {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+.hero-text-col .hero-worth-question {
+  font-size: 40px;
+  text-align: left;
+  margin-bottom: 10px;
+}
+.hero-text-col .hero-title--find-out {
+  font-size: 34px;
+  line-height: 1.18;
+  margin: 0 0 16px;
+  max-width: 18ch;
+}
+.hero-support {
+  font-size: 16px;
+  color: #475569;
+  line-height: 1.6;
+  margin: 0;
+  max-width: 46ch;
+  white-space: pre-line;
+}
+.hero-input-col {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+/* Let the paste box fill the hero's right column */
+.hero-input-col .input-card {
+  max-width: 100% !important;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  .hero--split { padding: 32px 0 28px; }
+  .hero-split-grid { grid-template-columns: 1fr; gap: 24px; }
+  .hero-text-col { align-items: center; text-align: center; }
+  .hero-text-col .hero-worth-question { text-align: center; font-size: 32px; }
+  .hero-text-col .hero-title--find-out { text-align: center; max-width: none; font-size: 28px; }
+  .hero-support { text-align: center; max-width: 52ch; margin: 0 auto; }
+  .hero-input-col .input-card { max-width: 560px !important; }
+}
+@media (max-width: 480px) {
+  .hero--split { padding: 24px 0 20px; }
+  .hero-text-col .hero-worth-question { font-size: 27px; margin-bottom: 6px; }
+  .hero-text-col .hero-title--find-out { font-size: 23px; }
+  .hero-support { font-size: 14px; }
+}
+
+/* ════════════════════════════════════════
+   IMPACT CHART (left) + SAVINGS CALCULATOR (right)
+   Single combined row — client restructure
+   ════════════════════════════════════════ */
+.impact-savings-section {
+  background: linear-gradient(160deg, #f0f7ff 0%, #dbeafe 50%, #eff6ff 100%);
+  padding: 52px 0 60px;
+}
+.impact-savings-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: stretch;
+  max-width: 1040px;
+  margin: 0 auto;
+}
+.impact-col,
+.savings-col {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+}
+/* Impact column tweaks: chart fills card, left-aligned header */
+.impact-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.impact-col .comp-chart-header {
+  text-align: left;
+  margin-bottom: 22px;
+}
+/* Savings column header spacing */
+.savings-col .comp-chart-header {
+  text-align: left;
+  margin-bottom: 22px;
+}
+/* Flatten the inner calculator cards (the column itself is the card now) */
+.savings-col .savings-inputs {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  gap: 18px;
+}
+.savings-col .savings-outputs {
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding-top: 20px;
+  gap: 16px;
+}
+.savings-col .savings-headline-num { font-size: 52px; }
+
+@media (max-width: 860px) {
+  .impact-savings-grid { grid-template-columns: 1fr; gap: 20px; }
+}
+@media (max-width: 768px) {
+  .impact-savings-section { padding: 32px 0 40px; }
+  .impact-col, .savings-col { padding: 20px; }
+  .impact-col .comp-chart-header,
+  .savings-col .comp-chart-header { margin-bottom: 16px; }
+  .savings-col .savings-headline-num { font-size: 44px; }
 }

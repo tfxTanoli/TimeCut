@@ -1,5 +1,6 @@
 const zhCN: Record<string, string> = {
   // ── Navbar ──
+  'nav.home': '首页',
   'nav.howItWorks': '使用方法',
   'nav.features': '功能特性',
   'nav.examples': '示例',
