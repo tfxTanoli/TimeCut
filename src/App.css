@@ -737,6 +737,32 @@
 }
 .char-count--warn { color: #ef4444; }
 
+/* ── Text area meta row (speed note + char count) ── */
+.text-area-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+.analysis-speed-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #64748b;
+}
+.analysis-speed-note svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.text-area-meta .char-count { margin: 0; }
+@media (max-width: 480px) {
+  .text-area-meta { flex-wrap: wrap; gap: 4px; }
+}
+
 /* ════════════════════════════════════════
    CUSTOM PAYMENT MODAL
    ════════════════════════════════════════ */

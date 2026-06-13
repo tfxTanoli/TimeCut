@@ -13,9 +13,6 @@ const LANGUAGES = [
 /* ── Savings Calculator Constants ── */
 const CALC = {
   weeksPerYear: 52.18,   // 365.25 / 7 — exact average
-  hoursPerDay: 24,
-  gymMinsPerSession: 48,
-  hoursPerBook: 6,
 }
 
 interface Props {
@@ -97,10 +94,6 @@ export default function LandingPage({
   const lowValueMinsPerWeek = articlesPerWeek * avgReadingTime * (lowValuePct / 100)
   const hoursSavedPerYear = Math.round((lowValueMinsPerWeek / 60) * CALC.weeksPerYear)
   const hoursSavedPerMonth = parseFloat((hoursSavedPerYear / 12).toFixed(1))
-  const daysSavedPerYear = parseFloat((hoursSavedPerYear / CALC.hoursPerDay).toFixed(1))
-  const familyDinners = hoursSavedPerYear
-  const gymSessions = Math.round(hoursSavedPerYear / (CALC.gymMinsPerSession / 60))
-  const booksRead = Math.round(hoursSavedPerYear / CALC.hoursPerBook)
 
   /* ── Comparison chart (yearly) ── */
   const totalHoursPerYear = Math.round((articlesPerWeek * avgReadingTime / 60) * CALC.weeksPerYear)
@@ -275,9 +268,14 @@ export default function LandingPage({
                         rows={4}
                         disabled={isLoading}
                       />
-                      <p className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
-                        {textValue.length.toLocaleString()} / 15,000
-                      </p>
+                      <div className="text-area-meta">
+                        <span className="analysis-speed-note">
+                          <IconClock /> {t('home.analysisSpeed')}
+                        </span>
+                        <span className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
+                          {textValue.length.toLocaleString()} / 15,000
+                        </span>
+                      </div>
                     </>
                   )}
 
@@ -440,28 +438,6 @@ export default function LandingPage({
                 <span className="savings-headline-num">{hoursSavedPerYear}</span>
                 <span className="savings-headline-unit"> hours saved per year</span>
               </div>
-              <div className="savings-conversions">
-                <div className="savings-conv-row">
-                  <span className="savings-conv-eq">=</span>
-                  <span className="savings-conv-num">{daysSavedPerYear}</span>
-                  <span className="savings-conv-label">days of free time</span>
-                </div>
-                <div className="savings-conv-row">
-                  <span className="savings-conv-eq">=</span>
-                  <span className="savings-conv-num">{familyDinners}</span>
-                  <span className="savings-conv-label">family dinners</span>
-                </div>
-                <div className="savings-conv-row">
-                  <span className="savings-conv-eq">=</span>
-                  <span className="savings-conv-num">{gymSessions}</span>
-                  <span className="savings-conv-label">gym sessions</span>
-                </div>
-                <div className="savings-conv-row">
-                  <span className="savings-conv-eq">=</span>
-                  <span className="savings-conv-num">{booksRead}</span>
-                  <span className="savings-conv-label">books read</span>
-                </div>
-              </div>
               <div className="savings-monthly">
                 <span className="savings-monthly-item">
                   <strong>{hoursSavedPerMonth}h</strong> saved this month
@@ -521,28 +497,6 @@ export default function LandingPage({
                 <h3>{title}</h3>
                 <p>{desc}</p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Social Proof ── */}
-      <section className="social-proof">
-        <div className="container">
-          <div className="stats-row">
-            {[
-              { v: '527',    l: t('home.stat1Label'), d: '0ms' },
-              { v: '8,961',  l: t('home.stat2Label'), d: '100ms' },
-              { v: '12',     l: t('home.stat3Label'), d: '200ms' },
-              { v: '~10 sec',l: t('home.stat4Label'), d: '300ms' },
-            ].map(({ v, l, d }, i, arr) => (
-              <>
-                <div key={v} className="stat-item fade-up" style={{ transitionDelay: d }}>
-                  <p className="stat-value">{v}</p>
-                  <p className="stat-label">{l}</p>
-                </div>
-                {i < arr.length - 1 && <div key={`div-${i}`} className="stat-divider" />}
-              </>
             ))}
           </div>
         </div>
