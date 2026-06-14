@@ -48,6 +48,7 @@ const en: Record<string, string> = {
   'home.analyzing': 'Analyzing...',
   'home.analysisSpeed': 'Get your analysis in about 10 seconds.',
   'home.saveMyTime': 'Start Analysis',
+  'home.tryFree': 'Try Free',
   'home.trustLine': 'Your content is never stored · Private & secure',
   'home.whyBadge': 'Why TimeCut?',
   'home.whyTitle': 'Save Time. Protect Attention.',

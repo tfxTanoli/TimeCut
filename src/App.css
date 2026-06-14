@@ -1907,7 +1907,7 @@
 .demo-cta { text-align: center; margin-top: 24px; }
 
 /* ── Example Analysis Preview ── */
-.examples-preview { padding: 48px 0 40px; background: #fff; border-top: 1px solid var(--border); }
+.examples-preview { padding: 12px 0 16px; background: #fff; border-top: 1px solid var(--border); }
 .examples-preview-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4223,7 +4223,7 @@
    (Client restructure: titles left, input right)
    ════════════════════════════════════════ */
 .hero--split {
-  padding: 40px 0 20px;
+  padding: 20px 0 10px;
   text-align: left;
 }
 .hero-split-grid {
@@ -4299,7 +4299,7 @@
 }
 /* Compact variant: charts brought up directly under the hero (continuous blue block) */
 .impact-savings-section--compact {
-  padding: 4px 0 40px;
+  padding: 4px 0 14px;
 }
 .impact-savings-grid {
   display: grid;
@@ -4368,3 +4368,67 @@
   .savings-col .comp-chart-header { margin-bottom: 16px; }
   .savings-col .savings-headline-num { font-size: 44px; }
 }
+
+/* ════════════════════════════════════════
+   TEXTAREA + META UNIFIED BOX
+   ════════════════════════════════════════ */
+.textarea-wrap {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg);
+  transition: border-color 0.15s;
+}
+.textarea-wrap:focus-within { border-color: var(--accent); }
+.textarea-wrap .text-area--inner {
+  border: none;
+  border-radius: 0;
+  border-bottom: 1px solid var(--border);
+}
+.textarea-wrap .text-area--inner:focus { border-color: transparent; box-shadow: none; }
+.textarea-wrap .text-area-meta {
+  padding: 5px 12px 7px;
+  background: var(--code-bg);
+  margin: 0;
+}
+
+/* ════════════════════════════════════════
+   NO CREDIT CARD HINT + CTA COLUMN
+   ════════════════════════════════════════ */
+.input-cta-col {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  flex: 1;
+}
+.input-cta-col .btn-cta { width: 100%; }
+.no-cc-hint {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: #16a34a;
+  font-weight: 600;
+  padding: 0 2px;
+  white-space: nowrap;
+}
+.no-cc-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+/* ════════════════════════════════════════
+   RESULT CARDS — DENSE (above-the-fold)
+   ════════════════════════════════════════ */
+.examples-preview .rpc { padding: 14px 16px 12px; gap: 10px; }
+.examples-preview .rpc-verdict--big { font-size: 15px; padding: 6px 14px; }
+.examples-preview .rpc-scores { gap: 6px 10px; }
+.examples-preview .rpc-score-value { font-size: 15px; }
+.examples-preview .rpc-score-label { font-size: 9px; }
+.examples-preview .rpc-final { padding-top: 8px; }
+.examples-preview .rpc-final-text { font-size: 12px; }

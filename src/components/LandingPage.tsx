@@ -137,13 +137,13 @@ export default function LandingPage({
               <div className="input-body">
                 <div key={activeTab} className="tab-fade">
                   {activeTab === 'text' && !showPdfUpgrade && (
-                    <>
+                    <div className="textarea-wrap">
                       <textarea
-                        className="text-area"
+                        className="text-area text-area--inner"
                         placeholder={t('home.textPlaceholder')}
                         value={textValue}
                         onChange={e => setTextValue(e.target.value)}
-                        rows={3}
+                        rows={2}
                         disabled={isLoading}
                       />
                       <div className="text-area-meta">
@@ -154,7 +154,7 @@ export default function LandingPage({
                           {textValue.length.toLocaleString()} / 15,000
                         </span>
                       </div>
-                    </>
+                    </div>
                   )}
 
                   {showPdfUpgrade && (
@@ -203,19 +203,27 @@ export default function LandingPage({
                   <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                     {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                   </select>
-                  {isAtLimit ? (
-                    <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
-                      onClick={() => navigate('/pricing')}>
-                      {t('home.limitReachedUpgrade')}
-                    </button>
-                  ) : (
-                    <button type="submit" className="btn-primary btn-cta save-cta"
-                      disabled={isLoading || showPdfUpgrade || !canSubmit}>
-                      {isLoading
-                        ? <><span className="btn-spinner" />{t('home.analyzing')}</>
-                        : t('home.saveMyTime')}
-                    </button>
-                  )}
+                  <div className="input-cta-col">
+                    {!isLoggedIn && !isAtLimit && (
+                      <div className="no-cc-hint">
+                        <span className="no-cc-dot" />
+                        {t('home.freeNoCc')}
+                      </div>
+                    )}
+                    {isAtLimit ? (
+                      <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
+                        onClick={() => navigate('/pricing')}>
+                        {t('home.limitReachedUpgrade')}
+                      </button>
+                    ) : (
+                      <button type="submit" className="btn-primary btn-cta save-cta"
+                        disabled={isLoading || showPdfUpgrade || !canSubmit}>
+                        {isLoading
+                          ? <><span className="btn-spinner" />{t('home.analyzing')}</>
+                          : isLoggedIn ? t('home.saveMyTime') : t('home.tryFree')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

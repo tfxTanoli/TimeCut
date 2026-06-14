@@ -48,6 +48,7 @@ const zhTW: Record<string, string> = {
   'home.analyzing': '分析中……',
   'home.analysisSpeed': '約 10 秒即可獲得您的分析結果。',
   'home.saveMyTime': '開始分析',
+  'home.tryFree': '免費試用',
   'home.trustLine': '即時時間智能報告  •  無需註冊',
   'home.whyBadge': '為什麼選擇 TimeCut？',
   'home.whyTitle': '節省時間。保護注意力。',

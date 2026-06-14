@@ -48,6 +48,7 @@ const zhCN: Record<string, string> = {
   'home.analyzing': '分析中……',
   'home.analysisSpeed': '约 10 秒即可获得您的分析结果。',
   'home.saveMyTime': '开始分析',
+  'home.tryFree': '免费试用',
   'home.trustLine': '即时时间智能报告  •  无需注册',
   'home.whyBadge': '为什么选择 TimeCut？',
   'home.whyTitle': '节省时间。保护注意力。',
