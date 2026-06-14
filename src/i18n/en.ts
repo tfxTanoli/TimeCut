@@ -7,7 +7,7 @@ const en: Record<string, string> = {
   'nav.pricing': 'Pricing',
   'nav.blog': 'Blog',
   'nav.logIn': 'Log in',
-  'nav.getStarted': 'Try Free',
+  'nav.getStarted': 'Get Started',
   'nav.accountMenu': 'Account menu',
 
   // ── Footer ──
@@ -77,6 +77,90 @@ const en: Record<string, string> = {
   'home.philoQuestion': 'Where is your life going?',
   'home.errorNetwork': 'Network error. Please check your connection and try again.',
   'home.errorGeneral': 'Something went wrong. Please try again.',
+
+  // ── Home: Hero title ──
+  'home.findOutTitle': 'Find out before you spend another minute.',
+
+  // ── Home: Free CTA bar ──
+  'home.freeAvailable': 'Free analysis available.',
+  'home.freeUnlock': 'Sign up to unlock 3 more.',
+  'home.freeNoCc': 'No credit card required',
+
+  // ── Home: PDF upgrade prompt ──
+  'home.pdfPaidTitle': 'PDF Upload is a paid feature',
+  'home.pdfPaidSub': 'Upgrade to Starter or Pro to analyze PDF documents.',
+  'home.pdfSignUp': 'Sign up free',
+  'home.pdfViewPlans': 'View Plans',
+  'home.pdfBackToText': 'Back to text',
+
+  // ── Home: Plan usage bar ──
+  'home.usedThisMonth': 'used this month',
+  'home.limitReached': 'Limit reached',
+  'home.upgrade': 'Upgrade',
+  'home.limitReachedUpgrade': '🔒 Limit Reached: Upgrade',
+
+  // ── Home: Result preview cards ──
+  'home.rpcSkipArticle': '"10 Morning Habits That Will Change Your Life"',
+  'home.rpcReadArticle': '"Deep Work - Cal Newport"',
+  'home.rpcReadingTime': 'Reading Time',
+  'home.rpcTimeSaved': 'Time Saved',
+  'home.rpcOriginality': 'Originality',
+  'home.rpcInfoDensity': 'Info Density',
+  'home.rpcAttentionQuality': 'Attention Quality',
+  'home.rpcValueScore': 'Value Score',
+  'home.rpcMins': 'mins',
+  'home.rpcHigh': 'High',
+  'home.rpcFinalDecision': 'Final Decision',
+  'home.rpcTagRepeated': 'Repeated ideas',
+  'home.rpcTagLowOrig': 'Low originality',
+  'home.rpcTagLowDensity': 'Low information density',
+  'home.rpcTagOriginal': 'Original thinking',
+  'home.rpcTagResearch': 'Research-backed',
+  'home.rpcTagHighDensity': 'High information density',
+  'home.rpcSkipFinal': 'Most ideas are widely known and can be summarized in one sentence. Not worth your time.',
+  'home.rpcReadFinal': 'Read this fully. High chance of permanently changing how you structure your workday.',
+  'home.verdictReadIt': 'READ IT',
+  'home.verdictSkimIt': 'SKIM IT',
+
+  // ── Home: Impact chart ──
+  'home.impactEyebrow': 'The Impact',
+  'home.impactTitle': 'See Your Time, Reclaimed',
+  'home.impactWithout': 'Without TimeCut',
+  'home.impactWith': 'With TimeCut',
+  'home.impactReclaimed': 'Time Reclaimed',
+  'home.impactPerYear': 'h/yr',
+  'home.impactNote': 'Figures update live as you adjust the calculator.',
+
+  // ── Home: Savings calculator ──
+  'home.savingsEyebrow': 'Savings Calculator',
+  'home.savingsTitle': 'How Much Can You Reclaim?',
+  'home.savingsArticles': 'Articles read per week',
+  'home.savingsReadingTime': 'Average reading time',
+  'home.savingsMin': 'min',
+  'home.savingsLowValue': 'Low-value content',
+  'home.savingsResearchNote': 'Based on industry research: ~73% of online content contains no original insight.',
+  'home.savingsHoursPerYear': 'hours saved per year',
+  'home.savingsThisMonth': 'saved this month',
+  'home.savingsCta': 'Start Reclaiming Your Time',
+
+  // ── Home: How TimeCut Works ──
+  'home.hiwEyebrow': 'Simple Process',
+  'home.hiwTitle': 'How TimeCut Works',
+  'home.hiwStep1Title': 'Paste Content',
+  'home.hiwStep1Desc': 'Copy any article, email, book chapter, or report and paste it into the box.',
+  'home.hiwStep2Title': 'TimeCut Analysis',
+  'home.hiwStep2Desc': 'TimeCut analyzes quality, originality, information density, actionability, and time worthiness.',
+  'home.hiwStep3Title': 'Get Your Verdict',
+  'home.hiwStep3DescPre': 'Receive a clear verdict:',
+  'home.hiwStep3DescPost': 'in seconds.',
+
+  // ── Home: Monthly limit modal ──
+  'home.limitModalTitle': 'Monthly Limit Reached',
+  'home.limitModalSub': 'You have used all {limit} analyses on your {plan} plan this month.',
+  'home.limitModalSub2': 'Upgrade your plan to continue analyzing content without limits.',
+  'home.limitModalSignup': 'Sign up free — get 3 free analyses',
+  'home.limitModalUpgrade': 'Upgrade Plan →',
+  'home.limitModalLater': 'Maybe later',
 
   // ── Result Page ──
   'result.title': 'TIME INTELLIGENCE REPORT',

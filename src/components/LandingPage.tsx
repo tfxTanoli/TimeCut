@@ -105,13 +105,12 @@ export default function LandingPage({
       {/* ── Hero: headline left · paste box right ── */}
       <section className="hero hero--split">
         <div className="container hero-split-grid">
-          {/* LEFT · headline + supporting text */}
+          {/* LEFT · headline */}
           <div className="hero-text-col">
             <p className="hero-worth-question">{t('home.worthQuestion')}</p>
             <h1 className="hero-title hero-title--find-out">
-              Find out before you spend another minute.
+              {t('home.findOutTitle')}
             </h1>
-            <p className="hero-support">{t('home.subtitle')}</p>
           </div>
 
           {/* RIGHT · paste box + analysis CTA */}
@@ -144,7 +143,7 @@ export default function LandingPage({
                         placeholder={t('home.textPlaceholder')}
                         value={textValue}
                         onChange={e => setTextValue(e.target.value)}
-                        rows={4}
+                        rows={3}
                         disabled={isLoading}
                       />
                       <div className="text-area-meta">
@@ -161,16 +160,16 @@ export default function LandingPage({
                   {showPdfUpgrade && (
                     <div className="pdf-upgrade-prompt">
                       <span className="pdf-upgrade-icon">🔒</span>
-                      <p className="pdf-upgrade-title">PDF Upload is a paid feature</p>
-                      <p className="pdf-upgrade-sub">Upgrade to Starter or Pro to analyze PDF documents.</p>
+                      <p className="pdf-upgrade-title">{t('home.pdfPaidTitle')}</p>
+                      <p className="pdf-upgrade-sub">{t('home.pdfPaidSub')}</p>
                       <div className="pdf-upgrade-actions">
                         {!isLoggedIn && (
-                          <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>Sign up free</button>
+                          <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>{t('home.pdfSignUp')}</button>
                         )}
-                        <a href="/pricing" className="btn-primary btn-sm">View Plans</a>
+                        <a href="/pricing" className="btn-primary btn-sm">{t('home.pdfViewPlans')}</a>
                         <button type="button" className="pdf-upgrade-dismiss"
                           onClick={() => { setShowPdfUpgrade(false); setActiveTab('text') }}>
-                          Back to text
+                          {t('home.pdfBackToText')}
                         </button>
                       </div>
                     </div>
@@ -207,7 +206,7 @@ export default function LandingPage({
                   {isAtLimit ? (
                     <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
                       onClick={() => navigate('/pricing')}>
-                      🔒 Limit Reached: Upgrade
+                      {t('home.limitReachedUpgrade')}
                     </button>
                   ) : (
                     <button type="submit" className="btn-primary btn-cta save-cta"
@@ -228,19 +227,19 @@ export default function LandingPage({
                   <>
                     <div className="plan-usage-left">
                       <span className={`plan-badge plan-badge--${plan}`}>{plan.toUpperCase()}</span>
-                      <span className="plan-usage-text">{monthlyUsage} / {planLimit} used this month</span>
-                      {remaining === 0 && <span className="plan-usage-limit-tag">Limit reached</span>}
+                      <span className="plan-usage-text">{monthlyUsage} / {planLimit} {t('home.usedThisMonth')}</span>
+                      {remaining === 0 && <span className="plan-usage-limit-tag">{t('home.limitReached')}</span>}
                     </div>
                     {remaining === 0 && (
-                      <Link to="/pricing" className="plan-usage-upgrade">Upgrade</Link>
+                      <Link to="/pricing" className="plan-usage-upgrade">{t('home.upgrade')}</Link>
                     )}
                   </>
                 ) : (
                   <div className="input-free-cta">
                     <div className="input-free-cta-text">
-                      <span className="input-free-label">Free analysis available.</span>
-                      <span className="input-free-sub"> Sign up to unlock 3 more.</span>
-                      <span className="input-no-cc"> · No credit card required</span>
+                      <span className="input-free-label">{t('home.freeAvailable')}</span>
+                      <span className="input-free-sub"> {t('home.freeUnlock')}</span>
+                      <span className="input-no-cc"> · {t('home.freeNoCc')}</span>
                     </div>
                     <button type="button" className="btn-primary btn-sm input-free-btn" onClick={onOpenAuth}>
                       {t('nav.getStarted')}
@@ -257,135 +256,58 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* ── Result Card · directly below hero ── */}
-      <section className="examples-preview">
-        <div className="container">
-          <div className="examples-preview-grid">
-            {/* SKIP IT card */}
-            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
-              <div className="rpc-article">"10 Morning Habits That Will Change Your Life"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">SKIP IT</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Reading Time</span>
-                    <span className="rpc-score-value">24 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Time Saved</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Originality</span>
-                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Info Density</span>
-                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--bad">Repeated ideas</span>
-                <span className="rpc-tag rpc-tag--bad">Low originality</span>
-                <span className="rpc-tag rpc-tag--bad">Low information density</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Most ideas are widely known and can be summarized in one sentence. Not worth your time.</p>
-              </div>
-            </div>
-
-            {/* MUST READ card */}
-            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
-              <div className="rpc-article">"Deep Work - Cal Newport"</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">MUST READ</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Reading Time</span>
-                    <span className="rpc-score-value">24 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Time Saved</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 mins</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Attention Quality</span>
-                    <span className="rpc-score-value">High</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">Value Score</span>
-                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--good">Original thinking</span>
-                <span className="rpc-tag rpc-tag--good">Research-backed</span>
-                <span className="rpc-tag rpc-tag--good">High information density</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">Final Decision</span>
-                <p className="rpc-final-text">Read this fully. High chance of permanently changing how you structure your workday.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Impact Chart (left) + Savings Calculator (right) ── */}
-      <section className="impact-savings-section">
+      {/* ── Impact Chart (left) + Savings Calculator (right) · brought up under the hero ── */}
+      <section className="impact-savings-section impact-savings-section--compact">
         <div className="container">
           <div className="impact-savings-grid">
 
             {/* LEFT · Impact Chart */}
             <div className="impact-col fade-up">
               <div className="comp-chart-header">
-                <p className="section-eyebrow">The Impact</p>
-                <h2 className="section-title">See Your Time, Reclaimed</h2>
+                <p className="section-eyebrow">{t('home.impactEyebrow')}</p>
+                <h2 className="section-title">{t('home.impactTitle')}</h2>
               </div>
               <div className="comp-chart-bars">
                 <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--bad">Without TimeCut</span>
+                  <span className="comp-bar-label comp-bar-label--bad">{t('home.impactWithout')}</span>
                   <div className="comp-bar-track">
                     <div className="comp-bar comp-bar--bad"
                       style={{ width: `${Math.min((totalHoursPerYear / maxBarHours) * 100, 100)}%` }} />
                   </div>
-                  <span className="comp-bar-value">{totalHoursPerYear}h/yr</span>
+                  <span className="comp-bar-value">{totalHoursPerYear}{t('home.impactPerYear')}</span>
                 </div>
                 <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--good">With TimeCut</span>
+                  <span className="comp-bar-label comp-bar-label--good">{t('home.impactWith')}</span>
                   <div className="comp-bar-track">
                     <div className="comp-bar comp-bar--good"
                       style={{ width: `${Math.min((withTimecutHoursPerYear / maxBarHours) * 100, 100)}%` }} />
                   </div>
-                  <span className="comp-bar-value">{withTimecutHoursPerYear}h/yr</span>
+                  <span className="comp-bar-value">{withTimecutHoursPerYear}{t('home.impactPerYear')}</span>
                 </div>
                 <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--saved">Time Reclaimed</span>
+                  <span className="comp-bar-label comp-bar-label--saved">{t('home.impactReclaimed')}</span>
                   <div className="comp-bar-track">
                     <div className="comp-bar comp-bar--saved"
                       style={{ width: `${Math.min((hoursSavedPerYear / maxBarHours) * 100, 100)}%` }} />
                   </div>
-                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}h/yr</span>
+                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}{t('home.impactPerYear')}</span>
                 </div>
               </div>
-              <p className="comp-chart-note">Figures update live as you adjust the calculator.</p>
+              <p className="comp-chart-note">{t('home.impactNote')}</p>
             </div>
 
             {/* RIGHT · Savings Calculator */}
             <div className="savings-col fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="comp-chart-header">
-                <p className="section-eyebrow">Savings Calculator</p>
-                <h2 className="section-title">How Much Can You Reclaim?</h2>
+                <p className="section-eyebrow">{t('home.savingsEyebrow')}</p>
+                <h2 className="section-title">{t('home.savingsTitle')}</h2>
               </div>
 
               {/* Inputs */}
               <div className="savings-inputs">
               <div className="savings-input-group">
                 <div className="savings-input-header">
-                  <label className="savings-input-label">Articles read per week</label>
+                  <label className="savings-input-label">{t('home.savingsArticles')}</label>
                   <span className="savings-input-val">{articlesPerWeek}</span>
                 </div>
                 <input type="range" min={1} max={50} value={articlesPerWeek}
@@ -396,18 +318,18 @@ export default function LandingPage({
 
               <div className="savings-input-group">
                 <div className="savings-input-header">
-                  <label className="savings-input-label">Average reading time</label>
-                  <span className="savings-input-val">{avgReadingTime} min</span>
+                  <label className="savings-input-label">{t('home.savingsReadingTime')}</label>
+                  <span className="savings-input-val">{avgReadingTime} {t('home.savingsMin')}</span>
                 </div>
                 <input type="range" min={2} max={60} value={avgReadingTime}
                   onChange={e => setAvgReadingTime(Number(e.target.value))}
                   className="savings-slider" />
-                <div className="savings-slider-ticks"><span>2 min</span><span>60 min</span></div>
+                <div className="savings-slider-ticks"><span>2 {t('home.savingsMin')}</span><span>60 {t('home.savingsMin')}</span></div>
               </div>
 
               <div className="savings-input-group">
                 <div className="savings-input-header">
-                  <label className="savings-input-label">Low-value content</label>
+                  <label className="savings-input-label">{t('home.savingsLowValue')}</label>
                   <span className="savings-input-val">{lowValuePct}%</span>
                 </div>
                 <input type="range" min={10} max={90} value={lowValuePct}
@@ -418,7 +340,7 @@ export default function LandingPage({
 
               <div className="savings-formula-note">
                 <IconInfo />
-                <span>Based on industry research: ~73% of online content contains no original insight.</span>
+                <span>{t('home.savingsResearchNote')}</span>
               </div>
             </div>
 
@@ -426,15 +348,15 @@ export default function LandingPage({
             <div className="savings-outputs">
               <div className="savings-headline">
                 <span className="savings-headline-num">{hoursSavedPerYear}</span>
-                <span className="savings-headline-unit"> hours saved per year</span>
+                <span className="savings-headline-unit"> {t('home.savingsHoursPerYear')}</span>
               </div>
               <div className="savings-monthly">
                 <span className="savings-monthly-item">
-                  <strong>{hoursSavedPerMonth}h</strong> saved this month
+                  <strong>{hoursSavedPerMonth}h</strong> {t('home.savingsThisMonth')}
                 </span>
               </div>
               <button className="btn-primary btn-cta savings-cta" onClick={onOpenAuth} type="button">
-                Start Reclaiming Your Time
+                {t('home.savingsCta')}
               </button>
             </div>
             </div>{/* /savings-col */}
@@ -443,28 +365,105 @@ export default function LandingPage({
         </div>
       </section>
 
+      {/* ── Result Card · below the impact/savings row ── */}
+      <section className="examples-preview">
+        <div className="container">
+          <div className="examples-preview-grid">
+            {/* SKIP IT card */}
+            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
+              <div className="rpc-article">{t('home.rpcSkipArticle')}</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">{t('result.verdictSkipIt')}</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
+                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcOriginality')}</span>
+                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcInfoDensity')}</span>
+                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagRepeated')}</span>
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowOrig')}</span>
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowDensity')}</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
+                <p className="rpc-final-text">{t('home.rpcSkipFinal')}</p>
+              </div>
+            </div>
+
+            {/* MUST READ card */}
+            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
+              <div className="rpc-article">{t('home.rpcReadArticle')}</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">{t('result.verdictMustRead')}</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
+                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcAttentionQuality')}</span>
+                    <span className="rpc-score-value">{t('home.rpcHigh')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcValueScore')}</span>
+                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagOriginal')}</span>
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagResearch')}</span>
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagHighDensity')}</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
+                <p className="rpc-final-text">{t('home.rpcReadFinal')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── How TimeCut Works ── */}
       <section className="hiw-home">
         <div className="container">
-          <p className="section-eyebrow fade-up">Simple Process</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>How TimeCut Works</h2>
+          <p className="section-eyebrow fade-up">{t('home.hiwEyebrow')}</p>
+          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.hiwTitle')}</h2>
           <div className="hiw-home-steps">
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '0ms' }}>
               <div className="hiw-home-num">01</div>
-              <h3 className="hiw-home-step-title">Paste Content</h3>
-              <p className="hiw-home-step-desc">Copy any article, email, book chapter, or report and paste it into the box.</p>
+              <h3 className="hiw-home-step-title">{t('home.hiwStep1Title')}</h3>
+              <p className="hiw-home-step-desc">{t('home.hiwStep1Desc')}</p>
             </div>
             <div className="hiw-home-arrow" />
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '120ms' }}>
               <div className="hiw-home-num">02</div>
-              <h3 className="hiw-home-step-title">TimeCut Analysis</h3>
-              <p className="hiw-home-step-desc">TimeCut analyzes quality, originality, information density, actionability, and time worthiness.</p>
+              <h3 className="hiw-home-step-title">{t('home.hiwStep2Title')}</h3>
+              <p className="hiw-home-step-desc">{t('home.hiwStep2Desc')}</p>
             </div>
             <div className="hiw-home-arrow" />
             <div className="hiw-home-step fade-up" style={{ transitionDelay: '240ms' }}>
               <div className="hiw-home-num">03</div>
-              <h3 className="hiw-home-step-title">Get Your Verdict</h3>
-              <p className="hiw-home-step-desc">Receive a clear verdict: <strong>READ IT</strong> · <strong>SKIM IT</strong> · <strong>SKIP IT</strong>, in seconds.</p>
+              <h3 className="hiw-home-step-title">{t('home.hiwStep3Title')}</h3>
+              <p className="hiw-home-step-desc">{t('home.hiwStep3DescPre')} <strong>{t('home.verdictReadIt')}</strong> · <strong>{t('home.verdictSkimIt')}</strong> · <strong>{t('result.verdictSkipIt')}</strong>, {t('home.hiwStep3DescPost')}</p>
             </div>
           </div>
         </div>

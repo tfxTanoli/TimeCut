@@ -47,29 +47,28 @@ interface UpgradeModalProps {
   isLoggedIn: boolean
   onClose: () => void
   onOpenAuth: () => void
+  t: (key: string) => string
 }
 
-function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth }: UpgradeModalProps) {
+function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth, t }: UpgradeModalProps) {
   const planNames: Record<string, string> = { free: 'Free', starter: 'Starter', pro: 'Pro', custom: 'Custom' }
+  const subText = t('home.limitModalSub')
+    .replace('{limit}', String(planLimit))
+    .replace('{plan}', planNames[plan] ?? plan)
   return (
     <div className="upgrade-modal-backdrop" onClick={onClose}>
       <div className="upgrade-modal-card" onClick={e => e.stopPropagation()}>
         <div className="upgrade-modal-icon">⏱</div>
-        <h2 className="upgrade-modal-title">Monthly Limit Reached</h2>
-        <p className="upgrade-modal-sub">
-          You have used all <strong>{planLimit}</strong> analyses on your{' '}
-          <strong>{planNames[plan] ?? plan}</strong> plan this month.
-        </p>
-        <p className="upgrade-modal-sub">
-          Upgrade your plan to continue analyzing content without limits.
-        </p>
+        <h2 className="upgrade-modal-title">{t('home.limitModalTitle')}</h2>
+        <p className="upgrade-modal-sub">{subText}</p>
+        <p className="upgrade-modal-sub">{t('home.limitModalSub2')}</p>
         <div className="upgrade-modal-actions">
           {!isLoggedIn ? (
             <button
               className="btn-primary btn-cta upgrade-modal-cta"
               onClick={() => { onClose(); onOpenAuth() }}
             >
-              Sign up free — get 3 free analyses
+              {t('home.limitModalSignup')}
             </button>
           ) : (
             <Link
@@ -77,11 +76,11 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth }: Upgr
               className="btn-primary btn-cta upgrade-modal-cta"
               onClick={onClose}
             >
-              Upgrade Plan →
+              {t('home.limitModalUpgrade')}
             </Link>
           )}
           <button className="upgrade-modal-dismiss" onClick={onClose}>
-            Maybe later
+            {t('home.limitModalLater')}
           </button>
         </div>
       </div>
@@ -197,6 +196,7 @@ export default function HomePage() {
           isLoggedIn={!!user}
           onClose={() => setShowUpgradeModal(false)}
           onOpenAuth={openAuthModal}
+          t={t}
         />
       )}
       <LandingPage

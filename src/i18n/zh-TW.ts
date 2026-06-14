@@ -78,6 +78,90 @@ const zhTW: Record<string, string> = {
   'home.errorNetwork': '網路錯誤。請檢查您的連線後重試。',
   'home.errorGeneral': '出了點問題，請重試。',
 
+  // ── Home: Hero title ──
+  'home.findOutTitle': '在花費另一分鐘之前先弄清楚。',
+
+  // ── Home: Free CTA bar ──
+  'home.freeAvailable': '可免費分析一次。',
+  'home.freeUnlock': '註冊即可再解鎖 3 次。',
+  'home.freeNoCc': '無需信用卡',
+
+  // ── Home: PDF upgrade prompt ──
+  'home.pdfPaidTitle': 'PDF 上傳是付費功能',
+  'home.pdfPaidSub': '升級至入門版或專業版即可分析 PDF 文件。',
+  'home.pdfSignUp': '免費註冊',
+  'home.pdfViewPlans': '查看方案',
+  'home.pdfBackToText': '返回文字',
+
+  // ── Home: Plan usage bar ──
+  'home.usedThisMonth': '本月已使用',
+  'home.limitReached': '已達上限',
+  'home.upgrade': '升級',
+  'home.limitReachedUpgrade': '🔒 已達上限：升級',
+
+  // ── Home: Result preview cards ──
+  'home.rpcSkipArticle': '"改變你人生的10個晨間習慣"',
+  'home.rpcReadArticle': '"深度工作 - 卡爾·紐波特"',
+  'home.rpcReadingTime': '閱讀時間',
+  'home.rpcTimeSaved': '節省時間',
+  'home.rpcOriginality': '原創性',
+  'home.rpcInfoDensity': '資訊密度',
+  'home.rpcAttentionQuality': '注意力品質',
+  'home.rpcValueScore': '價值評分',
+  'home.rpcMins': '分鐘',
+  'home.rpcHigh': '高',
+  'home.rpcFinalDecision': '最終決定',
+  'home.rpcTagRepeated': '重複的觀點',
+  'home.rpcTagLowOrig': '原創性低',
+  'home.rpcTagLowDensity': '資訊密度低',
+  'home.rpcTagOriginal': '原創思考',
+  'home.rpcTagResearch': '有研究支撐',
+  'home.rpcTagHighDensity': '資訊密度高',
+  'home.rpcSkipFinal': '大多數觀點廣為人知，一句話即可概括。不值得您花時間。',
+  'home.rpcReadFinal': '請完整閱讀。極有可能徹底改變您安排工作日的方式。',
+  'home.verdictReadIt': '閱讀',
+  'home.verdictSkimIt': '瀏覽',
+
+  // ── Home: Impact chart ──
+  'home.impactEyebrow': '影響',
+  'home.impactTitle': '看見您奪回的時間',
+  'home.impactWithout': '沒有 TimeCut',
+  'home.impactWith': '使用 TimeCut',
+  'home.impactReclaimed': '奪回的時間',
+  'home.impactPerYear': '小時/年',
+  'home.impactNote': '調整計算器時數據會即時更新。',
+
+  // ── Home: Savings calculator ──
+  'home.savingsEyebrow': '節省計算器',
+  'home.savingsTitle': '您能奪回多少時間？',
+  'home.savingsArticles': '每週閱讀文章數',
+  'home.savingsReadingTime': '平均閱讀時間',
+  'home.savingsMin': '分鐘',
+  'home.savingsLowValue': '低價值內容',
+  'home.savingsResearchNote': '基於行業研究：約73%的線上內容沒有原創見解。',
+  'home.savingsHoursPerYear': '小時 / 年節省',
+  'home.savingsThisMonth': '本月節省',
+  'home.savingsCta': '開始奪回您的時間',
+
+  // ── Home: How TimeCut Works ──
+  'home.hiwEyebrow': '簡單流程',
+  'home.hiwTitle': 'TimeCut 如何運作',
+  'home.hiwStep1Title': '貼上內容',
+  'home.hiwStep1Desc': '複製任何文章、電子郵件、書籍章節或報告，貼到框中。',
+  'home.hiwStep2Title': 'TimeCut 分析',
+  'home.hiwStep2Desc': 'TimeCut 從品質、原創性、資訊密度、可操作性和時間價值等方面進行分析。',
+  'home.hiwStep3Title': '取得您的判決',
+  'home.hiwStep3DescPre': '獲得明確的判決：',
+  'home.hiwStep3DescPost': '只需幾秒。',
+
+  // ── Home: Monthly limit modal ──
+  'home.limitModalTitle': '已達每月上限',
+  'home.limitModalSub': '您本月已用完 {plan} 方案的全部 {limit} 次分析。',
+  'home.limitModalSub2': '升級您的方案，即可不受限制地繼續分析內容。',
+  'home.limitModalSignup': '免費註冊 — 獲得 3 次免費分析',
+  'home.limitModalUpgrade': '升級方案 →',
+  'home.limitModalLater': '以後再說',
+
   // ── Result Page ──
   'result.title': '時間智能報告',
   'result.backToHome': '返回首頁',

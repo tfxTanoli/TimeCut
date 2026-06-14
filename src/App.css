@@ -94,10 +94,11 @@
 .navbar-logo:hover .navbar-logo-text { opacity: 0.8; }
 .navbar-logo-img { height: 34px; width: auto; max-height: 34px; object-fit: contain; border-radius: 4px; display: block; }
 .navbar-logo-text {
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 900;
-  letter-spacing: 6px;
+  letter-spacing: 0.5px;
   color: #2563EB;
+  -webkit-text-stroke: 0.7px #2563EB;
   transition: opacity 0.2s;
   text-transform: uppercase;
 }
@@ -1844,6 +1845,11 @@
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  padding-left: 26px;
+  padding-right: 26px;
+  min-width: 130px;
+  font-weight: 600;
   background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%) !important;
 }
 .nav-cta:not(:disabled):hover {
@@ -4217,13 +4223,13 @@
    (Client restructure: titles left, input right)
    ════════════════════════════════════════ */
 .hero--split {
-  padding: 44px 0 40px;
+  padding: 40px 0 20px;
   text-align: left;
 }
 .hero-split-grid {
   display: grid;
   grid-template-columns: 1.05fr 1fr;
-  gap: 48px;
+  gap: 40px;
   align-items: center;
 }
 .hero-text-col {
@@ -4267,14 +4273,19 @@
   .hero-split-grid { grid-template-columns: 1fr; gap: 24px; }
   .hero-text-col { align-items: center; text-align: center; }
   .hero-text-col .hero-worth-question { text-align: center; font-size: 32px; }
-  .hero-text-col .hero-title--find-out { text-align: center; max-width: none; font-size: 28px; }
+  /* Keep "Find out before you spend another minute." on a single line on mobile */
+  .hero-text-col .hero-title--find-out {
+    text-align: center;
+    max-width: none;
+    font-size: clamp(12px, 4.4vw, 26px);
+    white-space: nowrap;
+  }
   .hero-support { text-align: center; max-width: 52ch; margin: 0 auto; }
   .hero-input-col .input-card { max-width: 560px !important; }
 }
 @media (max-width: 480px) {
-  .hero--split { padding: 24px 0 20px; }
+  .hero--split { padding: 24px 0 16px; }
   .hero-text-col .hero-worth-question { font-size: 27px; margin-bottom: 6px; }
-  .hero-text-col .hero-title--find-out { font-size: 23px; }
   .hero-support { font-size: 14px; }
 }
 
@@ -4285,6 +4296,10 @@
 .impact-savings-section {
   background: linear-gradient(160deg, #f0f7ff 0%, #dbeafe 50%, #eff6ff 100%);
   padding: 52px 0 60px;
+}
+/* Compact variant: charts brought up directly under the hero (continuous blue block) */
+.impact-savings-section--compact {
+  padding: 4px 0 40px;
 }
 .impact-savings-grid {
   display: grid;
@@ -4302,6 +4317,16 @@
   padding: 28px;
   box-shadow: 0 4px 24px rgba(0,0,0,0.06);
 }
+/* Smaller, denser charts in compact mode */
+.impact-savings-section--compact .impact-col,
+.impact-savings-section--compact .savings-col {
+  padding: 20px 22px;
+}
+.impact-savings-section--compact .comp-chart-header { margin-bottom: 16px; }
+.impact-savings-section--compact .section-title { font-size: 21px; }
+.impact-savings-section--compact .savings-col .savings-headline-num { font-size: 42px; }
+.impact-savings-section--compact .savings-col .savings-inputs { gap: 14px; }
+.impact-savings-section--compact .savings-col .savings-outputs { margin-top: 16px; padding-top: 16px; }
 /* Impact column tweaks: chart fills card, left-aligned header */
 .impact-col {
   display: flex;
