@@ -4432,3 +4432,38 @@
 .examples-preview .rpc-score-label { font-size: 9px; }
 .examples-preview .rpc-final { padding-top: 8px; }
 .examples-preview .rpc-final-text { font-size: 12px; }
+
+/* ════════════════════════════════════════
+   DESKTOP ABOVE-FOLD DENSITY
+   (min-width: 901px — does not affect mobile)
+   ════════════════════════════════════════ */
+@media (min-width: 901px) {
+  /* Hero: hide redundant trust-line (no-cc-hint above button already covers it) */
+  .hero--split .trust-line { display: none; }
+  /* Hero: free-CTA bar — drop sub-line "No credit card required", tighten padding */
+  .hero--split .plan-usage-bar { padding: 5px 16px; }
+  .hero--split .input-no-cc { display: none; }
+
+  /* Savings calculator: hide slider tick labels + research note */
+  .savings-slider-ticks { display: none; }
+  .savings-formula-note { display: none; }
+  /* Tighter gaps between sliders */
+  .impact-savings-section--compact .savings-col .savings-inputs { gap: 8px !important; }
+  /* Smaller "317" headline to reduce outputs block */
+  .impact-savings-section--compact .savings-col .savings-headline-num { font-size: 30px !important; }
+  .impact-savings-section--compact .savings-col .savings-outputs { margin-top: 8px !important; padding-top: 8px !important; }
+
+  /* Result cards: hide article title to save ~30px per card */
+  .examples-preview .rpc-article { display: none; }
+  /* Result cards: scores in 4-column single row (halves score grid height) */
+  .examples-preview .rpc-scores { grid-template-columns: repeat(4, 1fr); }
+  /* Result cards: final text capped to 1 line */
+  .examples-preview .rpc-final-text {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Savings outputs: tighter spacing */
+  .impact-savings-section--compact .savings-col .savings-monthly { margin-top: -4px; }
+  .impact-savings-section--compact .savings-col .savings-cta { padding: 10px 16px !important; font-size: 13px; }
+}
