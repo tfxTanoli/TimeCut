@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 
 export default function ProfilePage() {
-  const { user, userData, displayName, updateDisplayName, reauthAndChangePassword, plan, planLimit, monthlyUsage } = useAuth()
+  const { user, userData, displayName, updateDisplayName, reauthAndChangePassword, plan, planLimit, planExpiresAt, monthlyUsage } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -126,6 +126,41 @@ export default function ProfilePage() {
           </div>
 
           <div className="profile-grid">
+            <div className="profile-card profile-card--subscription">
+              <div className="profile-card-header">
+                <IconSubscription />
+                <h2 className="profile-card-title">Subscription</h2>
+              </div>
+              <div className="profile-subscription">
+                <div className="profile-subscription-row">
+                  <span className="profile-subscription-label">Current Plan</span>
+                  <span className={`plan-badge plan-badge--${plan}`} style={{ fontSize: 13, padding: '4px 12px' }}>
+                    {plan.toUpperCase()}
+                  </span>
+                </div>
+                {plan !== 'free' && planExpiresAt ? (
+                  <div className="profile-subscription-row">
+                    <span className="profile-subscription-label">Active Until</span>
+                    <span className="profile-subscription-date">
+                      {planExpiresAt.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="profile-subscription-empty">
+                    <p className="profile-subscription-note">No active subscription</p>
+                    <Link to="/pricing" className="btn-primary btn-cta profile-btn" style={{ marginTop: 12 }}>
+                      View Plans
+                    </Link>
+                  </div>
+                )}
+                {plan !== 'free' && (
+                  <Link to="/pricing" className="btn-outline profile-btn" style={{ marginTop: 16 }}>
+                    Change Plan
+                  </Link>
+                )}
+              </div>
+            </div>
+
             <div className="profile-card">
               <div className="profile-card-header">
                 <IconUser />
@@ -254,6 +289,15 @@ function IconLock() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  )
+}
+
+function IconSubscription() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
     </svg>
   )
 }

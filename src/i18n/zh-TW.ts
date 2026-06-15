@@ -40,7 +40,7 @@ const zhTW: Record<string, string> = {
   'home.subtitle': 'TimeCut 智能檢測真正值得您關注的內容。\n在花費時間之前，了解內容的價值。',
   'home.pasteText': '貼上文字',
   'home.uploadPDF': '上傳 PDF',
-  'home.textPlaceholder': '在此貼上任何內容：文章、電子郵件、書籍章節、報告……',
+  'home.textPlaceholder': '文章 • PDF • 書籍 • 課堂筆記 • 電子郵件 • 報告',
   'home.charCount': '{count} / 15,000',
   'home.pdfClick': '點擊選擇 PDF 檔案',
   'home.pdfMax': '最大 10 MB',
@@ -80,7 +80,7 @@ const zhTW: Record<string, string> = {
   'home.errorGeneral': '出了點問題，請重試。',
 
   // ── Home: Hero title ──
-  'home.findOutTitle': '在花費另一分鐘之前先弄清楚。',
+  'home.findOutTitle': '秒速分析文章、PDF、書籍和筆記。',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': '可免費分析一次。',

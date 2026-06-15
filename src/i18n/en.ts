@@ -40,7 +40,7 @@ const en: Record<string, string> = {
   'home.subtitle': "TimeCut's intelligence detects what's truly worth your attention.\nKnow the value before you spend your time.",
   'home.pasteText': 'Paste Text',
   'home.uploadPDF': 'Upload PDF',
-  'home.textPlaceholder': 'Paste any content here: article, email, book chapter, report...',
+  'home.textPlaceholder': 'Articles • PDFs • Books • Lecture Notes • Email • Report',
   'home.charCount': '{count} / 15,000',
   'home.pdfClick': 'Click to select a PDF file',
   'home.pdfMax': 'Max 10 MB',
@@ -80,7 +80,7 @@ const en: Record<string, string> = {
   'home.errorGeneral': 'Something went wrong. Please try again.',
 
   // ── Home: Hero title ──
-  'home.findOutTitle': 'Find out before you spend another minute.',
+  'home.findOutTitle': 'Analyze Articles, PDFs, Books & Notes in Seconds.',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': 'Free analysis available.',

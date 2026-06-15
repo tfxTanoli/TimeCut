@@ -8,6 +8,7 @@ import {
   serverTimestamp,
   increment,
   runTransaction,
+  type Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User } from 'firebase/auth'
@@ -149,6 +150,8 @@ export interface UserData {
   totalAnalyses: number
   totalTimeSaved: number
   plan: PlanType
+  planStartDate?: Timestamp | null
+  planExpiresAt?: Timestamp | null
 }
 
 export async function getUserData(uid: string): Promise<UserData | null> {

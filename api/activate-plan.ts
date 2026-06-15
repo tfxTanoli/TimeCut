@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Stripe from 'stripe'
+import admin from 'firebase-admin'
 import { stripe, getAdminDb } from './_lib/stripe-admin.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -37,15 +38,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (shouldActivate) {
       const adminDb = getAdminDb()
       if (adminDb) {
+        const expiresAt = admin.firestore.Timestamp.fromDate(
+          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        )
         await adminDb.doc(`users/${uid}`).set(
           {
             plan,
+            planStartDate: admin.firestore.FieldValue.serverTimestamp(),
+            planExpiresAt: expiresAt,
             ...(subscriptionId ? { stripeSubscriptionId: subscriptionId } : {}),
             ...(customerId ? { stripeCustomerId: customerId } : {}),
           },
           { merge: true },
         )
-        console.log(`[activate-plan] ✓ uid=${uid} → plan=${plan}`)
+        console.log(`[activate-plan] ✓ uid=${uid} → plan=${plan}, expires=${expiresAt.toDate().toISOString()}`)
       }
       return res.json({ success: true, plan })
     }

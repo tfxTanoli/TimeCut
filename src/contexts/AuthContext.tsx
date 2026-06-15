@@ -38,6 +38,7 @@ interface AuthContextValue {
   loading: boolean
   plan: PlanType
   planLimit: number
+  planExpiresAt: Date | null
   monthlyUsage: number
   refreshUsage: () => void
   login: (email: string, password: string) => Promise<void>
@@ -52,10 +53,11 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser]                 = useState<User | null>(null)
-  const [userData, setUserData]         = useState<UserData | null>(null)
-  const [loading, setLoading]           = useState(true)
-  const [monthlyUsage, setMonthlyUsage] = useState(0)
+  const [user, setUser]                   = useState<User | null>(null)
+  const [userData, setUserData]           = useState<UserData | null>(null)
+  const [loading, setLoading]             = useState(true)
+  const [monthlyUsage, setMonthlyUsage]   = useState(0)
+  const [planExpiresAt, setPlanExpiresAt] = useState<Date | null>(null)
 
   // Keep refs to active Firestore unsubscribers so we can clean up on sign-out
   const unsubUserRef  = useRef<(() => void) | null>(null)
@@ -75,7 +77,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     unsubUserRef.current = onSnapshot(
       doc(db, 'users', uid),
       snap => {
-        setUserData(snap.exists() ? (snap.data() as UserData) : null)
+        if (snap.exists()) {
+          const data = snap.data() as UserData
+          setUserData(data)
+          const expiresAt = data.planExpiresAt?.toDate?.() ?? null
+          setPlanExpiresAt(expiresAt)
+          // Auto-downgrade if plan has expired
+          if (expiresAt && expiresAt < new Date() && data.plan !== 'free') {
+            fetch('/api/expire-plan', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ uid }),
+            }).catch(e => console.warn('[expire-plan] call failed:', e))
+          }
+        } else {
+          setUserData(null)
+          setPlanExpiresAt(null)
+        }
         setLoading(false)
       },
       () => setLoading(false),
@@ -98,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         detachListeners()
         setUserData(null)
         setMonthlyUsage(0)
+        setPlanExpiresAt(null)
         setLoading(false)
       }
     })
@@ -168,6 +187,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
     setUserData(null)
     setMonthlyUsage(0)
+    setPlanExpiresAt(null)
   }
 
   async function updateDisplayName(name: string) {
@@ -194,7 +214,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, userData, displayName, loading,
-      plan, planLimit, monthlyUsage, refreshUsage,
+      plan, planLimit, planExpiresAt, monthlyUsage, refreshUsage,
       login, signup, loginWithGoogle, logout,
       updateDisplayName, changePassword, reauthAndChangePassword,
     }}>

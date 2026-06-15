@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Stripe from 'stripe'
+import admin from 'firebase-admin'
 import { stripe, STRIPE_PLAN_MAP, getAdminDb } from './_lib/stripe-admin.js'
 
 // Vercel must NOT parse the body — Stripe needs the raw bytes to verify the signature
@@ -49,12 +50,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const planKey = STRIPE_PLAN_MAP[product.name.toLowerCase().replace(/\s+/g, '')]
           ?? (product.metadata?.plan as string | undefined)
         if (planKey) {
+          const expiresAt = admin.firestore.Timestamp.fromDate(
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          )
           await adminDb.doc(`users/${uid}`).update({
             plan: planKey,
+            planStartDate: admin.firestore.FieldValue.serverTimestamp(),
+            planExpiresAt: expiresAt,
             stripeCustomerId: session.customer,
             stripeSubscriptionId: subscriptionId,
           })
-          console.log(`[webhook] Updated user ${uid} to plan: ${planKey}`)
+          console.log(`[webhook] Updated user ${uid} to plan: ${planKey}, expires: ${expiresAt.toDate().toISOString()}`)
         }
       } catch (e) {
         console.error('[webhook] Firestore update failed:', e)
@@ -72,7 +78,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const users = await adminDb.collection('users')
           .where('stripeCustomerId', '==', customerId).limit(1).get()
         if (!users.empty) {
-          await users.docs[0].ref.update({ plan: 'free' })
+          await users.docs[0].ref.update({
+            plan: 'free',
+            planStartDate: null,
+            planExpiresAt: null,
+          })
           console.log(`[webhook] Downgraded customer ${customerId} to free`)
         }
       } catch (e) {

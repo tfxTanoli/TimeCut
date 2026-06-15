@@ -40,7 +40,7 @@ const zhCN: Record<string, string> = {
   'home.subtitle': 'TimeCut 智能检测真正值得您关注的内容。\n在花费时间之前，了解内容的价值。',
   'home.pasteText': '粘贴文本',
   'home.uploadPDF': '上传 PDF',
-  'home.textPlaceholder': '在此粘贴任何内容：文章、邮件、书章节、报告……',
+  'home.textPlaceholder': '文章 • PDF • 书籍 • 课堂笔记 • 邮件 • 报告',
   'home.charCount': '{count} / 15,000',
   'home.pdfClick': '点击选择 PDF 文件',
   'home.pdfMax': '最大 10 MB',
@@ -80,7 +80,7 @@ const zhCN: Record<string, string> = {
   'home.errorGeneral': '出了点问题，请重试。',
 
   // ── Home: Hero title ──
-  'home.findOutTitle': '在花费另一分钟之前先弄清楚。',
+  'home.findOutTitle': '秒速分析文章、PDF、书籍和笔记。',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': '可免费分析一次。',

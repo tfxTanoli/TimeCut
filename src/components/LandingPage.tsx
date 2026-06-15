@@ -111,6 +111,28 @@ export default function LandingPage({
             <h1 className="hero-title hero-title--find-out">
               {t('home.findOutTitle')}
             </h1>
+
+            {/* Why TimeCut? — ChatGPT vs TimeCut comparison */}
+            <div className="why-timecut-block">
+              <p className="why-timecut-label">Why TimeCut?</p>
+              <div className="why-timecut-compare">
+                <div className="why-timecut-col why-timecut-col--other">
+                  <p className="why-timecut-tool">ChatGPT</p>
+                  <p className="why-timecut-action">summarizes.</p>
+                </div>
+                <div className="why-timecut-vline" />
+                <div className="why-timecut-col why-timecut-col--us">
+                  <p className="why-timecut-tool why-timecut-tool--us">TimeCut</p>
+                  <p className="why-timecut-action">tells you:</p>
+                  <ul className="why-timecut-checks">
+                    <li>Worth Reading?</li>
+                    <li>Time Saved</li>
+                    <li>What To Skip</li>
+                    <li>Who It's For</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* RIGHT · paste box + analysis CTA */}
