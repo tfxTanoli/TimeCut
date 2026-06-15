@@ -199,31 +199,29 @@ export default function LandingPage({
                   )}
                 </div>
 
+                {!isLoggedIn && !isAtLimit && (
+                  <div className="no-cc-hint no-cc-hint--above-footer">
+                    <span className="no-cc-dot" />
+                    {t('home.freeNoCc')}
+                  </div>
+                )}
                 <div className="input-footer">
                   <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                     {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                   </select>
-                  <div className="input-cta-col">
-                    {!isLoggedIn && !isAtLimit && (
-                      <div className="no-cc-hint">
-                        <span className="no-cc-dot" />
-                        {t('home.freeNoCc')}
-                      </div>
-                    )}
-                    {isAtLimit ? (
-                      <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
-                        onClick={() => navigate('/pricing')}>
-                        {t('home.limitReachedUpgrade')}
-                      </button>
-                    ) : (
-                      <button type="submit" className="btn-primary btn-cta save-cta"
-                        disabled={isLoading || showPdfUpgrade || !canSubmit}>
-                        {isLoading
-                          ? <><span className="btn-spinner" />{t('home.analyzing')}</>
-                          : t('home.saveMyTime')}
-                      </button>
-                    )}
-                  </div>
+                  {isAtLimit ? (
+                    <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
+                      onClick={() => navigate('/pricing')}>
+                      {t('home.limitReachedUpgrade')}
+                    </button>
+                  ) : (
+                    <button type="submit" className="btn-primary btn-cta save-cta"
+                      disabled={isLoading || showPdfUpgrade || !canSubmit}>
+                      {isLoading
+                        ? <><span className="btn-spinner" />{t('home.analyzing')}</>
+                        : t('home.saveMyTime')}
+                    </button>
+                  )}
                 </div>
               </div>
 

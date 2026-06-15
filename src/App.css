@@ -4413,6 +4413,16 @@
   padding: 0 2px;
   white-space: nowrap;
 }
+/* No-cc hint placed as its own row above the lang+button footer */
+.no-cc-hint--above-footer {
+  justify-content: center;
+  padding: 0;
+}
+/* Button fills remaining space in input-footer when no input-cta-col wrapper */
+.input-footer .save-cta,
+.input-footer .save-cta--limit {
+  flex: 1;
+}
 .no-cc-dot {
   width: 7px;
   height: 7px;
