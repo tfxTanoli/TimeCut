@@ -49,7 +49,7 @@ export default function LandingPage({
   const [avgReadingTime, setAvgReadingTime] = useState(25)
   const [lowValuePct, setLowValuePct] = useState(73)
 
-  const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'custom'
+  const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'business' || plan === 'custom'
 
   function handlePdfTabClick() {
     setActiveTab('pdf')

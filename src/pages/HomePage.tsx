@@ -51,7 +51,7 @@ interface UpgradeModalProps {
 }
 
 function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth, t }: UpgradeModalProps) {
-  const planNames: Record<string, string> = { free: 'Free', starter: 'Starter', pro: 'Pro', custom: 'Custom' }
+  const planNames: Record<string, string> = { free: 'Free', starter: 'Starter', pro: 'Pro', business: 'Business', custom: 'Custom' }
   const subText = t('home.limitModalSub')
     .replace('{limit}', String(planLimit))
     .replace('{plan}', planNames[plan] ?? plan)
