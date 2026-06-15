@@ -4453,8 +4453,7 @@
   .impact-savings-section--compact .savings-col .savings-headline-num { font-size: 30px !important; }
   .impact-savings-section--compact .savings-col .savings-outputs { margin-top: 8px !important; padding-top: 8px !important; }
 
-  /* Result cards: hide article title to save ~30px per card */
-  .examples-preview .rpc-article { display: none; }
+  /* Result cards: article title visible on desktop */
   /* Result cards: scores in 4-column single row (halves score grid height) */
   .examples-preview .rpc-scores { grid-template-columns: repeat(4, 1fr); }
   /* Result cards: final text capped to 1 line */
@@ -4466,4 +4465,44 @@
   /* Savings outputs: tighter spacing */
   .impact-savings-section--compact .savings-col .savings-monthly { margin-top: -4px; }
   .impact-savings-section--compact .savings-col .savings-cta { padding: 10px 16px !important; font-size: 13px; }
+}
+
+/* ════════════════════════════════════════
+   HOME MID SECTIONS — ordering wrapper
+   Desktop: examples (result cards) first, then chart
+   Mobile:  chart first, then examples
+   ════════════════════════════════════════ */
+.home-mid-sections {
+  display: flex;
+  flex-direction: column;
+}
+/* Desktop order is DOM order — no override needed */
+
+@media (max-width: 768px) {
+  .home-mid-sections { display: flex; flex-direction: column; }
+  .home-sec-chart   { order: 1; }   /* impact chart first on mobile */
+  .home-sec-examples { order: 2; }  /* result cards second on mobile */
+}
+
+/* ════════════════════════════════════════
+   MOBILE COMPRESSION — show impact chart on first screen
+   ════════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Hide trust-line in paste box (space saving) */
+  .hero--split .trust-line { display: none; }
+
+  /* Hide the guest plan-usage-bar on mobile — main CTA covers the action */
+  .plan-usage-bar--guest { display: none; }
+
+  /* Hide savings calculator on mobile — show only impact chart */
+  .home-sec-chart .savings-col { display: none; }
+
+  /* Impact chart section: minimal padding */
+  .home-sec-chart.impact-savings-section--compact { padding: 10px 0 16px; }
+
+  /* Result cards section: tighter padding */
+  .home-sec-examples.examples-preview { padding: 10px 0 12px; }
+
+  /* Compress no-cc-hint line height */
+  .no-cc-hint { padding: 0; font-size: 10px; }
 }

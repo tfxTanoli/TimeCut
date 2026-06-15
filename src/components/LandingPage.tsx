@@ -220,7 +220,7 @@ export default function LandingPage({
                         disabled={isLoading || showPdfUpgrade || !canSubmit}>
                         {isLoading
                           ? <><span className="btn-spinner" />{t('home.analyzing')}</>
-                          : isLoggedIn ? t('home.saveMyTime') : t('home.tryFree')}
+                          : t('home.saveMyTime')}
                       </button>
                     )}
                   </div>
@@ -230,7 +230,7 @@ export default function LandingPage({
               {error && <p className="error-banner">{error}</p>}
 
               {/* Plan usage / free CTA */}
-              <div className="plan-usage-bar">
+              <div className={`plan-usage-bar${!isLoggedIn && !isAtLimit ? ' plan-usage-bar--guest' : ''}`}>
                 {isLoggedIn ? (
                   <>
                     <div className="plan-usage-left">
@@ -250,7 +250,7 @@ export default function LandingPage({
                       <span className="input-no-cc"> · {t('home.freeNoCc')}</span>
                     </div>
                     <button type="button" className="btn-primary btn-sm input-free-btn" onClick={onOpenAuth}>
-                      {t('nav.getStarted')}
+                      {t('home.tryFree')}
                     </button>
                   </div>
                 )}
@@ -264,8 +264,88 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* ── Impact Chart (left) + Savings Calculator (right) · brought up under the hero ── */}
-      <section className="impact-savings-section impact-savings-section--compact">
+      {/* ── Mid sections: result cards + chart (wrapped for mobile order control) ── */}
+      <div className="home-mid-sections">
+
+      {/* Result Cards · desktop: right after title; mobile: after chart (CSS order) */}
+      <section className="examples-preview home-sec-examples">
+        <div className="container">
+          <div className="examples-preview-grid">
+            {/* SKIP IT card */}
+            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
+              <div className="rpc-article">{t('home.rpcSkipArticle')}</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">{t('result.verdictSkipIt')}</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
+                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcOriginality')}</span>
+                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcInfoDensity')}</span>
+                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagRepeated')}</span>
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowOrig')}</span>
+                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowDensity')}</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
+                <p className="rpc-final-text">{t('home.rpcSkipFinal')}</p>
+              </div>
+            </div>
+
+            {/* MUST READ card */}
+            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
+              <div className="rpc-article">{t('home.rpcReadArticle')}</div>
+              <div className="rpc-header">
+                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">{t('result.verdictMustRead')}</span>
+                <div className="rpc-scores">
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
+                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
+                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcAttentionQuality')}</span>
+                    <span className="rpc-score-value">{t('home.rpcHigh')}</span>
+                  </div>
+                  <div className="rpc-score-item">
+                    <span className="rpc-score-label">{t('home.rpcValueScore')}</span>
+                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
+                  </div>
+                </div>
+              </div>
+              <div className="rpc-tags">
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagOriginal')}</span>
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagResearch')}</span>
+                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagHighDensity')}</span>
+              </div>
+              <div className="rpc-final">
+                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
+                <p className="rpc-final-text">{t('home.rpcReadFinal')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Impact Chart (left) + Savings Calculator (right) ── */}
+      <section className="impact-savings-section impact-savings-section--compact home-sec-chart">
         <div className="container">
           <div className="impact-savings-grid">
 
@@ -373,82 +453,7 @@ export default function LandingPage({
         </div>
       </section>
 
-      {/* ── Result Card · below the impact/savings row ── */}
-      <section className="examples-preview">
-        <div className="container">
-          <div className="examples-preview-grid">
-            {/* SKIP IT card */}
-            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
-              <div className="rpc-article">{t('home.rpcSkipArticle')}</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">{t('result.verdictSkipIt')}</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
-                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcOriginality')}</span>
-                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcInfoDensity')}</span>
-                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagRepeated')}</span>
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowOrig')}</span>
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowDensity')}</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
-                <p className="rpc-final-text">{t('home.rpcSkipFinal')}</p>
-              </div>
-            </div>
-
-            {/* MUST READ card */}
-            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
-              <div className="rpc-article">{t('home.rpcReadArticle')}</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">{t('result.verdictMustRead')}</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
-                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcAttentionQuality')}</span>
-                    <span className="rpc-score-value">{t('home.rpcHigh')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcValueScore')}</span>
-                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagOriginal')}</span>
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagResearch')}</span>
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagHighDensity')}</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
-                <p className="rpc-final-text">{t('home.rpcReadFinal')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      </div>{/* /home-mid-sections */}
 
       {/* ── How TimeCut Works ── */}
       <section className="hiw-home">
