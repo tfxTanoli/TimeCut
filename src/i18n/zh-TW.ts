@@ -47,7 +47,7 @@ const zhTW: Record<string, string> = {
   'home.pdfRemove': '移除',
   'home.analyzing': '分析中……',
   'home.analysisSpeed': '約 10 秒即可獲得您的分析結果。',
-  'home.saveMyTime': '開始分析',
+  'home.saveMyTime': '分析價值',
   'home.tryFree': '免費試用',
   'home.trustLine': '即時時間智能報告  •  無需註冊',
   'home.whyBadge': '為什麼選擇 TimeCut？',
@@ -81,6 +81,8 @@ const zhTW: Record<string, string> = {
 
   // ── Home: Hero title ──
   'home.findOutTitle': '秒速分析文章、PDF、書籍和筆記。',
+  'home.heroSubtitle': '在花費下一分鐘之前先弄清楚。',
+  'home.heroContentTypes': '文章 · PDF · 書籍 · 報告 · 筆記',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': '可免費分析一次。',

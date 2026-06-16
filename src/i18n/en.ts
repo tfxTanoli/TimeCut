@@ -47,7 +47,7 @@ const en: Record<string, string> = {
   'home.pdfRemove': 'Remove',
   'home.analyzing': 'Analyzing...',
   'home.analysisSpeed': 'Get your analysis in about 10 seconds.',
-  'home.saveMyTime': 'Start Analysis',
+  'home.saveMyTime': 'Analyze Value',
   'home.tryFree': 'Try Free',
   'home.trustLine': 'Your content is never stored · Private & secure',
   'home.whyBadge': 'Why TimeCut?',
@@ -81,6 +81,8 @@ const en: Record<string, string> = {
 
   // ── Home: Hero title ──
   'home.findOutTitle': 'Analyze Articles, PDFs, Books & Notes in Seconds.',
+  'home.heroSubtitle': 'Find out before you spend another minute.',
+  'home.heroContentTypes': 'Articles · PDFs · Books · Reports · Notes',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': 'Free analysis available.',

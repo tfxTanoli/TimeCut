@@ -574,7 +574,7 @@
 
 /* ── Hero ── */
 .hero {
-  background: linear-gradient(160deg, #f0f7ff 0%, #dbeafe 50%, #eff6ff 100%);
+  background: #F8FBFF;
   padding: 52px 0 44px;
   text-align: center;
 }
@@ -586,11 +586,19 @@
 
 /* "Find out before you spend another minute." sub-tagline */
 .hero-find-out {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 500;
   color: #475569;
-  margin: -4px 0 16px;
+  margin: -4px 0 6px;
   letter-spacing: -0.2px;
+}
+/* Small content-types line under subtitle */
+.hero-content-types {
+  font-size: 11.5px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin: 0 0 16px;
+  letter-spacing: 0.02em;
 }
 
 /* ── Input Section (standalone below examples) ── */
@@ -4319,8 +4327,11 @@
     font-size: clamp(18px, 4.8vw, 28px);
   }
   .hero-support { text-align: center; max-width: 52ch; margin: 0 auto; }
+  .hero-find-out { text-align: center; }
+  .hero-content-types { text-align: center; }
   .hero-input-col .input-card { max-width: 560px !important; }
   .why-timecut-block { margin: 0 auto; }
+  .ctd-block { margin: 4px auto 0; }
 }
 @media (max-width: 480px) {
   .hero--split { padding: 20px 0 12px; }
@@ -4406,11 +4417,84 @@
 }
 
 /* ════════════════════════════════════════
+   FROM CONTENT TO DECISION — decision block
+   ════════════════════════════════════════ */
+.ctd-block {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px 18px;
+  width: 100%;
+  max-width: 340px;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+.ctd-eyebrow {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #94a3b8;
+  margin: 0 0 4px;
+}
+.ctd-headline {
+  font-size: 17px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 14px;
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+}
+.ctd-table {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+.ctd-col-header {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+  margin: 0 0 8px;
+}
+.ctd-items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ctd-items li {
+  font-size: 12.5px;
+  color: #374151;
+  font-weight: 500;
+}
+.ctd-items--checks li {
+  color: #0f172a;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ctd-items--checks li::before {
+  content: '✓';
+  color: #16a34a;
+  font-weight: 800;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  .ctd-block { max-width: 320px; }
+}
+
+/* ════════════════════════════════════════
    IMPACT CHART (left) + SAVINGS CALCULATOR (right)
    Single combined row — client restructure
    ════════════════════════════════════════ */
 .impact-savings-section {
-  background: linear-gradient(160deg, #f0f7ff 0%, #dbeafe 50%, #eff6ff 100%);
+  background: #F8FBFF;
   padding: 52px 0 60px;
 }
 /* Compact variant: charts brought up directly under the hero (continuous blue block) */
@@ -4619,9 +4703,6 @@
 
   /* Hide the guest plan-usage-bar on mobile — main CTA covers the action */
   .plan-usage-bar--guest { display: none; }
-
-  /* Hide savings calculator on mobile — show only impact chart */
-  .home-sec-chart .savings-col { display: none; }
 
   /* Impact chart section: minimal padding */
   .home-sec-chart.impact-savings-section--compact { padding: 10px 0 16px; }

@@ -47,7 +47,7 @@ const zhCN: Record<string, string> = {
   'home.pdfRemove': '删除',
   'home.analyzing': '分析中……',
   'home.analysisSpeed': '约 10 秒即可获得您的分析结果。',
-  'home.saveMyTime': '开始分析',
+  'home.saveMyTime': '分析价值',
   'home.tryFree': '免费试用',
   'home.trustLine': '即时时间智能报告  •  无需注册',
   'home.whyBadge': '为什么选择 TimeCut？',
@@ -81,6 +81,8 @@ const zhCN: Record<string, string> = {
 
   // ── Home: Hero title ──
   'home.findOutTitle': '秒速分析文章、PDF、书籍和笔记。',
+  'home.heroSubtitle': '在花费下一分钟之前先弄清楚。',
+  'home.heroContentTypes': '文章 · PDF · 书籍 · 报告 · 笔记',
 
   // ── Home: Free CTA bar ──
   'home.freeAvailable': '可免费分析一次。',

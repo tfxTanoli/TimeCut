@@ -111,24 +111,31 @@ export default function LandingPage({
             <h1 className="hero-title hero-title--find-out">
               {t('home.findOutTitle')}
             </h1>
+            <p className="hero-find-out">{t('home.heroSubtitle')}</p>
+            <p className="hero-content-types">{t('home.heroContentTypes')}</p>
 
-            {/* Why TimeCut? — ChatGPT vs TimeCut comparison */}
-            <div className="why-timecut-block">
-              <p className="why-timecut-label">Why TimeCut?</p>
-              <div className="why-timecut-compare">
-                <div className="why-timecut-col why-timecut-col--other">
-                  <p className="why-timecut-tool">ChatGPT</p>
-                  <p className="why-timecut-action">summarizes.</p>
+            {/* FROM CONTENT TO DECISION block */}
+            <div className="ctd-block">
+              <p className="ctd-eyebrow">FROM CONTENT TO DECISION</p>
+              <h3 className="ctd-headline">Turn Information Into Clarity</h3>
+              <div className="ctd-table">
+                <div className="ctd-col">
+                  <p className="ctd-col-header">CONTENT</p>
+                  <ul className="ctd-items">
+                    <li>Articles</li>
+                    <li>PDFs</li>
+                    <li>Books</li>
+                    <li>Reports</li>
+                    <li>Notes</li>
+                  </ul>
                 </div>
-                <div className="why-timecut-vline" />
-                <div className="why-timecut-col why-timecut-col--us">
-                  <p className="why-timecut-tool why-timecut-tool--us">TimeCut</p>
-                  <p className="why-timecut-action">tells you:</p>
-                  <ul className="why-timecut-checks">
+                <div className="ctd-col">
+                  <p className="ctd-col-header">DECISION</p>
+                  <ul className="ctd-items ctd-items--checks">
                     <li>Worth Reading?</li>
                     <li>Time Saved</li>
                     <li>What To Skip</li>
-                    <li>Who It's For</li>
+                    <li>Best For</li>
                   </ul>
                 </div>
               </div>
@@ -221,12 +228,6 @@ export default function LandingPage({
                   )}
                 </div>
 
-                {!isLoggedIn && !isAtLimit && (
-                  <div className="no-cc-hint no-cc-hint--above-footer">
-                    <span className="no-cc-dot" />
-                    {t('home.freeNoCc')}
-                  </div>
-                )}
                 <div className="input-footer">
                   <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
                     {LANGUAGES.map(l => <option key={l}>{l}</option>)}
