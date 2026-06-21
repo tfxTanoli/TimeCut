@@ -1,4 +1,4 @@
-import type { AnalyzeResponse } from './types'
+import type { AnalyzeResponse, DecisionAnalyzeResponse } from './types'
 
 export async function analyzeText(content: string, language: string): Promise<AnalyzeResponse> {
   const res = await fetch('/api/analyze', {
@@ -14,5 +14,23 @@ export async function analyzePdf(file: File, language: string): Promise<AnalyzeR
   form.append('file', file)
   form.append('language', language)
   const res = await fetch('/api/analyze-pdf', { method: 'POST', body: form })
+  return res.json()
+}
+
+export async function analyzeDecision(
+  files: File[],
+  decisionGoal: string,
+  language: string,
+  pageLimit: number = 999999,
+): Promise<DecisionAnalyzeResponse> {
+  const form = new FormData()
+  files.forEach(f => form.append('files[]', f))
+  form.append('decisionGoal', decisionGoal)
+  form.append('language', language)
+  const res = await fetch('/api/analyze-decision', {
+    method: 'POST',
+    headers: { 'x-page-limit': String(pageLimit) },
+    body: form,
+  })
   return res.json()
 }

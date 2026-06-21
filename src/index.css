@@ -1,26 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Manrope:wght@400;500;600;700;800;900&display=swap');
 
 :root {
-  --text: #4d4658;
-  --text-h: #0F172A;
-  --bg: #ffffff;
-  --border: #bfdbfe;
-  --code-bg: #dbeafe;
-  --accent: #2563EB;
-  --accent-bg: rgba(37, 99, 235, 0.08);
-  --accent-border: rgba(37, 99, 235, 0.35);
-  --social-bg: rgba(219, 234, 254, 0.6);
-  --page-bg: #ffffff;
+  --text: #9CA3AF;
+  --text-h: #FFFFFF;
+  --bg: #1F2937;
+  --border: #374151;
+  --code-bg: #111827;
+  --accent: #3B82F6;
+  --accent-bg: rgba(59, 130, 246, 0.12);
+  --accent-border: rgba(59, 130, 246, 0.35);
+  --social-bg: rgba(59, 130, 246, 0.1);
+  --page-bg: #09090B;
+  --bg-primary: #09090B;
+  --bg-secondary: #111827;
+  --bg-card: #1F2937;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --text-primary: #FFFFFF;
+  --text-secondary: #9CA3AF;
   --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+    rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.2) 0 4px 6px -2px;
 
-  --sans: 'Plus Jakarta Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: 'Plus Jakarta Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'Inter', 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: 'Inter', 'Manrope', system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--text);
   background: var(--page-bg);
   font-synthesis: none;

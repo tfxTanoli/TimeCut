@@ -13,20 +13,20 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   starter: {
     label: 'STARTER',
     price: '$9/month',
-    tagline: 'Build better information habits',
-    features: ['60 analyses/month', 'Everything in Free', 'PDF Upload & Analysis', 'Analysis History', 'Multi-language Support', 'Advanced Insights', 'Download Reports'],
+    tagline: 'Full decision intelligence for individuals',
+    features: ['5 analyses/month', '50 pages per analysis', 'Full Ranking & Recommendation', 'Complete Risk Analysis', 'Missing Information Detection', 'Smart Skeptic Questions', 'Download Reports'],
   },
   pro: {
     label: 'PRO',
     price: '$29/month',
-    tagline: 'Make faster decisions at scale',
-    features: ['500 analyses/month', 'Everything in Starter', 'Advanced Analysis Reports', 'Priority Processing', 'Detailed Breakdown Analysis', 'Export Reports (PDF)', 'Premium Support'],
+    tagline: 'Advanced risk intelligence at scale',
+    features: ['20 analyses/month', '100 pages per analysis', 'Advanced Risk Detection', 'Blind Spot Analysis', 'Opposition Thinking', 'Decision Defense Generator', 'Export Reports (PDF)', 'Priority Processing'],
   },
   business: {
     label: 'BUSINESS',
     price: '$149/month',
-    tagline: 'Scale your content intelligence',
-    features: ['2,000 analyses/month', 'Everything in Pro', 'Team Workspace (up to 10 users)', 'Priority Dedicated Support', 'Custom Report Branding'],
+    tagline: 'Team decision intelligence',
+    features: ['Unlimited analyses', 'Unlimited pages', 'Team Workspace', 'Shared Decision History', 'Knowledge Base', 'Benchmarking Reports', 'Priority Dedicated Support'],
   },
 }
 

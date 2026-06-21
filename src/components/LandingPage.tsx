@@ -1,20 +1,10 @@
-import { useState, useRef, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
 import type { InputTab } from '../types'
 import type { PlanType } from '../lib/userService'
 import Footer from './Footer'
 import { useTranslation } from '../hooks/useTranslation'
 
-const LANGUAGES = [
-  'English', 'Spanish', 'French', 'German', 'Arabic',
-  'Portuguese', 'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Turkish', 'Italian', 'Korean',
-]
-
-/* ── Savings Calculator Constants ── */
-const CALC = {
-  weeksPerYear: 52.18,   // 365.25 / 7 — exact average
-}
-
+/* Props kept identical so HomePage.tsx requires no change */
 interface Props {
   onSubmit: (tab: InputTab, value: string | File, language: string) => void
   isLoading: boolean
@@ -28,34 +18,9 @@ interface Props {
   isAtLimit?: boolean
 }
 
-export default function LandingPage({
-  onSubmit, isLoading, error,
-  plan = 'free', planLimit = 5, monthlyUsage = 0, remaining = 5,
-  isLoggedIn = false, onOpenAuth, isAtLimit = false,
-}: Props) {
+export default function LandingPage(_props: Props) {
   const { t } = useTranslation()
-  const navigate = useNavigate()
-  const [activeTab, setActiveTab] = useState<InputTab>('text')
-  const [textValue, setTextValue] = useState('')
-  const [pdfFile, setPdfFile] = useState<File | null>(null)
-  const [language, setLanguage] = useState('English')
-  const [showPdfUpgrade, setShowPdfUpgrade] = useState(false)
-  const [activeCard, setActiveCard] = useState<number | null>(null)
-  const fileRef = useRef<HTMLInputElement>(null)
   const seenFadeEls = useRef<Set<Element>>(new Set())
-
-  /* ── Savings Calculator State (defaults → ~317 hrs/year) ── */
-  const [articlesPerWeek, setArticlesPerWeek] = useState(20)
-  const [avgReadingTime, setAvgReadingTime] = useState(25)
-  const [lowValuePct, setLowValuePct] = useState(73)
-
-  const canUsePdf = plan === 'starter' || plan === 'pro' || plan === 'business' || plan === 'custom'
-
-  function handlePdfTabClick() {
-    setActiveTab('pdf')
-    if (!canUsePdf) { setShowPdfUpgrade(true); return }
-    setShowPdfUpgrade(false)
-  }
 
   useEffect(() => {
     const els = document.querySelectorAll<Element>('.fade-up')
@@ -68,7 +33,7 @@ export default function LandingPage({
           observer.unobserve(e.target)
         }
       }),
-      { threshold: 0.12 }
+      { threshold: 0.1 }
     )
     els.forEach(el => observer.observe(el))
     return () => observer.disconnect()
@@ -78,519 +43,133 @@ export default function LandingPage({
     seenFadeEls.current.forEach(el => el.classList.add('is-visible'))
   })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isLoggedIn) { onOpenAuth?.(); return }
-    if (activeTab === 'text' && textValue.trim()) onSubmit('text', textValue.trim(), language)
-    if (activeTab === 'pdf' && pdfFile && canUsePdf) onSubmit('pdf', pdfFile, language)
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  const canSubmit =
-    !isLoading && !showPdfUpgrade && !isAtLimit &&
-    ((activeTab === 'text' && textValue.trim().length > 0) ||
-      (activeTab === 'pdf' && pdfFile !== null && canUsePdf))
-
-  /* ── Calculator (yearly, using 52.18 wks/yr) ── */
-  const lowValueMinsPerWeek = articlesPerWeek * avgReadingTime * (lowValuePct / 100)
-  const hoursSavedPerYear = Math.round((lowValueMinsPerWeek / 60) * CALC.weeksPerYear)
-  const hoursSavedPerMonth = parseFloat((hoursSavedPerYear / 12).toFixed(1))
-
-  /* ── Comparison chart (yearly) ── */
-  const totalHoursPerYear = Math.round((articlesPerWeek * avgReadingTime / 60) * CALC.weeksPerYear)
-  const withTimecutHoursPerYear = totalHoursPerYear - hoursSavedPerYear
-  const maxBarHours = Math.max(totalHoursPerYear, 1)
 
   return (
     <>
-      {/* ── Hero: headline left · paste box right ── */}
-      <section className="hero hero--split">
-        <div className="container hero-split-grid">
-          {/* LEFT · headline */}
-          <div className="hero-text-col">
-            <p className="hero-worth-question">{t('home.worthQuestion')}</p>
-            <h1 className="hero-title hero-title--find-out">
-              {t('home.findOutTitle')}
-            </h1>
-            <p className="hero-find-out">{t('home.heroSubtitle')}</p>
-            <p className="hero-content-types">{t('home.heroContentTypes')}</p>
-
-            {/* FROM CONTENT TO DECISION block */}
-            <div className="ctd-block">
-              <p className="ctd-eyebrow">FROM CONTENT TO DECISION</p>
-              <h3 className="ctd-headline">Turn Information Into Clarity</h3>
-              <div className="ctd-table">
-                <div className="ctd-col">
-                  <p className="ctd-col-header">CONTENT</p>
-                  <ul className="ctd-items">
-                    <li>Articles</li>
-                    <li>PDFs</li>
-                    <li>Books</li>
-                    <li>Reports</li>
-                    <li>Notes</li>
-                  </ul>
-                </div>
-                <div className="ctd-col">
-                  <p className="ctd-col-header">DECISION</p>
-                  <ul className="ctd-items ctd-items--checks">
-                    <li>Worth Reading?</li>
-                    <li>Time Saved</li>
-                    <li>What To Skip</li>
-                    <li>Best For</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
+      {/* ══════════════════════════════════════════
+          HERO
+      ══════════════════════════════════════════ */}
+      <section className="lp-hero">
+        <div className="container lp-hero-inner">
+          <div className="lp-hero-badges fade-up">
+            <span className="lp-badge">{t('home.lpBadge1')}</span>
+            <span className="lp-badge">{t('home.lpBadge2')}</span>
+            <span className="lp-badge">{t('home.lpBadge3')}</span>
+            <span className="lp-badge">{t('home.lpBadge4')}</span>
           </div>
-
-          {/* RIGHT · paste box + analysis CTA */}
-          <div className="hero-input-col">
-            <form className="input-card" onSubmit={handleSubmit}>
-              <div className="input-tabs">
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'text' ? 'tab-btn--active' : ''}`}
-                  onClick={() => { setActiveTab('text'); setShowPdfUpgrade(false) }}
-                >
-                  <IconDoc /> {t('home.pasteText')}
-                </button>
-                <button
-                  type="button"
-                  className={`tab-btn ${activeTab === 'pdf' ? 'tab-btn--active' : ''} ${!canUsePdf ? 'tab-btn--locked' : ''}`}
-                  onClick={handlePdfTabClick}
-                >
-                  <IconUpload /> {t('home.uploadPDF')}
-                  {!canUsePdf && <span className="tab-lock-icon">🔒</span>}
-                </button>
-              </div>
-
-              <div className="input-body">
-                <div key={activeTab} className="tab-fade">
-                  {activeTab === 'text' && !showPdfUpgrade && (
-                    <div className="textarea-wrap">
-                      <textarea
-                        className="text-area text-area--inner"
-                        placeholder={t('home.textPlaceholder')}
-                        value={textValue}
-                        onChange={e => setTextValue(e.target.value)}
-                        rows={2}
-                        disabled={isLoading}
-                      />
-                      <div className="text-area-meta">
-                        <span className="analysis-speed-note">
-                          <IconClock /> {t('home.analysisSpeed')}
-                        </span>
-                        <span className={`char-count ${textValue.length > 13000 ? 'char-count--warn' : ''}`}>
-                          {textValue.length.toLocaleString()} / 15,000
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {showPdfUpgrade && (
-                    <div className="pdf-upgrade-prompt">
-                      <span className="pdf-upgrade-icon">🔒</span>
-                      <p className="pdf-upgrade-title">{t('home.pdfPaidTitle')}</p>
-                      <p className="pdf-upgrade-sub">{t('home.pdfPaidSub')}</p>
-                      <div className="pdf-upgrade-actions">
-                        {!isLoggedIn && (
-                          <button type="button" className="btn-primary btn-sm" onClick={onOpenAuth}>{t('home.pdfSignUp')}</button>
-                        )}
-                        <a href="/pricing" className="btn-primary btn-sm">{t('home.pdfViewPlans')}</a>
-                        <button type="button" className="pdf-upgrade-dismiss"
-                          onClick={() => { setShowPdfUpgrade(false); setActiveTab('text') }}>
-                          {t('home.pdfBackToText')}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'pdf' && canUsePdf && (
-                    <div className="pdf-drop" onClick={() => fileRef.current?.click()}>
-                      <IconUpload className="pdf-drop-icon" />
-                      {pdfFile ? (
-                        <>
-                          <p className="pdf-name">{pdfFile.name}</p>
-                          <p className="pdf-size">
-                            {(pdfFile.size / 1024).toFixed(0)} KB &nbsp;·&nbsp;
-                            <span className="pdf-remove" onClick={e => { e.stopPropagation(); setPdfFile(null) }}>
-                              {t('home.pdfRemove')}
-                            </span>
-                          </p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="pdf-drop-title">{t('home.pdfClick')}</p>
-                          <p className="pdf-drop-hint">{t('home.pdfMax')}</p>
-                        </>
-                      )}
-                      <input ref={fileRef} type="file" accept=".pdf" hidden onChange={e => setPdfFile(e.target.files?.[0] ?? null)} />
-                    </div>
-                  )}
-                </div>
-
-                <div className="input-footer">
-                  <select className="lang-select" value={language} onChange={e => setLanguage(e.target.value)} disabled={isLoading}>
-                    {LANGUAGES.map(l => <option key={l}>{l}</option>)}
-                  </select>
-                  {isAtLimit ? (
-                    <button type="button" className="btn-primary btn-cta save-cta save-cta--limit"
-                      onClick={() => navigate('/pricing')}>
-                      {t('home.limitReachedUpgrade')}
-                    </button>
-                  ) : (
-                    <button type="submit" className="btn-primary btn-cta save-cta"
-                      disabled={isLoading || showPdfUpgrade || !canSubmit}>
-                      {isLoading
-                        ? <><span className="btn-spinner" />{t('home.analyzing')}</>
-                        : t('home.saveMyTime')}
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {error && <p className="error-banner">{error}</p>}
-
-              {/* Plan usage / free CTA */}
-              <div className={`plan-usage-bar${!isLoggedIn && !isAtLimit ? ' plan-usage-bar--guest' : ''}`}>
-                {isLoggedIn ? (
-                  <>
-                    <div className="plan-usage-left">
-                      <span className={`plan-badge plan-badge--${plan}`}>{plan.toUpperCase()}</span>
-                      <span className="plan-usage-text">{monthlyUsage} / {planLimit} {t('home.usedThisMonth')}</span>
-                      {remaining === 0 && <span className="plan-usage-limit-tag">{t('home.limitReached')}</span>}
-                    </div>
-                    {remaining === 0 && (
-                      <Link to="/pricing" className="plan-usage-upgrade">{t('home.upgrade')}</Link>
-                    )}
-                  </>
-                ) : (
-                  <div className="input-free-cta">
-                    <div className="input-free-cta-text">
-                      <span className="input-free-label">{t('home.freeAvailable')}</span>
-                      <span className="input-free-sub"> {t('home.freeUnlock')}</span>
-                      <span className="input-no-cc"> · {t('home.freeNoCc')}</span>
-                    </div>
-                    <button type="button" className="btn-primary btn-sm input-free-btn" onClick={onOpenAuth}>
-                      {t('home.tryFree')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <p className="trust-line">
-                <IconShield /> {t('home.trustLine')}
-              </p>
-            </form>
+          <h1 className="lp-headline fade-up" style={{ transitionDelay: '60ms' }}>
+            {t('home.lpHeadline')}
+          </h1>
+          <p className="lp-subheadline fade-up" style={{ transitionDelay: '120ms' }}>
+            {t('home.lpSubheadline')}
+          </p>
+          <div className="lp-hero-actions fade-up" style={{ transitionDelay: '180ms' }}>
+            <button className="btn-primary btn-cta lp-primary-cta" onClick={scrollToTop}>
+              {t('home.lpCta')}
+            </button>
+            <p className="lp-no-cc">{t('home.lpNoCc')}</p>
           </div>
         </div>
       </section>
 
-      {/* ── Mid sections: result cards + chart (wrapped for mobile order control) ── */}
-      <div className="home-mid-sections">
-
-      {/* Result Cards · desktop: right after title; mobile: after chart (CSS order) */}
-      <section className="examples-preview home-sec-examples">
+      {/* ══════════════════════════════════════════
+          HOW IT WORKS  (4 steps)
+      ══════════════════════════════════════════ */}
+      <section className="lp-section">
         <div className="container">
-          <div className="examples-preview-grid">
-            {/* SKIP IT card */}
-            <div className="rpc rpc--skip fade-up" style={{ transitionDelay: '60ms' }}>
-              <div className="rpc-article">{t('home.rpcSkipArticle')}</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--skip rpc-verdict--big">{t('result.verdictSkipIt')}</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
-                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcOriginality')}</span>
-                    <span className="rpc-score-value">3.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcInfoDensity')}</span>
-                    <span className="rpc-score-value">2.6<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagRepeated')}</span>
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowOrig')}</span>
-                <span className="rpc-tag rpc-tag--bad">{t('home.rpcTagLowDensity')}</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
-                <p className="rpc-final-text">{t('home.rpcSkipFinal')}</p>
-              </div>
-            </div>
-
-            {/* MUST READ card */}
-            <div className="rpc rpc--read fade-up" style={{ transitionDelay: '180ms' }}>
-              <div className="rpc-article">{t('home.rpcReadArticle')}</div>
-              <div className="rpc-header">
-                <span className="rpc-verdict rpc-verdict--read rpc-verdict--big">{t('result.verdictMustRead')}</span>
-                <div className="rpc-scores">
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcReadingTime')}</span>
-                    <span className="rpc-score-value">24 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcTimeSaved')}</span>
-                    <span className="rpc-score-value rpc-score-value--saved">22 {t('home.rpcMins')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcAttentionQuality')}</span>
-                    <span className="rpc-score-value">{t('home.rpcHigh')}</span>
-                  </div>
-                  <div className="rpc-score-item">
-                    <span className="rpc-score-label">{t('home.rpcValueScore')}</span>
-                    <span className="rpc-score-value rpc-score-value--high">9.1<span className="rpc-score-sub"> / 10</span></span>
-                  </div>
-                </div>
-              </div>
-              <div className="rpc-tags">
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagOriginal')}</span>
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagResearch')}</span>
-                <span className="rpc-tag rpc-tag--good">{t('home.rpcTagHighDensity')}</span>
-              </div>
-              <div className="rpc-final">
-                <span className="rpc-final-label">{t('home.rpcFinalDecision')}</span>
-                <p className="rpc-final-text">{t('home.rpcReadFinal')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Impact Chart (left) + Savings Calculator (right) ── */}
-      <section className="impact-savings-section impact-savings-section--compact home-sec-chart">
-        <div className="container">
-          <div className="impact-savings-grid">
-
-            {/* LEFT · Impact Chart */}
-            <div className="impact-col fade-up">
-              <div className="comp-chart-header">
-                <p className="section-eyebrow">{t('home.impactEyebrow')}</p>
-                <h2 className="section-title">{t('home.impactTitle')}</h2>
-              </div>
-              <div className="comp-chart-bars">
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--bad">{t('home.impactWithout')}</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--bad"
-                      style={{ width: `${Math.min((totalHoursPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value">{totalHoursPerYear}{t('home.impactPerYear')}</span>
-                </div>
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--good">{t('home.impactWith')}</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--good"
-                      style={{ width: `${Math.min((withTimecutHoursPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value">{withTimecutHoursPerYear}{t('home.impactPerYear')}</span>
-                </div>
-                <div className="comp-bar-row">
-                  <span className="comp-bar-label comp-bar-label--saved">{t('home.impactReclaimed')}</span>
-                  <div className="comp-bar-track">
-                    <div className="comp-bar comp-bar--saved"
-                      style={{ width: `${Math.min((hoursSavedPerYear / maxBarHours) * 100, 100)}%` }} />
-                  </div>
-                  <span className="comp-bar-value comp-bar-value--saved">{hoursSavedPerYear}{t('home.impactPerYear')}</span>
-                </div>
-              </div>
-              <p className="comp-chart-note">{t('home.impactNote')}</p>
-            </div>
-
-            {/* RIGHT · Savings Calculator */}
-            <div className="savings-col fade-up" style={{ transitionDelay: '120ms' }}>
-              <div className="comp-chart-header">
-                <p className="section-eyebrow">{t('home.savingsEyebrow')}</p>
-                <h2 className="section-title">{t('home.savingsTitle')}</h2>
-              </div>
-
-              {/* Inputs */}
-              <div className="savings-inputs">
-              <div className="savings-input-group">
-                <div className="savings-input-header">
-                  <label className="savings-input-label">{t('home.savingsArticles')}</label>
-                  <span className="savings-input-val">{articlesPerWeek}</span>
-                </div>
-                <input type="range" min={1} max={50} value={articlesPerWeek}
-                  onChange={e => setArticlesPerWeek(Number(e.target.value))}
-                  className="savings-slider" />
-                <div className="savings-slider-ticks"><span>1</span><span>50</span></div>
-              </div>
-
-              <div className="savings-input-group">
-                <div className="savings-input-header">
-                  <label className="savings-input-label">{t('home.savingsReadingTime')}</label>
-                  <span className="savings-input-val">{avgReadingTime} {t('home.savingsMin')}</span>
-                </div>
-                <input type="range" min={2} max={60} value={avgReadingTime}
-                  onChange={e => setAvgReadingTime(Number(e.target.value))}
-                  className="savings-slider" />
-                <div className="savings-slider-ticks"><span>2 {t('home.savingsMin')}</span><span>60 {t('home.savingsMin')}</span></div>
-              </div>
-
-              <div className="savings-input-group">
-                <div className="savings-input-header">
-                  <label className="savings-input-label">{t('home.savingsLowValue')}</label>
-                  <span className="savings-input-val">{lowValuePct}%</span>
-                </div>
-                <input type="range" min={10} max={90} value={lowValuePct}
-                  onChange={e => setLowValuePct(Number(e.target.value))}
-                  className="savings-slider" />
-                <div className="savings-slider-ticks"><span>10%</span><span>90%</span></div>
-              </div>
-
-              <div className="savings-formula-note">
-                <IconInfo />
-                <span>{t('home.savingsResearchNote')}</span>
-              </div>
-            </div>
-
-            {/* Outputs */}
-            <div className="savings-outputs">
-              <div className="savings-headline">
-                <span className="savings-headline-num">{hoursSavedPerYear}</span>
-                <span className="savings-headline-unit"> {t('home.savingsHoursPerYear')}</span>
-              </div>
-              <div className="savings-monthly">
-                <span className="savings-monthly-item">
-                  <strong>{hoursSavedPerMonth}h</strong> {t('home.savingsThisMonth')}
-                </span>
-              </div>
-              <button className="btn-primary btn-cta savings-cta" onClick={onOpenAuth} type="button">
-                {t('home.savingsCta')}
-              </button>
-            </div>
-            </div>{/* /savings-col */}
-
-          </div>{/* /impact-savings-grid */}
-        </div>
-      </section>
-
-      </div>{/* /home-mid-sections */}
-
-      {/* ── How TimeCut Works ── */}
-      <section className="hiw-home">
-        <div className="container">
-          <p className="section-eyebrow fade-up">{t('home.hiwEyebrow')}</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.hiwTitle')}</h2>
-          <div className="hiw-home-steps">
-            <div className="hiw-home-step fade-up" style={{ transitionDelay: '0ms' }}>
-              <div className="hiw-home-num">01</div>
-              <h3 className="hiw-home-step-title">{t('home.hiwStep1Title')}</h3>
-              <p className="hiw-home-step-desc">{t('home.hiwStep1Desc')}</p>
-            </div>
-            <div className="hiw-home-arrow" />
-            <div className="hiw-home-step fade-up" style={{ transitionDelay: '120ms' }}>
-              <div className="hiw-home-num">02</div>
-              <h3 className="hiw-home-step-title">{t('home.hiwStep2Title')}</h3>
-              <p className="hiw-home-step-desc">{t('home.hiwStep2Desc')}</p>
-            </div>
-            <div className="hiw-home-arrow" />
-            <div className="hiw-home-step fade-up" style={{ transitionDelay: '240ms' }}>
-              <div className="hiw-home-num">03</div>
-              <h3 className="hiw-home-step-title">{t('home.hiwStep3Title')}</h3>
-              <p className="hiw-home-step-desc">{t('home.hiwStep3DescPre')} <strong>{t('home.verdictReadIt')}</strong> · <strong>{t('home.verdictSkimIt')}</strong> · <strong>{t('result.verdictSkipIt')}</strong>, {t('home.hiwStep3DescPost')}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Feature Cards ── */}
-      <section className="features">
-        <div className="container">
-          <p className="section-eyebrow fade-up">{t('home.whyBadge')}</p>
-          <h2 className="section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.whyTitle')}</h2>
-          <div className="features-grid">
+          <p className="lp-eyebrow fade-up">{t('home.lpHiwEyebrow')}</p>
+          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpHiwTitle')}</h2>
+          <div className="lp-hiw-grid">
             {[
-              { icon: <IconClock />, cls: 'feature-icon--purple', i: 0, title: t('home.feat1Title'), desc: t('home.feat1Desc') },
-              { icon: <IconTarget />, cls: 'feature-icon--amber', i: 1, title: t('home.feat2Title'), desc: t('home.feat2Desc') },
-              { icon: <IconShieldCheck />, cls: 'feature-icon--green', i: 2, title: t('home.feat3Title'), desc: t('home.feat3Desc') },
-            ].map(({ icon, cls, i, title, desc }) => (
-              <div key={i}
-                className={`feature-card fade-up${activeCard === i ? ' feature-card--active' : ''}`}
-                style={{ transitionDelay: `${i * 120}ms` }}
-                onClick={() => setActiveCard(activeCard === i ? null : i)}>
-                <div className={`feature-icon ${cls}`}>{icon}</div>
-                <h3>{title}</h3>
-                <p>{desc}</p>
+              { num: '01', title: t('home.lpHiw1Title'), desc: t('home.lpHiw1Desc') },
+              { num: '02', title: t('home.lpHiw2Title'), desc: t('home.lpHiw2Desc') },
+              { num: '03', title: t('home.lpHiw3Title'), desc: t('home.lpHiw3Desc') },
+              { num: '04', title: t('home.lpHiw4Title'), desc: t('home.lpHiw4Desc') },
+            ].map((step, i) => (
+              <div key={i} className="lp-hiw-step fade-up" style={{ transitionDelay: `${i * 80}ms` }}>
+                <div className="lp-hiw-num">{step.num}</div>
+                <h3 className="lp-hiw-step-title">{step.title}</h3>
+                <p className="lp-hiw-step-desc">{step.desc}</p>
+                {i < 3 && <div className="lp-hiw-arrow">→</div>}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Philosophy ── */}
-      <section className="philosophy-section">
-        <div className="container philosophy-inner">
-          <p className="philosophy-line">{t('home.philoLine1')}</p>
-          <p className="philosophy-line philosophy-line--accent">{t('home.philoLine2')}</p>
-          <p className="philosophy-question">{t('home.philoQuestion')}</p>
+      {/* ══════════════════════════════════════════
+          USE CASES  (5 cards)
+      ══════════════════════════════════════════ */}
+      <section className="lp-section lp-section--alt">
+        <div className="container">
+          <p className="lp-eyebrow fade-up">{t('home.lpUseCasesEyebrow')}</p>
+          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpUseCasesTitle')}</h2>
+          <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms' }}>{t('home.lpUseCasesSub')}</p>
+          <div className="lp-usecases-grid">
+            {[
+              { icon: '👥', title: t('home.lpUc1Title'), desc: t('home.lpUc1Desc') },
+              { icon: '📦', title: t('home.lpUc2Title'), desc: t('home.lpUc2Desc') },
+              { icon: '📊', title: t('home.lpUc3Title'), desc: t('home.lpUc3Desc') },
+              { icon: '🔬', title: t('home.lpUc4Title'), desc: t('home.lpUc4Desc') },
+              { icon: '📚', title: t('home.lpUc5Title'), desc: t('home.lpUc5Desc') },
+            ].map((uc, i) => (
+              <div key={i} className="lp-uc-card fade-up" style={{ transitionDelay: `${i * 60}ms` }}>
+                <span className="lp-uc-icon">{uc.icon}</span>
+                <h3 className="lp-uc-title">{uc.title}</h3>
+                <p className="lp-uc-desc">{uc.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          WHY TIMECUT  (vs ChatGPT table)
+      ══════════════════════════════════════════ */}
+      <section className="lp-section">
+        <div className="container">
+          <p className="lp-eyebrow fade-up">{t('home.lpWhyEyebrow')}</p>
+          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpWhyTitle')}</h2>
+          <div className="lp-comparison-table fade-up" style={{ transitionDelay: '120ms' }}>
+            <div className="lp-comp-header">
+              <div className="lp-comp-col-label" />
+              <div className="lp-comp-col-label lp-comp-col--other">ChatGPT</div>
+              <div className="lp-comp-col-label lp-comp-col--us">TimeCut</div>
+            </div>
+            {[
+              { label: t('home.lpComp1Label'), other: t('home.lpComp1Other'), us: t('home.lpComp1Us') },
+              { label: t('home.lpComp2Label'), other: t('home.lpComp2Other'), us: t('home.lpComp2Us') },
+              { label: t('home.lpComp3Label'), other: t('home.lpComp3Other'), us: t('home.lpComp3Us') },
+              { label: t('home.lpComp4Label'), other: t('home.lpComp4Other'), us: t('home.lpComp4Us') },
+            ].map((row, i) => (
+              <div key={i} className="lp-comp-row">
+                <div className="lp-comp-cell lp-comp-cell--label">{row.label}</div>
+                <div className="lp-comp-cell lp-comp-cell--other">{row.other}</div>
+                <div className="lp-comp-cell lp-comp-cell--us">
+                  <span className="lp-comp-check">✓</span> {row.us}
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="lp-why-cta fade-up" style={{ transitionDelay: '200ms' }}>
+            <button className="btn-primary btn-cta" onClick={scrollToTop}>{t('home.lpCta')}</button>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          LEGAL DISCLAIMER
+      ══════════════════════════════════════════ */}
+      <section className="lp-disclaimer-section">
+        <div className="container">
+          <p className="lp-disclaimer-text">{t('home.lpDisclaimer')}</p>
         </div>
       </section>
 
       <Footer />
     </>
-  )
-}
-
-/* ── Inline SVG Icons ── */
-function IconDoc({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" />
-    </svg>
-  )
-}
-function IconUpload({ className }: { className?: string }) {
-  return (
-    <svg className={className} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="16 16 12 12 8 16" /><line x1="12" y1="12" x2="12" y2="21" />
-      <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3" />
-    </svg>
-  )
-}
-function IconClock() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-    </svg>
-  )
-}
-function IconTarget() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" />
-    </svg>
-  )
-}
-function IconShield() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-    </svg>
-  )
-}
-function IconShieldCheck() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <polyline points="9 12 11 14 15 10" />
-    </svg>
-  )
-}
-function IconInfo() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-      <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
-    </svg>
   )
 }

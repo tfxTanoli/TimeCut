@@ -1,8 +1,9 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { analyzeText, analyzePdf } from '../api'
-import type { TimeCutReport, InputTab } from '../types'
+import { analyzeText, analyzePdf, analyzeDecision } from '../api'
+import type { TimeCutReport, InputTab, DecisionReport } from '../types'
 import LandingPage from '../components/LandingPage'
+import DecisionUpload from '../components/DecisionUpload'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -11,9 +12,11 @@ import {
   incrementAnalysisStats,
   saveAnalysis,
   checkAndIncrementUsage,
+  PAGE_LIMITS,
 } from '../lib/userService'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
+const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
 
 const ANON_LIMIT = 1
 const ANON_KEY = 'tc_anon_usage'
@@ -93,6 +96,7 @@ export default function HomePage() {
   const { openSignup: openAuthModal } = useAuthModal()
   const { t } = useTranslation()
   const [report, setReport] = useState<TimeCutReport | null>(null)
+  const [decisionReport, setDecisionReport] = useState<DecisionReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [analysisLanguage, setAnalysisLanguage] = useState('English')
@@ -102,6 +106,7 @@ export default function HomePage() {
   const userRemaining = user ? Math.max(0, planLimit - monthlyUsage) : null
   const remaining = userRemaining ?? anonRemaining
   const isAtLimit = remaining <= 0
+  const pageLimit = PAGE_LIMITS[plan]
 
   async function handleSubmit(tab: InputTab, value: string | File, language: string) {
     setError(null)
@@ -173,10 +178,64 @@ export default function HomePage() {
     setIsLoading(false)
   }
 
+  async function handleDecisionSubmit(files: File[], goal: string, language: string) {
+    setError(null)
+
+    if (isAtLimit) { setShowUpgradeModal(true); return }
+
+    if (user) {
+      try {
+        await checkAndIncrementUsage(user.uid, plan)
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : ''
+        if (msg.startsWith('LIMIT_EXCEEDED')) { setShowUpgradeModal(true); return }
+        setError(t('home.errorGeneral'))
+        return
+      }
+    } else {
+      if (anonRemaining <= 0) { setShowUpgradeModal(true); return }
+      incrementAnonUsage()
+    }
+
+    setIsLoading(true)
+    setAnalysisLanguage(language)
+
+    if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language })
+
+    try {
+      const result = await analyzeDecision(files, goal, language, pageLimit)
+      if (result.data) {
+        setDecisionReport(result.data)
+        if (user) {
+          await Promise.all([
+            refreshUsage(),
+            logActivity(user.uid, 'analysis_completed', { language }),
+          ])
+        }
+      } else {
+        if (user) refreshUsage()
+        setError(result.error ?? t('home.errorGeneral'))
+      }
+    } catch {
+      if (user) refreshUsage()
+      setError(t('home.errorNetwork'))
+    }
+    setIsLoading(false)
+  }
+
   function handleBack() {
     setReport(null)
+    setDecisionReport(null)
     setError(null)
     setShowUpgradeModal(false)
+  }
+
+  if (decisionReport) {
+    return (
+      <Suspense fallback={<div className="page-loading" />}>
+        <DecisionResultPage report={decisionReport} onBack={handleBack} language={analysisLanguage} />
+      </Suspense>
+    )
   }
 
   if (report) {
@@ -199,6 +258,18 @@ export default function HomePage() {
           t={t}
         />
       )}
+      <DecisionUpload
+        onDecisionSubmit={handleDecisionSubmit}
+        isLoading={isLoading}
+        error={error}
+        plan={plan}
+        planLimit={user ? planLimit : 2}
+        monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
+        isLoggedIn={!!user}
+        onOpenAuth={openAuthModal}
+        remaining={remaining}
+        isAtLimit={isAtLimit}
+      />
       <LandingPage
         onSubmit={handleSubmit}
         isLoading={isLoading}

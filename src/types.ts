@@ -46,3 +46,44 @@ export interface AnalyzeResponse {
   data?: TimeCutReport
   error?: string
 }
+
+/* ─────────────────────────────────────────────────────
+   Decision Intelligence Types  (Phase 2)
+   ───────────────────────────────────────────────────── */
+
+export type RiskSeverity = 'High' | 'Medium' | 'Low'
+
+export interface RiskItem {
+  description: string
+  severity: RiskSeverity
+}
+
+export interface RankedDocument {
+  rank: number
+  name: string
+  summary: string
+}
+
+export interface EvidenceItem {
+  section: string
+  page?: string
+  clause?: string
+}
+
+export interface DecisionReport {
+  recommendation: string
+  ranking: RankedDocument[]
+  confidence_score: number
+  confidence_rationale: string
+  hidden_risks: RiskItem[]
+  missing_information: string[]
+  smart_skeptic_questions: string[]
+  decision_defense: string
+  evidence_found: EvidenceItem[]
+  documents_analyzed: number
+}
+
+export interface DecisionAnalyzeResponse {
+  data?: DecisionReport
+  error?: string
+}

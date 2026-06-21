@@ -132,7 +132,6 @@ export default function PricingPage() {
 
             {/* PRO */}
             <div className="pricing-card pricing-card--highlight" onClick={() => handlePaidPlan('pro')}>
-              <span className="pricing-badge">{t('pricing.mostPopular')}</span>
               {planBadge('pro')}
               <p className="pricing-plan-name">{t('pricing.pro')}</p>
               <p className="pricing-plan-tagline">{t('pricing.proTagline')}</p>

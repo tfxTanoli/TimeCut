@@ -13,7 +13,11 @@ function extractPDFText(buffer: Buffer): Promise<string> {
     const parser = new PDFParser(null, true)
     parser.on('pdfParser_dataReady', () => resolve(parser.getRawTextContent()))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parser.on('pdfParser_dataError', (err: any) => reject(err.parserError ?? err))
+    parser.on('pdfParser_dataError', (errData: any) => {
+      // pdf2json emits { parserError: string } — always convert to proper Error
+      const raw = errData?.parserError ?? errData
+      reject(new Error(typeof raw === 'string' ? raw : String(raw)))
+    })
     parser.parseBuffer(buffer)
   })
 }
@@ -112,9 +116,9 @@ const PLAN_LABELS: Record<string, string> = {
 }
 
 const PLAN_LIMITS: Record<string, string> = {
-  starter: '60 analyses/month',
-  pro: '300 analyses/month',
-  business: '2,000 analyses/month',
+  starter: '5 analyses/month · 50 pages per analysis',
+  pro: '20 analyses/month · 100 pages per analysis',
+  business: 'Unlimited analyses & pages',
 }
 
 async function sendVerificationEmail(to: string, name: string, verificationLink: string) {
@@ -643,6 +647,141 @@ app.post('/api/stripe-webhook',
     res.json({ received: true })
   }
 )
+
+// ── Decision Intelligence: multi-document analysis ──
+const DECISION_SYSTEM_PROMPT = `You are a Critical Decision Reviewer for TimeCut Decision Intelligence. Your role is to help users make better, safer decisions by analyzing their documents with a skeptical, risk-aware mindset.
+
+CRITICAL RULES:
+- You are NOT a summarizer. Do NOT describe or paraphrase what documents say.
+- You ARE a risk detector, blind-spot finder, and decision advisor.
+- Always challenge assumptions. Always look for what is MISSING.
+- Surface hidden risks even when documents appear clean or positive.
+- Use cautious, non-absolute language in recommendations (e.g., "Based on available evidence..." not "You should...").
+- Rank documents by fit-to-decision-goal, not by general quality.
+- Every risk must be described in 1-2 clear sentences.
+- Evidence references must cite the document name and section/page if detectable.
+
+YOUR ANALYSIS PROCESS:
+1. Read all documents in the context of the stated decision goal.
+2. Compare documents against each other AND against the decision goal.
+3. Identify what information is present, what is missing, and what is suspicious.
+4. Generate critical questions a skeptical stakeholder would ask.
+5. Produce a structured decision report.
+
+OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
+{
+  "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
+  "ranking": [
+    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, based on decision goal fit>" }
+  ],
+  "confidence_score": <integer 0-100>,
+  "confidence_rationale": "<1-2 sentences explaining the confidence score>",
+  "hidden_risks": [
+    { "description": "<clear risk description, 1-2 sentences>", "severity": "High" | "Medium" | "Low" }
+  ],
+  "missing_information": ["<specific missing item>"],
+  "smart_skeptic_questions": ["<critical question>"],
+  "decision_defense": "<2-4 sentences: business justification suitable for presenting to a manager>",
+  "evidence_found": [
+    { "section": "<section>", "page": "<page or null>", "clause": "<clause or null>" }
+  ],
+  "documents_analyzed": <integer>
+}
+
+Generate ALL text fields in the user's selected language.`
+
+const uploadAny = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } }).any()
+
+app.post('/api/analyze-decision', (req, res, next) => {
+  uploadAny(req, res, (err) => {
+    if (err) {
+      console.error('[analyze-decision] multer error:', err)
+      res.status(400).json({ error: err instanceof Error ? err.message : 'File upload failed' })
+      return
+    }
+    next()
+  })
+}, async (req, res) => {
+  try {
+    const files = (req.files as Express.Multer.File[]) ?? []
+    const { decisionGoal, language = 'English' } = req.body
+    const pageLimitRaw = req.headers['x-page-limit']
+    const pageLimit = parseInt(Array.isArray(pageLimitRaw) ? pageLimitRaw[0] : (pageLimitRaw ?? '999999'), 10) || 999999
+
+    console.log(`[analyze-decision] files=${files.length} goal="${decisionGoal}" lang=${language}`)
+
+    if (!files.length) { res.status(400).json({ error: 'No files uploaded' }); return }
+    if (!decisionGoal?.trim()) { res.status(400).json({ error: 'Decision goal is required' }); return }
+
+    let totalPages = 0
+    const documents: { name: string; content: string }[] = []
+    const parseErrors: string[] = []
+
+    for (const file of files) {
+      const isPdf = file.mimetype === 'application/pdf' || file.originalname.toLowerCase().endsWith('.pdf')
+      let text: string
+
+      if (isPdf) {
+        try {
+          text = await extractPDFText(file.buffer)
+          const meaningful = text.replace(/-+Page \(\d+\) Break-+/g, '').trim()
+          if (meaningful.length < 20) {
+            parseErrors.push(`"${file.originalname}" appears to be a scanned/image-based PDF with no extractable text.`)
+            continue
+          }
+          const pageMarkers = (text.match(/-+Page \(\d+\) Break-+/g) ?? []).length
+          totalPages += Math.max(pageMarkers, 1)
+        } catch (pdfErr) {
+          const msg = pdfErr instanceof Error ? pdfErr.message : String(pdfErr)
+          console.warn(`[analyze-decision] PDF parse failed for "${file.originalname}":`, msg)
+          parseErrors.push(`"${file.originalname}" could not be parsed: ${msg}`)
+          continue
+        }
+      } else {
+        text = file.buffer.toString('utf-8')
+        totalPages += Math.ceil(text.length / 3000)
+      }
+
+      documents.push({ name: file.originalname, content: text })
+    }
+
+    if (documents.length === 0) {
+      const detail = parseErrors.length ? ` Details: ${parseErrors.join(' ')}` : ''
+      res.status(400).json({ error: `None of the uploaded files could be read.${detail}` })
+      return
+    }
+
+    if (parseErrors.length) {
+      console.warn(`[analyze-decision] ${parseErrors.length} file(s) skipped:`, parseErrors)
+    }
+
+    if (totalPages > pageLimit) {
+      res.status(400).json({ error: `Total pages (${totalPages}) exceeds your plan limit (${pageLimit} pages).` })
+      return
+    }
+
+    const docsBlock = documents
+      .map((d, i) => `--- Document ${i + 1}: ${d.name} ---\n${d.content.slice(0, 8000)}`)
+      .join('\n\n')
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      response_format: { type: 'json_object' },
+      messages: [
+        { role: 'system', content: DECISION_SYSTEM_PROMPT },
+        { role: 'user', content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}` },
+      ],
+    })
+
+    const raw = completion.choices[0]?.message?.content ?? '{}'
+    const data = JSON.parse(raw)
+    res.json({ data })
+  } catch (err) {
+    const message = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
+    console.error('[analyze-decision] Error:', message, err)
+    res.status(500).json({ error: message || 'Analysis failed' })
+  }
+})
 
 // Text or URL analysis
 app.post('/api/analyze', express.json(), async (req, res) => {

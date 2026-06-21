@@ -130,7 +130,7 @@ export default function AuthModal() {
 
         {verifyScreen ? (
           <div className="auth-modal-success">
-            <div className="auth-modal-success-ring" style={{ background: '#eff6ff', borderColor: '#bfdbfe' }}>
+            <div className="auth-modal-success-ring">
               <IconMail />
             </div>
             <p className="auth-modal-success-title">Check your inbox</p>

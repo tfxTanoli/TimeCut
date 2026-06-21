@@ -17,10 +17,18 @@ import type { InputTab, TimeCutReport } from '../types'
 export type PlanType = 'free' | 'starter' | 'pro' | 'business' | 'custom'
 
 export const PLAN_LIMITS: Record<PlanType, number> = {
-  free: 5,
-  starter: 60,
-  pro: 300,
-  business: 2000,
+  free: 2,
+  starter: 5,
+  pro: 20,
+  business: 999999,
+  custom: 999999,
+}
+
+export const PAGE_LIMITS: Record<PlanType, number> = {
+  free: 20,
+  starter: 50,
+  pro: 100,
+  business: 999999,
   custom: 999999,
 }
 

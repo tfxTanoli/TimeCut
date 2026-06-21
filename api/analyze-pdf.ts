@@ -9,7 +9,10 @@ function extractPDFText(buffer: Buffer): Promise<string> {
     const parser = new PDFParser(null, true)
     parser.on('pdfParser_dataReady', () => resolve(parser.getRawTextContent()))
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parser.on('pdfParser_dataError', (err: any) => reject(err.parserError ?? err))
+    parser.on('pdfParser_dataError', (errData: any) => {
+      const raw = errData?.parserError ?? errData
+      reject(new Error(typeof raw === 'string' ? raw : String(raw)))
+    })
     parser.parseBuffer(buffer)
   })
 }

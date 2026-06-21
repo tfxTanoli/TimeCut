@@ -9,17 +9,17 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
 export const STRIPE_PLANS: Record<string, { name: string; description: string; amount: number }> = {
   starter: {
     name: 'TimeCut Starter',
-    description: 'Build better information habits — 60 analyses/month',
+    description: 'Full decision intelligence — 5 analyses/month · 50 pages per analysis',
     amount: 900,
   },
   pro: {
     name: 'TimeCut Pro',
-    description: 'Make faster decisions at scale — 500 analyses/month',
+    description: 'Advanced risk intelligence — 20 analyses/month · 100 pages per analysis',
     amount: 2900,
   },
   business: {
     name: 'TimeCut Business',
-    description: 'Scale your content intelligence — 2,000 analyses/month',
+    description: 'Team decision intelligence — Unlimited analyses & pages',
     amount: 14900,
   },
 }
