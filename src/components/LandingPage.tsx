@@ -58,7 +58,6 @@ export default function LandingPage(_props: Props) {
             <span className="lp-badge">{t('home.lpBadge1')}</span>
             <span className="lp-badge">{t('home.lpBadge2')}</span>
             <span className="lp-badge">{t('home.lpBadge3')}</span>
-            <span className="lp-badge">{t('home.lpBadge4')}</span>
           </div>
           <h1 className="lp-headline fade-up" style={{ transitionDelay: '60ms' }}>
             {t('home.lpHeadline')}
