@@ -612,10 +612,12 @@ const zhCN: Record<string, string> = {
   'cta.startFree': '免费开始',
 
   // ── Decision Upload (Phase 4) ──
-  'decision.badge1': 'AI决策智能',
+  'decision.badge1': 'AI决策智能平台',
   'decision.badge2': 'AI风险发现',
   'decision.badge3': '文件风险洞察',
   'decision.headline': '在签字、招聘、投资、批准或决策之前...',
+  'decision.headlinePre': '在签字、招聘、投资、批准或决策之前...',
+  'decision.headlineMain': '找出他人忽略的风险。',
   'decision.subheadline': '上传合同、供应商报价、简历、提案和报告。TimeCut在您做出决策前识别隐藏风险、缺失信息、薄弱证据和重要问题。',
   'decision.step1Title': '上传文件',
   'decision.step1Sub': '上传1至{max}份文件（PDF或TXT）。您的套餐每次分析最多允许{pageLimit}页。',
@@ -660,11 +662,13 @@ const zhCN: Record<string, string> = {
   'report.analyzeAnother': '分析另一个决策',
 
   // ── New Landing Page (Phase 6) ──
-  'home.lpBadge1': 'AI决策智能',
+  'home.lpBadge1': 'AI决策智能平台',
   'home.lpBadge2': 'AI风险发现',
   'home.lpBadge3': '文件风险洞察',
   'home.lpBadge4': '找出他人忽略的风险',
   'home.lpHeadline': '在签字、招聘、投资、批准或决策之前... 找出他人忽略的风险。',
+  'home.lpHeadlinePre': '在签字、招聘、投资、批准或决策之前...',
+  'home.lpHeadlineMain': '找出他人忽略的风险。',
   'home.lpSubheadline': '上传合同、供应商报价、简历、提案和报告。TimeCut在您做出决策前识别隐藏风险、缺失信息、薄弱证据和重要问题。',
   'home.lpCta': '免费试用TimeCut',
   'home.lpDemoCta': '查看示例报告 →',

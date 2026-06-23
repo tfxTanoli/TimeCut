@@ -612,10 +612,12 @@ const en: Record<string, string> = {
   'cta.startFree': 'Start for Free',
 
   // ── Decision Upload (Phase 4) ──
-  'decision.badge1': 'AI Decision Intelligence',
+  'decision.badge1': 'AI Decision Intelligence Platform',
   'decision.badge2': 'AI Risk Discovery',
   'decision.badge3': 'Document Risk Insights',
   'decision.headline': 'Before You Sign, Hire, Invest, Approve, or Decide...',
+  'decision.headlinePre': 'Before You Sign, Hire, Invest, Approve, or Decide...',
+  'decision.headlineMain': 'Find The Risks Others Miss.',
   'decision.subheadline': 'Upload contracts, supplier quotations, CVs, proposals, and reports. TimeCut identifies hidden risks, missing information, weak evidence, and important questions before you make a decision.',
   'decision.step1Title': 'Upload Documents',
   'decision.step1Sub': 'Upload 1–{max} documents (PDF or TXT). Your plan allows up to {pageLimit} pages per analysis.',
@@ -660,11 +662,13 @@ const en: Record<string, string> = {
   'report.analyzeAnother': 'Analyze Another Decision',
 
   // ── New Landing Page (Phase 6) ──
-  'home.lpBadge1': 'AI Decision Intelligence',
+  'home.lpBadge1': 'AI Decision Intelligence Platform',
   'home.lpBadge2': 'AI Risk Discovery',
   'home.lpBadge3': 'Document Risk Insights',
   'home.lpBadge4': 'Find The Risks Others Miss',
   'home.lpHeadline': 'Before You Sign, Hire, Invest, Approve, or Decide... Find the Risks Others Miss.',
+  'home.lpHeadlinePre': 'Before You Sign, Hire, Invest, Approve, or Decide...',
+  'home.lpHeadlineMain': 'Find The Risks Others Miss.',
   'home.lpSubheadline': 'Upload contracts, supplier quotations, CVs, proposals, and reports. TimeCut identifies hidden risks, missing information, weak evidence, and important questions before you make a decision.',
   'home.lpCta': 'Try TimeCut Free',
   'home.lpDemoCta': 'View Sample Report →',

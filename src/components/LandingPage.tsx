@@ -60,16 +60,17 @@ export default function LandingPage(_props: Props) {
         <div className="container lp-hero-inner">
           <div className="lp-hero-badges fade-up">
             <span className="lp-badge">{t('home.lpBadge1')}</span>
-            <span className="lp-badge">{t('home.lpBadge2')}</span>
-            <span className="lp-badge">{t('home.lpBadge3')}</span>
           </div>
-          <h1 className="lp-headline fade-up" style={{ transitionDelay: '60ms' }}>
-            {t('home.lpHeadline')}
+          <p className="lp-headline-pre fade-up" style={{ transitionDelay: '60ms' }}>
+            {t('home.lpHeadlinePre')}
+          </p>
+          <h1 className="lp-headline fade-up" style={{ transitionDelay: '120ms' }}>
+            {t('home.lpHeadlineMain')}
           </h1>
-          <p className="lp-subheadline fade-up" style={{ transitionDelay: '120ms' }}>
+          <p className="lp-subheadline fade-up" style={{ transitionDelay: '180ms' }}>
             {t('home.lpSubheadline')}
           </p>
-          <div className="lp-hero-actions fade-up" style={{ transitionDelay: '180ms' }}>
+          <div className="lp-hero-actions fade-up" style={{ transitionDelay: '240ms' }}>
             <button className="btn-primary btn-cta lp-primary-cta" onClick={scrollToTop}>
               {t('home.lpCta')}
             </button>

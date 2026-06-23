@@ -117,10 +117,9 @@ export default function DecisionUpload({
       <div className="du-hero">
         <div className="du-hero-badges">
           <span className="du-badge">{t('decision.badge1')}</span>
-          <span className="du-badge">{t('decision.badge2')}</span>
-          <span className="du-badge">{t('decision.badge3')}</span>
         </div>
-        <h1 className="du-headline">{t('decision.headline')}</h1>
+        <p className="du-headline-pre">{t('decision.headlinePre')}</p>
+        <h1 className="du-headline">{t('decision.headlineMain')}</h1>
         <p className="du-subheadline">{t('decision.subheadline')}</p>
       </div>
 
