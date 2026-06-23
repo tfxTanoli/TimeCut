@@ -662,7 +662,7 @@ const zhCN: Record<string, string> = {
   'report.analyzeAnother': '分析另一个决策',
 
   // ── New Landing Page (Phase 6) ──
-  'home.lpBadge1': 'AI决策智能平台',
+  'home.lpBadge1': 'AI决策智能',
   'home.lpBadge2': 'AI风险发现',
   'home.lpBadge3': '文件风险洞察',
   'home.lpBadge4': '找出他人忽略的风险',

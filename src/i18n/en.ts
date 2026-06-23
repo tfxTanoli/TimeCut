@@ -662,7 +662,7 @@ const en: Record<string, string> = {
   'report.analyzeAnother': 'Analyze Another Decision',
 
   // ── New Landing Page (Phase 6) ──
-  'home.lpBadge1': 'AI Decision Intelligence Platform',
+  'home.lpBadge1': 'AI Decision Intelligence',
   'home.lpBadge2': 'AI Risk Discovery',
   'home.lpBadge3': 'Document Risk Insights',
   'home.lpBadge4': 'Find The Risks Others Miss',
