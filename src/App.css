@@ -5354,6 +5354,94 @@
 .lp-comp-check { color: #22C55E; font-weight: 700; margin-right: 6px; }
 .lp-why-cta { display: flex; justify-content: center; margin-top: 40px; }
 
+/* ── Demo CTA (hero secondary button) ── */
+.lp-demo-cta {
+  background: transparent;
+  border: 1.5px solid rgba(59, 130, 246, 0.5);
+  color: #60A5FA;
+  padding: 11px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  letter-spacing: 0.01em;
+}
+.lp-demo-cta:hover { border-color: #3B82F6; color: #fff; background: rgba(59,130,246,0.1); }
+
+/* ── Example Output Card ── */
+.lp-eo-card {
+  max-width: 680px;
+  margin: 40px auto 0;
+  background: #0D1424;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  border-radius: 14px;
+  padding: 28px 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.lp-eo-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 16px 0; }
+.lp-eo-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+}
+.lp-eo-row--goal { align-items: center; }
+.lp-eo-top-row {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.lp-eo-rec, .lp-eo-score {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 140px;
+}
+.lp-eo-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6B7280;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 160px;
+}
+.lp-eo-label--risk { color: #F87171; }
+.lp-eo-label--missing { color: #FB923C; }
+.lp-eo-label--question { color: #A78BFA; }
+.lp-eo-label--evidence { color: #34D399; }
+.lp-eo-value {
+  font-size: 14px;
+  color: #D1D5DB;
+  line-height: 1.5;
+}
+.lp-eo-value--italic { font-style: italic; color: #C4B5FD; }
+.lp-eo-value--evidence { color: #6EE7B7; font-size: 13px; }
+.lp-eo-rec-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #22C55E;
+  letter-spacing: -0.01em;
+}
+.lp-eo-score-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: #3B82F6;
+  letter-spacing: -0.01em;
+}
+@media (max-width: 600px) {
+  .lp-eo-card { padding: 20px 18px; }
+  .lp-eo-label { min-width: 130px; font-size: 10px; }
+  .lp-eo-row { flex-direction: column; gap: 4px; }
+  .lp-eo-top-row { flex-direction: column; gap: 12px; }
+  .lp-eo-label { min-width: unset; }
+}
+
 /* ── Disclaimer ── */
 .lp-disclaimer-section {
   padding: 28px 0; background: #09090B;

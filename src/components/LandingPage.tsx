@@ -47,6 +47,10 @@ export default function LandingPage(_props: Props) {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  function scrollToExample() {
+    document.getElementById('example-output')?.scrollIntoView({ behavior: 'smooth' })
+  }
+
   return (
     <>
       {/* ══════════════════════════════════════════
@@ -68,6 +72,9 @@ export default function LandingPage(_props: Props) {
           <div className="lp-hero-actions fade-up" style={{ transitionDelay: '180ms' }}>
             <button className="btn-primary btn-cta lp-primary-cta" onClick={scrollToTop}>
               {t('home.lpCta')}
+            </button>
+            <button className="lp-demo-cta" onClick={scrollToExample}>
+              {t('home.lpDemoCta')}
             </button>
             <p className="lp-no-cc">{t('home.lpNoCc')}</p>
           </div>
@@ -100,18 +107,66 @@ export default function LandingPage(_props: Props) {
       </section>
 
       {/* ══════════════════════════════════════════
-          USE CASES  (5 cards)
+          EXAMPLE OUTPUT
       ══════════════════════════════════════════ */}
-      <section className="lp-section lp-section--alt">
+      <section id="example-output" className="lp-section">
+        <div className="container">
+          <p className="lp-eyebrow fade-up">{t('home.lpEoEyebrow')}</p>
+          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpEoTitle')}</h2>
+          <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms' }}>{t('home.lpEoSub')}</p>
+          <div className="lp-eo-card fade-up" style={{ transitionDelay: '140ms' }}>
+            <div className="lp-eo-row lp-eo-row--goal">
+              <span className="lp-eo-label">{t('home.lpEoGoalLabel')}</span>
+              <span className="lp-eo-value">{t('home.lpEoGoalValue')}</span>
+            </div>
+            <div className="lp-eo-divider" />
+            <div className="lp-eo-top-row">
+              <div className="lp-eo-rec">
+                <span className="lp-eo-label">{t('home.lpEoRecLabel')}</span>
+                <span className="lp-eo-rec-value">{t('home.lpEoRecValue')}</span>
+              </div>
+              <div className="lp-eo-score">
+                <span className="lp-eo-label">{t('home.lpEoScoreLabel')}</span>
+                <span className="lp-eo-score-value">{t('home.lpEoScoreValue')}</span>
+              </div>
+            </div>
+            <div className="lp-eo-divider" />
+            <div className="lp-eo-row lp-eo-row--risk">
+              <span className="lp-eo-label lp-eo-label--risk">⚠ {t('home.lpEoRiskLabel')}</span>
+              <span className="lp-eo-value">{t('home.lpEoRiskValue')}</span>
+            </div>
+            <div className="lp-eo-row lp-eo-row--missing">
+              <span className="lp-eo-label lp-eo-label--missing">◎ {t('home.lpEoMissingLabel')}</span>
+              <span className="lp-eo-value">{t('home.lpEoMissingValue')}</span>
+            </div>
+            <div className="lp-eo-row lp-eo-row--question">
+              <span className="lp-eo-label lp-eo-label--question">? {t('home.lpEoQLabel')}</span>
+              <span className="lp-eo-value lp-eo-value--italic">{t('home.lpEoQValue')}</span>
+            </div>
+            <div className="lp-eo-divider" />
+            <div className="lp-eo-row lp-eo-row--evidence">
+              <span className="lp-eo-label lp-eo-label--evidence">📄 {t('home.lpEoEvidenceLabel')}</span>
+              <span className="lp-eo-value lp-eo-value--evidence">{t('home.lpEoEvidenceValue')}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          USE CASES  (7 cards)
+      ══════════════════════════════════════════ */}
+      <section className="lp-section lp-section--alt lp-section--use-cases">
         <div className="container">
           <p className="lp-eyebrow fade-up">{t('home.lpUseCasesEyebrow')}</p>
           <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpUseCasesTitle')}</h2>
           <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms' }}>{t('home.lpUseCasesSub')}</p>
           <div className="lp-usecases-grid">
             {[
-              { icon: '👥', title: t('home.lpUc1Title'), desc: t('home.lpUc1Desc') },
               { icon: '📦', title: t('home.lpUc2Title'), desc: t('home.lpUc2Desc') },
               { icon: '📊', title: t('home.lpUc3Title'), desc: t('home.lpUc3Desc') },
+              { icon: '👥', title: t('home.lpUc1Title'), desc: t('home.lpUc1Desc') },
+              { icon: '🤝', title: t('home.lpUc6Title'), desc: t('home.lpUc6Desc') },
+              { icon: '📝', title: t('home.lpUc7Title'), desc: t('home.lpUc7Desc') },
               { icon: '🔬', title: t('home.lpUc4Title'), desc: t('home.lpUc4Desc') },
               { icon: '📚', title: t('home.lpUc5Title'), desc: t('home.lpUc5Desc') },
             ].map((uc, i) => (
