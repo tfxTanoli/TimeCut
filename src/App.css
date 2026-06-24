@@ -5475,3 +5475,269 @@
 @media (max-width: 480px) {
   .lp-usecases-grid { grid-template-columns: 1fr; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   LANDING PAGE — DEMO TABS & EXPAND/COLLAPSE  (Phase 7)
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Demo type tabs ── */
+.lp-demo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+.lp-demo-tab {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #9CA3AF;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+.lp-demo-tab:hover {
+  background: rgba(59,130,246,0.1);
+  border-color: rgba(59,130,246,0.3);
+  color: #60A5FA;
+}
+.lp-demo-tab--active {
+  background: rgba(59,130,246,0.15);
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+/* ── Summary stat row inside lp-eo-card ── */
+.lp-eo-stats-row {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 4px 0;
+  flex-wrap: wrap;
+}
+.lp-eo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  flex: 1;
+  min-width: 100px;
+  padding: 8px 12px;
+  text-align: center;
+}
+.lp-eo-stat-icon { font-size: 16px; line-height: 1; }
+.lp-eo-stat-count {
+  font-size: 22px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1;
+}
+.lp-eo-stat-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6B7280;
+}
+.lp-eo-stat-label--evidence {
+  font-size: 12px;
+  color: #34D399;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.lp-eo-stat-divider {
+  width: 1px;
+  height: 36px;
+  background: rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+
+/* ── Expand/collapse button ── */
+.lp-eo-expand-btn {
+  display: block;
+  width: 100%;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #60A5FA;
+  border-radius: 8px;
+  padding: 11px 0;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  text-align: center;
+  margin-top: 4px;
+  letter-spacing: 0.01em;
+}
+.lp-eo-expand-btn:hover {
+  background: rgba(59,130,246,0.18);
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+/* ── Expanded content wrapper ── */
+.lp-eo-expanded {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+}
+
+/* ── Risk / Missing / Recommendation item cards ── */
+.lp-risk-item {
+  background: rgba(255,255,255,0.03);
+  border-radius: 12px;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lp-risk-item--risk { border: 1px solid rgba(239,68,68,0.25); }
+.lp-risk-item--missing { border: 1px solid rgba(251,146,60,0.25); }
+.lp-risk-item--rec { border: 1px solid rgba(34,197,94,0.25); }
+
+.lp-risk-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.lp-risk-item__badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #F87171;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.lp-risk-item__badge--missing { color: #FB923C; }
+.lp-risk-item__badge--rec { color: #34D399; }
+
+.lp-risk-level-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+}
+.lp-risk-item__title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.3;
+}
+.lp-risk-item__title--rec { color: #34D399; }
+
+/* ── Risk detail rows ── */
+.lp-risk-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lp-risk-detail__row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.lp-risk-detail__key {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6B7280;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.lp-risk-detail__key--evidence { color: #34D399; }
+.lp-risk-detail__val {
+  font-size: 13px;
+  color: #D1D5DB;
+  line-height: 1.55;
+}
+.lp-risk-detail__val--evidence { color: #6EE7B7; font-weight: 600; }
+
+/* ── Recommendation reasons ── */
+.lp-rec-reasons { display: flex; flex-direction: column; gap: 6px; }
+.lp-rec-reasons__label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6B7280;
+}
+.lp-rec-reasons__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.lp-rec-reasons__item {
+  font-size: 13px;
+  color: #D1D5DB;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.lp-rec-reasons__check {
+  color: #34D399;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Use case "View Sample Report" button ── */
+.lp-uc-demo-btn {
+  display: inline-block;
+  background: transparent;
+  border: 1px solid rgba(59,130,246,0.35);
+  color: #60A5FA;
+  border-radius: 6px;
+  padding: 7px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  margin-top: auto;
+  text-align: left;
+  letter-spacing: 0.01em;
+}
+.lp-uc-demo-btn:hover {
+  background: rgba(59,130,246,0.12);
+  border-color: #3B82F6;
+  color: #FFFFFF;
+}
+
+/* ── Upload section wrapper ── */
+.lp-section--upload-wrapper {
+  background: #09090B;
+  border-top: 1px solid #1F2937;
+  border-bottom: 1px solid #1F2937;
+}
+.lp-section--upload-wrapper .decision-upload {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* ── Use cases section (light bg in new layout, was lp-section--alt) ── */
+.lp-section--use-cases { background: #09090B; }
+
+/* ── Responsive for new elements ── */
+@media (max-width: 640px) {
+  .lp-demo-tabs { gap: 8px; }
+  .lp-demo-tab { font-size: 13px; padding: 8px 13px; }
+  .lp-eo-stats-row { flex-direction: column; gap: 4px; }
+  .lp-eo-stat-divider { width: 100%; height: 1px; }
+  .lp-risk-detail__row { grid-template-columns: 1fr; gap: 3px; }
+  .lp-risk-detail__key { font-size: 10px; }
+}

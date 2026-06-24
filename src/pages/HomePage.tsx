@@ -246,6 +246,22 @@ export default function HomePage() {
     )
   }
 
+  const uploadForm = (
+    <DecisionUpload
+      hideHero
+      onDecisionSubmit={handleDecisionSubmit}
+      isLoading={isLoading}
+      error={error}
+      plan={plan}
+      planLimit={user ? planLimit : 2}
+      monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
+      isLoggedIn={!!user}
+      onOpenAuth={openAuthModal}
+      remaining={remaining}
+      isAtLimit={isAtLimit}
+    />
+  )
+
   return (
     <>
       {showUpgradeModal && (
@@ -258,18 +274,6 @@ export default function HomePage() {
           t={t}
         />
       )}
-      <DecisionUpload
-        onDecisionSubmit={handleDecisionSubmit}
-        isLoading={isLoading}
-        error={error}
-        plan={plan}
-        planLimit={user ? planLimit : 2}
-        monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
-        isLoggedIn={!!user}
-        onOpenAuth={openAuthModal}
-        remaining={remaining}
-        isAtLimit={isAtLimit}
-      />
       <LandingPage
         onSubmit={handleSubmit}
         isLoading={isLoading}
@@ -281,6 +285,7 @@ export default function HomePage() {
         onOpenAuth={openAuthModal}
         remaining={remaining}
         isAtLimit={isAtLimit}
+        uploadSection={uploadForm}
       />
     </>
   )

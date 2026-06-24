@@ -13,20 +13,43 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   starter: {
     label: 'STARTER',
     price: '$9/month',
-    tagline: 'Full decision intelligence for individuals',
-    features: ['5 analyses/month', '50 pages per analysis', 'Full Ranking & Recommendation', 'Complete Risk Analysis', 'Missing Information Detection', 'Smart Skeptic Questions', 'Download Reports'],
+    tagline: 'Full analysis depth for individuals',
+    features: [
+      '20 analyses/month',
+      'Up to 5 Documents per analysis',
+      'Full Hidden Risks',
+      'Missing Information',
+      'Evidence Found',
+      'Detailed Risk Breakdown',
+      'Document Ranking & Recommendation',
+    ],
   },
   pro: {
     label: 'PRO',
     price: '$29/month',
-    tagline: 'Advanced risk intelligence at scale',
-    features: ['20 analyses/month', '100 pages per analysis', 'Advanced Risk Detection', 'Blind Spot Analysis', 'Opposition Thinking', 'Decision Defense Generator', 'Export Reports (PDF)', 'Priority Processing'],
+    tagline: 'Deeper intelligence and stronger decisions',
+    features: [
+      '100 analyses/month',
+      'Up to 10 Documents per analysis',
+      'Everything in Starter',
+      'Smart Skeptic Questions',
+      'Decision Defense Generator',
+      'Advanced Evidence Mapping',
+      'Priority Processing',
+      'Export Reports (PDF)',
+    ],
   },
   business: {
     label: 'BUSINESS',
     price: '$149/month',
     tagline: 'Team decision intelligence',
-    features: ['Unlimited analyses', 'Unlimited pages', 'Team Workspace', 'Shared Decision History', 'Knowledge Base', 'Benchmarking Reports', 'Priority Dedicated Support'],
+    features: [
+      'Team Workspace',
+      'Shared Reports',
+      'Audit History',
+      'Custom Limits',
+      'Priority Support',
+    ],
   },
 }
 

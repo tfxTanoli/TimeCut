@@ -29,6 +29,7 @@ interface Props {
   isLoggedIn?: boolean
   onOpenAuth?: () => void
   isAtLimit?: boolean
+  hideHero?: boolean
 }
 
 function formatBytes(bytes: number): string {
@@ -67,6 +68,7 @@ export default function DecisionUpload({
   isLoggedIn = false,
   onOpenAuth,
   isAtLimit = false,
+  hideHero = false,
 }: Props) {
   const { t } = useTranslation()
   const fileRef = useRef<HTMLInputElement>(null)
@@ -113,15 +115,17 @@ export default function DecisionUpload({
 
   return (
     <div className="decision-upload">
-      {/* ── Hero headline ── */}
-      <div className="du-hero">
-        <div className="du-hero-badges">
-          <span className="du-badge">{t('decision.badge1')}</span>
+      {/* ── Hero headline (hidden when embedded inside landing page) ── */}
+      {!hideHero && (
+        <div className="du-hero">
+          <div className="du-hero-badges">
+            <span className="du-badge">{t('decision.badge1')}</span>
+          </div>
+          <p className="du-headline-pre">{t('decision.headlinePre')}</p>
+          <h1 className="du-headline">{t('decision.headlineMain')}</h1>
+          <p className="du-subheadline">{t('decision.subheadline')}</p>
         </div>
-        <p className="du-headline-pre">{t('decision.headlinePre')}</p>
-        <h1 className="du-headline">{t('decision.headlineMain')}</h1>
-        <p className="du-subheadline">{t('decision.subheadline')}</p>
-      </div>
+      )}
 
       <form className="du-form" onSubmit={handleSubmit}>
         {/* ── Step 1: Upload Documents ── */}
