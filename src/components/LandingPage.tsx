@@ -57,24 +57,44 @@ const DEMO_DATA: Record<DemoTab, DemoData> = {
       {
         title: 'Automatic Annual Price Increase Clause',
         level: 'High',
-        whyItMatters: 'The supplier may increase prices annually without a predefined cap, creating unpredictable long-term costs.',
-        action: 'Request fixed pricing or maximum increase limits (e.g. ≤ 3% CPI cap) before signing.',
+        whyItMatters: 'Supplier A may raise prices every year with no predefined cap, creating unpredictable long-term cost exposure.',
+        action: 'Request fixed pricing or a maximum annual increase cap (e.g. ≤ 3% CPI-linked) before signing.',
         evidence: 'Page 7, Section 4.2',
+      },
+      {
+        title: 'No Late Delivery Penalty Defined',
+        level: 'High',
+        whyItMatters: 'The quotation contains no penalty clause for missed delivery deadlines, leaving you with no financial recourse if timelines slip.',
+        action: 'Add a penalty clause specifying a daily or weekly fee for each day delivery is delayed beyond the agreed date.',
+        evidence: 'Page 12, Section 6.1',
+      },
+      {
+        title: 'Unclear Warranty Terms',
+        level: 'Medium',
+        whyItMatters: 'The warranty section is vague about what defects are covered, the claims process, and the response time — creating disputes at the point of failure.',
+        action: 'Request a clear warranty schedule covering defect categories, claim procedures, and guaranteed response times.',
+        evidence: 'Page 9, Section 5.3',
       },
     ],
     missing: [
       {
-        title: 'Delivery Guarantee Terms Missing',
-        whyItMatters: 'The quotation does not define any compensation or remedy if delivery deadlines are missed.',
-        action: 'Request explicit SLA terms with penalties for late delivery before finalizing the contract.',
+        title: 'Delivery Guarantee Missing',
+        whyItMatters: 'The quotation states target delivery windows but provides no formal guarantee or committed SLA for on-time delivery.',
+        action: 'Request a written delivery guarantee with a committed date and escalation path if the date is missed.',
         evidence: 'Page 12',
+      },
+      {
+        title: 'Cancellation Terms Not Specified',
+        whyItMatters: 'There is no information on how either party may cancel the contract, what notice period is required, or whether cancellation fees apply.',
+        action: 'Request a cancellation clause covering notice period (e.g. 30 days), any applicable fees, and asset return obligations.',
+        evidence: 'Page 14',
       },
     ],
     recReasons: [
-      'Lowest long-term cost projection',
-      'Clear delivery commitment and SLA',
-      'Stronger warranty and return terms',
-      'Lower overall contract risk score',
+      'Lowest long-term cost projection with no automatic escalation',
+      'Clear delivery commitment with SLA and penalty clause',
+      'Explicit warranty terms with defined response times',
+      'Lower overall contract risk score across all evaluated criteria',
     ],
   },
   cv: {
@@ -208,8 +228,6 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
         <div className="container lp-hero-inner">
           <div className="lp-hero-badges fade-up">
             <span className="lp-badge">{t('home.lpBadge1')}</span>
-            <span className="lp-badge">{t('home.lpBadge2')}</span>
-            <span className="lp-badge">{t('home.lpBadge3')}</span>
           </div>
           <h1 className="lp-headline fade-up" style={{ transitionDelay: '60ms' }}>
             {t('home.lpHeadline')}
@@ -225,31 +243,6 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
               {t('home.lpDemoCta')}
             </button>
             <p className="lp-no-cc">{t('home.lpNoCc')}</p>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════════
-          HOW IT WORKS  (4 steps)
-      ══════════════════════════════════════════ */}
-      <section className="lp-section">
-        <div className="container">
-          <p className="lp-eyebrow fade-up">{t('home.lpHiwEyebrow')}</p>
-          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpHiwTitle')}</h2>
-          <div className="lp-hiw-grid">
-            {[
-              { num: '01', title: t('home.lpHiw1Title'), desc: t('home.lpHiw1Desc') },
-              { num: '02', title: t('home.lpHiw2Title'), desc: t('home.lpHiw2Desc') },
-              { num: '03', title: t('home.lpHiw3Title'), desc: t('home.lpHiw3Desc') },
-              { num: '04', title: t('home.lpHiw4Title'), desc: t('home.lpHiw4Desc') },
-            ].map((step, i) => (
-              <div key={i} className="lp-hiw-step fade-up" style={{ transitionDelay: `${i * 80}ms` }}>
-                <div className="lp-hiw-num">{step.num}</div>
-                <h3 className="lp-hiw-step-title">{step.title}</h3>
-                <p className="lp-hiw-step-desc">{step.desc}</p>
-                {i < 3 && <div className="lp-hiw-arrow">→</div>}
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -404,6 +397,31 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          HOW IT WORKS  (4 steps)
+      ══════════════════════════════════════════ */}
+      <section className="lp-section">
+        <div className="container">
+          <p className="lp-eyebrow fade-up">{t('home.lpHiwEyebrow')}</p>
+          <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>{t('home.lpHiwTitle')}</h2>
+          <div className="lp-hiw-grid">
+            {[
+              { num: '01', title: t('home.lpHiw1Title'), desc: t('home.lpHiw1Desc') },
+              { num: '02', title: t('home.lpHiw2Title'), desc: t('home.lpHiw2Desc') },
+              { num: '03', title: t('home.lpHiw3Title'), desc: t('home.lpHiw3Desc') },
+              { num: '04', title: t('home.lpHiw4Title'), desc: t('home.lpHiw4Desc') },
+            ].map((step, i) => (
+              <div key={i} className="lp-hiw-step fade-up" style={{ transitionDelay: `${i * 80}ms` }}>
+                <div className="lp-hiw-num">{step.num}</div>
+                <h3 className="lp-hiw-step-title">{step.title}</h3>
+                <p className="lp-hiw-step-desc">{step.desc}</p>
+                {i < 3 && <div className="lp-hiw-arrow">→</div>}
+              </div>
+            ))}
           </div>
         </div>
       </section>

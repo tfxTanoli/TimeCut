@@ -11,7 +11,7 @@ const en: Record<string, string> = {
   'nav.accountMenu': 'Account menu',
 
   // ── Footer ──
-  'footer.tagline': 'Know the value before you spend your time.',
+  'footer.tagline': 'Find hidden risks before important decisions.',
   'footer.product': 'Product',
   'footer.howItWorks': 'How it Works',
   'footer.features': 'Features',
@@ -661,7 +661,7 @@ const en: Record<string, string> = {
   'report.analyzeAnother': 'Analyze Another Decision',
 
   // ── New Landing Page (Phase 6) ──
-  'home.lpBadge1': 'AI Decision Intelligence',
+  'home.lpBadge1': 'AI Risk Discovery Platform',
   'home.lpBadge2': 'AI Risk Discovery',
   'home.lpBadge3': 'Document Risk Insights',
   'home.lpBadge4': 'Find The Risks Others Miss',
@@ -673,7 +673,7 @@ const en: Record<string, string> = {
   'home.lpDemoCta': 'View Sample Report →',
   'home.lpNoCc': 'No credit card required · Free plan available',
   'home.lpHiwEyebrow': 'How It Works',
-  'home.lpHiwTitle': 'From Documents to Decision Intelligence in 4 Steps',
+  'home.lpHiwTitle': 'Find Hidden Risks in 4 Simple Steps',
   'home.lpHiw1Title': 'Upload Documents',
   'home.lpHiw1Desc': 'Upload 1–10 PDFs or text files. Contracts, CVs, proposals, reports — any document you need to decide on.',
   'home.lpHiw2Title': 'Set Your Decision Goal',

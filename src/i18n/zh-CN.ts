@@ -11,7 +11,7 @@ const zhCN: Record<string, string> = {
   'nav.accountMenu': '账户菜单',
 
   // ── Footer ──
-  'footer.tagline': '在花费时间之前，了解内容的价值。',
+  'footer.tagline': '在做出重要决定之前，发现隐藏风险。',
   'footer.product': '产品',
   'footer.howItWorks': '使用方法',
   'footer.features': '功能特性',
@@ -674,7 +674,7 @@ const zhCN: Record<string, string> = {
   'home.lpDemoCta': '查看示例报告 →',
   'home.lpNoCc': '无需信用卡 · 免费套餐可用',
   'home.lpHiwEyebrow': '工作原理',
-  'home.lpHiwTitle': '4步从文件到决策智能',
+  'home.lpHiwTitle': '4个简单步骤发现隐藏风险',
   'home.lpHiw1Title': '上传文件',
   'home.lpHiw1Desc': '上传1至10份PDF或文本文件。合同、简历、提案、报告 — 任何需要决策的文件。',
   'home.lpHiw2Title': '设定决策目标',

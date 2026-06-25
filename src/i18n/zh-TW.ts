@@ -11,7 +11,7 @@ const zhTW: Record<string, string> = {
   'nav.accountMenu': '帳戶選單',
 
   // ── Footer ──
-  'footer.tagline': '在花費時間之前，了解內容的價值。',
+  'footer.tagline': '在做出重要決定之前，發現隱藏風險。',
   'footer.product': '產品',
   'footer.howItWorks': '使用方法',
   'footer.features': '功能特色',
@@ -674,7 +674,7 @@ const zhTW: Record<string, string> = {
   'home.lpDemoCta': '查看示例報告 →',
   'home.lpNoCc': '無需信用卡 · 免費方案可用',
   'home.lpHiwEyebrow': '運作原理',
-  'home.lpHiwTitle': '4步從文件到決策智能',
+  'home.lpHiwTitle': '4個簡單步驟發現隱藏風險',
   'home.lpHiw1Title': '上傳文件',
   'home.lpHiw1Desc': '上傳1至10份PDF或文字文件。合約、履歷、提案、報告 — 任何需要決策的文件。',
   'home.lpHiw2Title': '設定決策目標',
