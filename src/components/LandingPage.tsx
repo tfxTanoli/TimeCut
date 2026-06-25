@@ -39,7 +39,7 @@ interface DemoData {
   tabLabel: string
   goal: string
   recommendation: string
-  confidence: string
+  confidence: number
   evidenceSummary: string
   risks: DemoRisk[]
   missing: DemoMissing[]
@@ -51,7 +51,7 @@ const DEMO_DATA: Record<DemoTab, DemoData> = {
     tabLabel: 'Supplier Quotation',
     goal: 'Choose the best supplier',
     recommendation: 'Supplier B',
-    confidence: '82%',
+    confidence: 82,
     evidenceSummary: 'Page 7, Section 4.2',
     risks: [
       {
@@ -101,7 +101,7 @@ const DEMO_DATA: Record<DemoTab, DemoData> = {
     tabLabel: 'CV / HR',
     goal: 'Hire the best Sales Manager',
     recommendation: 'Candidate B',
-    confidence: '88%',
+    confidence: 88,
     evidenceSummary: 'Resume Page 2',
     risks: [
       {
@@ -131,7 +131,7 @@ const DEMO_DATA: Record<DemoTab, DemoData> = {
     tabLabel: 'Business Proposal',
     goal: 'Evaluate the business proposal for partnership',
     recommendation: 'Accept with conditions',
-    confidence: '74%',
+    confidence: 74,
     evidenceSummary: 'Page 5, Section 3.1',
     risks: [
       {
@@ -242,6 +242,11 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
             <button className="lp-demo-cta" onClick={scrollToExample}>
               {t('home.lpDemoCta')}
             </button>
+            <div className="lp-trust-badges">
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Finds hidden risks</span>
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Explains why</span>
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Ranks the best option</span>
+            </div>
             <p className="lp-no-cc">{t('home.lpNoCc')}</p>
           </div>
         </div>
@@ -286,7 +291,25 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
               </div>
               <div className="lp-eo-score">
                 <span className="lp-eo-label">Confidence Score</span>
-                <span className="lp-eo-score-value">{demo.confidence}</span>
+                <div className="lp-eo-gauge">
+                  {(() => {
+                    const pct = demo.confidence
+                    const color = pct >= 70 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#EF4444'
+                    const r = 28
+                    const circ = 2 * Math.PI * r
+                    const offset = circ - (pct / 100) * circ
+                    return (
+                      <svg width="72" height="72" viewBox="0 0 72 72">
+                        <circle cx="36" cy="36" r={r} fill="none" stroke="#1F2937" strokeWidth="7" />
+                        <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="7"
+                          strokeDasharray={circ} strokeDashoffset={offset}
+                          strokeLinecap="round" transform="rotate(-90 36 36)" />
+                        <text x="36" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="700">{pct}</text>
+                        <text x="36" y="44" textAnchor="middle" fill="#6B7280" fontSize="9">/ 100</text>
+                      </svg>
+                    )
+                  })()}
+                </div>
               </div>
             </div>
             <div className="lp-eo-divider" />

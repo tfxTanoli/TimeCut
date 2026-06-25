@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem } from '../types'
+import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -184,21 +184,55 @@ function HiddenRisks({ risks, t }: { risks: RiskItem[]; t: (k: string) => string
   )
 }
 
+const EVIDENCE_COLOR: Record<string, string> = {
+  'Not found': '#EF4444',
+  'Unclear': '#F59E0B',
+  'Partially mentioned': '#FB923C',
+}
+const EVIDENCE_BG: Record<string, string> = {
+  'Not found': 'rgba(239,68,68,0.12)',
+  'Unclear': 'rgba(245,158,11,0.12)',
+  'Partially mentioned': 'rgba(251,146,60,0.12)',
+}
+
 /* ── 5. Missing Information ── */
-function MissingInformation({ items, t }: { items: string[]; t: (k: string) => string }) {
+function MissingInformation({ items, t }: { items: MissingInfoItem[]; t: (k: string) => string }) {
   return (
     <SectionCard icon={<IconSearch className="dr-icon--blue" />} title={t('report.missingInfo')}>
       {items.length === 0
         ? <p className="dr-empty">{t('report.noMissingInfo')}</p>
         : (
-          <ul className="dr-bullet-list">
-            {items.map((item, i) => (
-              <li key={i} className="dr-bullet-item">
-                <span className="dr-bullet-icon">⚠</span>
-                <span>{item}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="dr-missing-list">
+            {items.map((item, i) => {
+              const evidenceKey = Object.keys(EVIDENCE_COLOR).find(k => item.evidence?.startsWith(k)) ?? ''
+              const evidenceColor = EVIDENCE_COLOR[evidenceKey] ?? '#6B7280'
+              const evidenceBg = EVIDENCE_BG[evidenceKey] ?? 'rgba(107,114,128,0.12)'
+              return (
+                <div key={i} className="dr-missing-item">
+                  <div className="dr-missing-header">
+                    <span className="dr-missing-icon">⚠</span>
+                    <span className="dr-missing-title">{item.title}</span>
+                    <span
+                      className="dr-missing-evidence-badge"
+                      style={{ color: evidenceColor, background: evidenceBg }}
+                    >
+                      {item.evidence}
+                    </span>
+                  </div>
+                  <div className="dr-missing-details">
+                    <div className="dr-missing-row">
+                      <span className="dr-missing-key">Why It Matters</span>
+                      <span className="dr-missing-val">{item.whyItMatters}</span>
+                    </div>
+                    <div className="dr-missing-row">
+                      <span className="dr-missing-key">Recommended Action</span>
+                      <span className="dr-missing-val">{item.action}</span>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         )
       }
     </SectionCard>

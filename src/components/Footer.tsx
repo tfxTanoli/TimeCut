@@ -20,6 +20,7 @@ export default function Footer() {
               <li><Link to="/features">{t('footer.features')}</Link></li>
               <li><Link to="/examples">{t('footer.examples')}</Link></li>
               <li><Link to="/pricing">{t('footer.pricing')}</Link></li>
+              <li><Link to="/faq">{t('footer.faq')}</Link></li>
             </ul>
           </div>
           <div>
@@ -29,6 +30,7 @@ export default function Footer() {
               <li><Link to="/about">{t('footer.about')}</Link></li>
               <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
               <li><Link to="/terms">{t('footer.terms')}</Link></li>
+              <li><Link to="/security">{t('footer.security')}</Link></li>
             </ul>
           </div>
           <div>

@@ -5204,9 +5204,16 @@
 .dr-risk-desc { font-size: 14px; color: #D1D5DB; line-height: 1.55; margin: 0; }
 
 /* Missing info */
-.dr-bullet-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
-.dr-bullet-item { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: #D1D5DB; line-height: 1.5; }
-.dr-bullet-icon { color: #F59E0B; flex-shrink: 0; font-size: 13px; }
+.dr-missing-list { display: flex; flex-direction: column; gap: 12px; }
+.dr-missing-item { background: #111827; border: 1px solid #374151; border-radius: 10px; padding: 14px 16px; }
+.dr-missing-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.dr-missing-icon { color: #F59E0B; font-size: 14px; flex-shrink: 0; }
+.dr-missing-title { font-size: 14px; font-weight: 700; color: #F3F4F6; flex: 1; min-width: 0; }
+.dr-missing-evidence-badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+.dr-missing-details { display: flex; flex-direction: column; gap: 8px; }
+.dr-missing-row { display: grid; grid-template-columns: 140px 1fr; gap: 8px; align-items: flex-start; }
+.dr-missing-key { font-size: 12px; font-weight: 600; color: #6B7280; text-transform: uppercase; letter-spacing: 0.5px; padding-top: 1px; }
+.dr-missing-val { font-size: 13px; color: #D1D5DB; line-height: 1.55; margin: 0; }
 
 /* Skeptic questions */
 .dr-questions-list { display: flex; flex-direction: column; gap: 10px; }
@@ -5281,6 +5288,10 @@
 .lp-hero-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .lp-primary-cta { padding: 14px 36px; font-size: 16px; font-weight: 700; }
 .lp-no-cc { font-size: 13px; color: #4B5563; margin: 0; }
+.lp-trust-badges { display: flex; gap: 18px; flex-wrap: wrap; justify-content: center; margin-top: 2px; }
+.lp-trust-badge { font-size: 13px; color: #9CA3AF; display: flex; align-items: center; gap: 5px; }
+.lp-trust-check { color: #22C55E; font-weight: 700; font-size: 14px; }
+.lp-eo-gauge { display: flex; align-items: center; justify-content: center; }
 
 /* ── Generic section ── */
 .lp-section { padding: 72px 0; }
@@ -5320,11 +5331,11 @@
 /* ── Use Cases ── */
 .lp-usecases-grid {
   display: grid; grid-template-columns: repeat(5, 1fr);
-  gap: 16px; margin-top: 40px;
+  gap: 20px; margin-top: 40px;
 }
 .lp-uc-card {
   background: #1F2937; border: 1px solid #374151; border-radius: 12px;
-  padding: 22px 18px; display: flex; flex-direction: column; gap: 10px;
+  padding: 26px 22px; display: flex; flex-direction: column; gap: 12px;
   transition: border-color 0.2s, transform 0.2s;
 }
 .lp-uc-card:hover { border-color: #3B82F6; transform: translateY(-3px); }

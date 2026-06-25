@@ -70,13 +70,20 @@ export interface EvidenceItem {
   clause?: string
 }
 
+export interface MissingInfoItem {
+  title: string
+  whyItMatters: string
+  action: string
+  evidence: string
+}
+
 export interface DecisionReport {
   recommendation: string
   ranking: RankedDocument[]
   confidence_score: number
   confidence_rationale: string
   hidden_risks: RiskItem[]
-  missing_information: string[]
+  missing_information: MissingInfoItem[]
   smart_skeptic_questions: string[]
   decision_defense: string
   evidence_found: EvidenceItem[]
