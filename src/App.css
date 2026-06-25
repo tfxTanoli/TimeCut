@@ -5045,13 +5045,13 @@
 .du-subheadline { font-size: 16px; color: #9CA3AF; line-height: 1.6; margin: 0; max-width: 600px; margin-inline: auto; }
 
 /* Form */
-.du-form { display: flex; flex-direction: column; gap: 20px; }
+.du-form { display: flex; flex-direction: column; gap: 12px; }
 
 /* Step */
 .du-step {
   background: #1F2937; border: 1px solid #374151;
-  border-radius: 14px; padding: 20px 22px;
-  display: flex; flex-direction: column; gap: 14px;
+  border-radius: 14px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 .du-step-header { display: flex; align-items: flex-start; gap: 14px; }
 .du-step-num {
@@ -5067,10 +5067,10 @@
 /* Dropzone */
 .du-dropzone {
   border: 1.5px dashed #374151; border-radius: 10px;
-  padding: 28px 20px; cursor: pointer;
+  padding: 16px 20px; cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
   background: #111827; text-align: center;
-  min-height: 120px; display: flex; align-items: center; justify-content: center;
+  min-height: 80px; display: flex; align-items: center; justify-content: center;
 }
 .du-dropzone:hover, .du-dropzone--over {
   border-color: #3B82F6; background: rgba(59,130,246,0.05);

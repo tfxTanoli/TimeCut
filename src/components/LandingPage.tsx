@@ -472,8 +472,8 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
             <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>
               Upload Your Documents
             </h2>
-            <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms' }}>
-              Upload 1–10 documents and describe your decision goal. Get your full Decision Intelligence Report in seconds.
+            <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms', fontSize: '14px' }}>
+              Upload documents and describe your goal. Get a full risk report in seconds.
             </p>
             {uploadSection}
           </div>
