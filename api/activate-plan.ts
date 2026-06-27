@@ -39,7 +39,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const adminDb = getAdminDb()
       if (adminDb) {
         const expiresAt = admin.firestore.Timestamp.fromDate(
-          new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+          new Date(Date.now() + 37 * 24 * 60 * 60 * 1000), // 37 days: 30 billing + 7-day buffer
         )
         await adminDb.doc(`users/${uid}`).set(
           {

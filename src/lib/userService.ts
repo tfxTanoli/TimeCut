@@ -58,21 +58,30 @@ interface ActivityMetadata {
 
 export async function createUserDocument(user: User, name?: string) {
   const userRef = doc(db, 'users', user.uid)
-  await setDoc(
-    userRef,
-    {
-      uid: user.uid,
-      name: name ?? user.displayName ?? null,
+  const existing = await getDoc(userRef)
+
+  if (existing.exists()) {
+    // User already has a document — only touch safe metadata; NEVER overwrite plan or stats
+    await updateDoc(userRef, {
       email: user.email,
-      provider: user.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
-      createdAt: serverTimestamp(),
       lastLoginAt: serverTimestamp(),
-      totalAnalyses: 0,
-      totalTimeSaved: 0,
-      plan: 'free',
-    },
-    { merge: true },
-  )
+      ...(name ?? user.displayName ? { name: name ?? user.displayName } : {}),
+    })
+    return
+  }
+
+  // Brand-new user — create document with free plan
+  await setDoc(userRef, {
+    uid: user.uid,
+    name: name ?? user.displayName ?? null,
+    email: user.email,
+    provider: user.providerData[0]?.providerId === 'google.com' ? 'google' : 'email',
+    createdAt: serverTimestamp(),
+    lastLoginAt: serverTimestamp(),
+    totalAnalyses: 0,
+    totalTimeSaved: 0,
+    plan: 'free',
+  })
 }
 
 export async function getMonthlyUsage(uid: string): Promise<number> {

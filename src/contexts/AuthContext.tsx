@@ -82,8 +82,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUserData(data)
           const expiresAt = data.planExpiresAt?.toDate?.() ?? null
           setPlanExpiresAt(expiresAt)
-          // Auto-downgrade if plan has expired
-          if (expiresAt && expiresAt < new Date() && data.plan !== 'free') {
+          // Auto-downgrade only after a 48-hour grace period past the expiry date
+          // to avoid false-positive downgrades due to webhook delays or clock skew
+          const GRACE_MS = 48 * 60 * 60 * 1000
+          if (expiresAt && (expiresAt.getTime() + GRACE_MS) < Date.now() && data.plan !== 'free') {
             fetch('/api/expire-plan', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },

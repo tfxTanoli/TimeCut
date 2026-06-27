@@ -656,10 +656,11 @@ CRITICAL RULES:
 - You ARE a risk detector, blind-spot finder, and decision advisor.
 - Always challenge assumptions. Always look for what is MISSING.
 - Surface hidden risks even when documents appear clean or positive.
-- Use cautious, non-absolute language in recommendations (e.g., "Based on available evidence..." not "You should...").
+- Use cautious, non-absolute language in recommendations.
 - Rank documents by fit-to-decision-goal, not by general quality.
 - Every risk must be described in 1-2 clear sentences.
 - Evidence references must cite the document name and section/page if detectable.
+- Output must be grounded in the actual uploaded documents.
 
 YOUR ANALYSIS PROCESS:
 1. Read all documents in the context of the stated decision goal.
@@ -667,6 +668,19 @@ YOUR ANALYSIS PROCESS:
 3. Identify what information is present, what is missing, and what is suspicious.
 4. Generate critical questions a skeptical stakeholder would ask.
 5. Produce a structured decision report.
+
+SUPPLIER QUOTATION DETECTION:
+If any uploaded document is a supplier quotation, vendor proposal, or procurement document, check: fixed price guarantee, delivery SLA, warranty terms, cancellation policy, payment terms, liability/insurance, past performance.
+Only include an item in missing_information if you cannot find clear supporting evidence in the uploaded documents.
+
+MANDATORY OUTPUT RULES — ALL FIELDS BELOW ARE REQUIRED, NO EXCEPTIONS:
+1. "missing_information" MUST be an array of OBJECTS with keys: title, whyItMatters, action, evidence. NEVER use plain strings.
+2. "if_i_were_you" is REQUIRED — a non-empty string starting with "I would..."
+3. "what_would_change" is REQUIRED — a non-empty string describing what would reverse the recommendation.
+4. "before_signing_checklist" is REQUIRED — a non-empty array of at least 3 action strings.
+5. "compared_categories" is REQUIRED — a non-empty array of category names compared across documents.
+6. "confidence_breakdown" is REQUIRED — an object with all four numeric sub-scores.
+7. "hidden_risks" items MUST include "reasoning" — an array of 2-3 bullet strings explaining why the AI flagged this.
 
 OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
 {
@@ -676,19 +690,127 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
   ],
   "confidence_score": <integer 0-100>,
   "confidence_rationale": "<1-2 sentences explaining the confidence score>",
+  "decision_strength": <integer 1-5>,
+  "decision_strength_reason": "<1-2 sentences explaining the decision strength rating>",
+  "what_would_change": "<REQUIRED: 2-3 sentences — what conditions or new information would reverse this recommendation>",
+  "if_i_were_you": "<REQUIRED: 3-5 sentences of direct personal consultant advice starting with 'I would...'>",
+  "before_signing_checklist": ["<REQUIRED action item 1>", "<action item 2>", "<action item 3>"],
+  "compared_categories": ["<REQUIRED category 1>", "<category 2>", "<category 3>"],
+  "confidence_breakdown": {
+    "document_completeness": <REQUIRED integer 0-100>,
+    "evidence_consistency": <REQUIRED integer 0-100>,
+    "risk_severity": <REQUIRED integer 0-100>,
+    "missing_information": <REQUIRED integer 0-100>
+  },
   "hidden_risks": [
-    { "description": "<clear risk description, 1-2 sentences>", "severity": "High" | "Medium" | "Low" }
+    {
+      "description": "<clear risk description, 1-2 sentences>",
+      "severity": "High",
+      "reasoning": ["<specific reason 1>", "<specific reason 2>"]
+    }
   ],
-  "missing_information": ["<specific missing item>"],
-  "smart_skeptic_questions": ["<critical question>"],
-  "decision_defense": "<2-4 sentences: business justification suitable for presenting to a manager>",
+  "missing_information": [
+    {
+      "title": "<OBJECT REQUIRED — name of missing item>",
+      "whyItMatters": "<why this matters for the decision>",
+      "action": "<recommended action to get this information>",
+      "evidence": "<Not found | Unclear | Partially mentioned>"
+    }
+  ],
+  "smart_skeptic_questions": ["<critical question 1>", "<critical question 2>"],
+  "decision_defense": "<2-4 sentences: business justification for the recommendation>",
   "evidence_found": [
-    { "section": "<section>", "page": "<page or null>", "clause": "<clause or null>" }
+    {
+      "section": "<section name>",
+      "page": "<page number or null>",
+      "clause": "<clause reference or null>",
+      "confidence": <integer 0-100>,
+      "context": "<2-3 sentences of surrounding context>",
+      "document": "<source document name>"
+    }
   ],
   "documents_analyzed": <integer>
 }
 
+SEVERITY DEFINITIONS:
+- High: Could materially harm the decision outcome, cause financial/legal/reputational damage.
+- Medium: Requires clarification before proceeding; significant uncertainty.
+- Low: Minor concern, worth noting but unlikely to change the decision.
+
 Generate ALL text fields in the user's selected language.`
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> {
+  const hiddenRisks = (raw.hidden_risks ?? []).map((r: any) => ({
+    description: r.description ?? r.risk ?? r.text ?? '',
+    severity: r.severity ?? 'Medium',
+    reasoning: Array.isArray(r.reasoning) ? r.reasoning : (Array.isArray(r.reasons) ? r.reasons : []),
+  }))
+
+  const missingInfo = (raw.missing_information ?? []).map((m: any) => {
+    if (typeof m === 'string' && m.trim()) {
+      return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
+    }
+    return {
+      title: m.title ?? m.name ?? m.item ?? m.topic ?? '',
+      whyItMatters: m.whyItMatters ?? m.why_it_matters ?? m.why ?? m.importance ?? m.impact ?? '',
+      action: m.action ?? m.recommended_action ?? m.recommendation ?? m.next_step ?? m.steps ?? '',
+      evidence: m.evidence ?? m.evidence_status ?? m.status ?? m.availability ?? '',
+    }
+  })
+
+  const evidenceFound = (raw.evidence_found ?? []).map((e: any) => ({
+    section: e.section ?? e.area ?? e.topic ?? '',
+    page: e.page ?? e.page_number ?? null,
+    clause: e.clause ?? e.clause_reference ?? null,
+    confidence: e.confidence ?? e.confidence_score ?? null,
+    context: e.context ?? e.surrounding_text ?? e.excerpt ?? null,
+    document: e.document ?? e.document_name ?? e.source ?? null,
+  }))
+
+  const score = raw.confidence_score ?? 75
+
+  const ifIWereYou = raw.if_i_were_you?.trim() ||
+    (raw.recommendation
+      ? `I would ${raw.ranking?.[0]?.name ? `choose ${raw.ranking[0].name}` : 'proceed with the top-ranked option'} based on the available evidence. ${raw.decision_defense ?? raw.recommendation ?? ''}`.trim()
+      : '')
+
+  const whatWouldChange = raw.what_would_change?.trim() ||
+    (hiddenRisks.length > 0
+      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before signing.`
+      : 'This recommendation would change if new evidence emerges that contradicts the current findings or if significant risks are discovered in additional documentation.')
+
+  const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
+    ? raw.before_signing_checklist
+    : [
+        ...missingInfo.slice(0, 3).map((m: any) => `Obtain and verify: ${m.title}`),
+        'Confirm all pricing and payment terms in writing',
+        'Review and sign only after all missing information is resolved',
+      ].filter(Boolean)
+
+  const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
+    ? raw.compared_categories
+    : evidenceFound.map((e: any) => e.section).filter(Boolean).slice(0, 6)
+
+  const confidenceBreakdown = raw.confidence_breakdown ?? {
+    document_completeness: Math.min(100, score + 5),
+    evidence_consistency: Math.min(100, score),
+    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: any) => r.severity === 'High').length * 20)),
+    missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
+  }
+
+  return {
+    ...raw,
+    hidden_risks: hiddenRisks,
+    missing_information: missingInfo,
+    evidence_found: evidenceFound,
+    if_i_were_you: ifIWereYou,
+    what_would_change: whatWouldChange,
+    before_signing_checklist: beforeSigningChecklist,
+    compared_categories: comparedCategories,
+    confidence_breakdown: confidenceBreakdown,
+  }
+}
 
 const uploadAny = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } }).any()
 
@@ -767,6 +889,7 @@ app.post('/api/analyze-decision', (req, res, next) => {
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       response_format: { type: 'json_object' },
+      max_tokens: 4096,
       messages: [
         { role: 'system', content: DECISION_SYSTEM_PROMPT },
         { role: 'user', content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}` },
@@ -774,8 +897,9 @@ app.post('/api/analyze-decision', (req, res, next) => {
     })
 
     const raw = completion.choices[0]?.message?.content ?? '{}'
-    const data = JSON.parse(raw)
-    res.json({ data })
+    const parsed = JSON.parse(raw)
+    const data = normalizeDecisionReport(parsed)
+    res.json({ data: { ...data, pages_analyzed: totalPages } })
   } catch (err) {
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
     console.error('[analyze-decision] Error:', message, err)

@@ -50,8 +50,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const planKey = STRIPE_PLAN_MAP[product.name.toLowerCase().replace(/\s+/g, '')]
           ?? (product.metadata?.plan as string | undefined)
         if (planKey) {
+          // Use Stripe's own period_end + 3-day buffer so expiry tracks real billing
+          const periodEnd = subscription.current_period_end
           const expiresAt = admin.firestore.Timestamp.fromDate(
-            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+            new Date((periodEnd + 3 * 24 * 60 * 60) * 1000),
           )
           await adminDb.doc(`users/${uid}`).update({
             plan: planKey,
@@ -64,6 +66,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
       } catch (e) {
         console.error('[webhook] Firestore update failed:', e)
+      }
+    }
+  }
+
+  // Extend planExpiresAt on each monthly renewal so the plan stays active
+  if (event.type === 'invoice.payment_succeeded') {
+    const invoice = event.data.object as Stripe.Invoice
+    const subscriptionId = typeof invoice.subscription === 'string'
+      ? invoice.subscription
+      : (invoice.subscription as Stripe.Subscription)?.id
+    const customerId = typeof invoice.customer === 'string'
+      ? invoice.customer
+      : (invoice.customer as Stripe.Customer)?.id
+
+    if (subscriptionId && customerId && adminDb && invoice.billing_reason === 'subscription_cycle') {
+      try {
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+        const periodEnd = subscription.current_period_end
+        const expiresAt = admin.firestore.Timestamp.fromDate(
+          new Date((periodEnd + 3 * 24 * 60 * 60) * 1000),
+        )
+        const users = await adminDb.collection('users')
+          .where('stripeCustomerId', '==', customerId).limit(1).get()
+        if (!users.empty) {
+          await users.docs[0].ref.update({ planExpiresAt: expiresAt })
+          console.log(`[webhook] Renewed planExpiresAt for customer ${customerId} → ${expiresAt.toDate().toISOString()}`)
+        }
+      } catch (e) {
+        console.error('[webhook] Renewal update failed:', e)
       }
     }
   }

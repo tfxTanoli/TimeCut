@@ -1,4 +1,4 @@
-import type { AnalyzeResponse, DecisionAnalyzeResponse } from './types'
+import type { AnalyzeResponse, DecisionAnalyzeResponse, ChallengeAIResponse } from './types'
 
 export async function analyzeText(content: string, language: string): Promise<AnalyzeResponse> {
   const res = await fetch('/api/analyze', {
@@ -31,6 +31,19 @@ export async function analyzeDecision(
     method: 'POST',
     headers: { 'x-page-limit': String(pageLimit) },
     body: form,
+  })
+  return res.json()
+}
+
+export async function challengeAI(
+  question: string,
+  reportContext: string,
+  decisionGoal: string,
+): Promise<ChallengeAIResponse> {
+  const res = await fetch('/api/challenge-ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, reportContext, decisionGoal }),
   })
   return res.json()
 }

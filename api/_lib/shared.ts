@@ -140,38 +140,62 @@ EVIDENCE STATUS OPTIONS (use exactly one per missing item):
 - "Partially mentioned" — referenced but incomplete or lacking detail
 - "Found on [page/section reference]" — clearly present (do NOT include this in missing_information)
 
+MANDATORY OUTPUT RULES — THESE MUST APPEAR IN YOUR JSON, NO EXCEPTIONS:
+1. "missing_information" — MUST be an array of OBJECTS. NEVER use plain strings. Each object MUST have exactly these keys: "title" (string), "whyItMatters" (string), "action" (string), "evidence" (string).
+2. "if_i_were_you" — REQUIRED. Must be a non-empty string starting with "I would..." giving direct personal advice.
+3. "what_would_change" — REQUIRED. Must be a non-empty string describing what would reverse the recommendation.
+4. "before_signing_checklist" — REQUIRED. Must be a non-empty array of at least 3 action strings.
+5. "compared_categories" — REQUIRED. Must be a non-empty array of category strings.
+6. "confidence_breakdown" — REQUIRED. Must be an object with all four numeric sub-scores.
+
 OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
 {
   "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
   "ranking": [
-    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, based on decision goal fit>" },
-    ...
+    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, based on decision goal fit>" }
   ],
-  "confidence_score": <integer 0-100: based on evidence strength, document completeness, risk density>,
+  "confidence_score": <integer 0-100>,
   "confidence_rationale": "<1-2 sentences explaining the confidence score>",
+  "decision_strength": <integer 1-5>,
+  "decision_strength_reason": "<1-2 sentences explaining the decision strength rating>",
+  "what_would_change": "<REQUIRED: 2-3 sentences — what specific conditions or new information would reverse this recommendation>",
+  "if_i_were_you": "<REQUIRED: 3-5 sentences of direct personal consultant advice starting with 'I would...'>",
+  "before_signing_checklist": ["<REQUIRED: action item 1>", "<action item 2>", "<action item 3>"],
+  "compared_categories": ["<REQUIRED: category compared>", "<category 2>", "<category 3>"],
+  "confidence_breakdown": {
+    "document_completeness": <REQUIRED integer 0-100>,
+    "evidence_consistency": <REQUIRED integer 0-100>,
+    "risk_severity": <REQUIRED integer 0-100>,
+    "missing_information": <REQUIRED integer 0-100>
+  },
   "hidden_risks": [
-    { "description": "<clear risk description, 1-2 sentences>", "severity": "High" | "Medium" | "Low" },
-    ...
+    {
+      "description": "<clear risk description, 1-2 sentences>",
+      "severity": "High",
+      "reasoning": ["<specific reason 1>", "<specific reason 2>"]
+    }
   ],
   "missing_information": [
     {
-      "title": "<name of missing or unclear item>",
-      "whyItMatters": "<1-2 sentences explaining why this is important for the decision>",
-      "action": "<specific recommended action to obtain or clarify this information>",
-      "evidence": "<one of: Not found | Unclear | Partially mentioned | Found on [page/section]>"
-    },
-    ...
+      "title": "<OBJECT REQUIRED — name of missing item, NOT a plain string>",
+      "whyItMatters": "<why this matters for the decision>",
+      "action": "<recommended action to get this information>",
+      "evidence": "<Not found | Unclear | Partially mentioned>"
+    }
   ],
-  "smart_skeptic_questions": [
-    "<critical question a cautious decision-maker should ask before proceeding>",
-    ...
-  ],
-  "decision_defense": "<2-4 sentences: business justification for the recommended course of action, suitable for presenting to a manager or board>",
+  "smart_skeptic_questions": ["<question 1>", "<question 2>"],
+  "decision_defense": "<2-4 sentences: business justification for the recommendation>",
   "evidence_found": [
-    { "section": "<section or area of the document>", "page": "<page number or null>", "clause": "<clause reference or null>" },
-    ...
+    {
+      "section": "<section name>",
+      "page": "<page number or null>",
+      "clause": "<clause reference or null>",
+      "confidence": <integer 0-100>,
+      "context": "<2-3 sentences of surrounding context>",
+      "document": "<source document name>"
+    }
   ],
-  "documents_analyzed": <integer: number of documents provided>
+  "documents_analyzed": <integer>
 }
 
 SEVERITY DEFINITIONS:
@@ -200,6 +224,7 @@ export async function generateDecisionReport(
   const completion = await openai.chat.completions.create({
     model: 'gpt-4o',
     response_format: { type: 'json_object' },
+    max_tokens: 4096,
     messages: [
       { role: 'system', content: DECISION_SYSTEM_PROMPT },
       {

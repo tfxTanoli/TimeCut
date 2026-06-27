@@ -56,6 +56,7 @@ export type RiskSeverity = 'High' | 'Medium' | 'Low'
 export interface RiskItem {
   description: string
   severity: RiskSeverity
+  reasoning?: string[]
 }
 
 export interface RankedDocument {
@@ -68,6 +69,9 @@ export interface EvidenceItem {
   section: string
   page?: string
   clause?: string
+  confidence?: number
+  context?: string
+  document?: string
 }
 
 export interface MissingInfoItem {
@@ -75,6 +79,13 @@ export interface MissingInfoItem {
   whyItMatters: string
   action: string
   evidence: string
+}
+
+export interface ConfidenceBreakdown {
+  document_completeness: number
+  evidence_consistency: number
+  risk_severity: number
+  missing_information: number
 }
 
 export interface DecisionReport {
@@ -89,6 +100,18 @@ export interface DecisionReport {
   evidence_found: EvidenceItem[]
   documents_analyzed: number
   pages_analyzed?: number
+  what_would_change?: string
+  decision_strength?: number
+  decision_strength_reason?: string
+  compared_categories?: string[]
+  confidence_breakdown?: ConfidenceBreakdown
+  if_i_were_you?: string
+  before_signing_checklist?: string[]
+}
+
+export interface ChallengeAIResponse {
+  answer?: string
+  error?: string
 }
 
 export interface DecisionAnalyzeResponse {

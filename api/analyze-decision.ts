@@ -3,6 +3,85 @@ import formidable from 'formidable'
 import fs from 'fs'
 import PDFParser from 'pdf2json'
 import { generateDecisionReport } from './_lib/shared.js'
+// v2 — updated prompt forces all required fields
+
+/* ── Normalize GPT response to match expected TypeScript types ── */
+// GPT-4o sometimes uses snake_case or slightly different key names.
+// Normalizing here prevents empty fields in the UI.
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function normalizeReport(raw: Record<string, any>): Record<string, any> {
+  const hiddenRisks = (raw.hidden_risks ?? []).map((r: any) => ({
+    description: r.description ?? r.risk ?? r.text ?? '',
+    severity: r.severity ?? 'Medium',
+    reasoning: r.reasoning ?? r.reasons ?? r.explanation ?? [],
+  }))
+
+  const missingInfo = (raw.missing_information ?? []).map((m: any) => {
+    if (typeof m === 'string' && m.trim()) {
+      return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
+    }
+    return {
+      title: m.title ?? m.name ?? m.item ?? m.topic ?? '',
+      whyItMatters: m.whyItMatters ?? m.why_it_matters ?? m.why ?? m.importance ?? m.impact ?? '',
+      action: m.action ?? m.recommended_action ?? m.recommendation ?? m.next_step ?? m.steps ?? '',
+      evidence: m.evidence ?? m.evidence_status ?? m.status ?? m.availability ?? '',
+    }
+  })
+
+  const evidenceFound = (raw.evidence_found ?? []).map((e: any) => ({
+    section: e.section ?? e.area ?? e.topic ?? '',
+    page: e.page ?? e.page_number ?? null,
+    clause: e.clause ?? e.clause_reference ?? null,
+    confidence: e.confidence ?? e.confidence_score ?? null,
+    context: e.context ?? e.surrounding_text ?? e.excerpt ?? null,
+    document: e.document ?? e.document_name ?? e.source ?? null,
+  }))
+
+  // Derive fallbacks for fields GPT sometimes omits
+  const score = raw.confidence_score ?? 75
+
+  const ifIWereYou = raw.if_i_were_you?.trim() ||
+    (raw.recommendation
+      ? `I would ${raw.ranking?.[0]?.name ? `choose ${raw.ranking[0].name}` : 'proceed with the top-ranked option'} based on the evidence available. ${raw.decision_defense ?? raw.recommendation ?? ''}`.trim()
+      : '')
+
+  const whatWouldChange = raw.what_would_change?.trim() ||
+    (hiddenRisks.length > 0
+      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before signing.`
+      : 'This recommendation would change if new evidence emerges that contradicts the current findings or if significant risks are discovered in additional documentation.')
+
+  const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
+    ? raw.before_signing_checklist
+    : [
+        ...missingInfo.slice(0, 3).map((m: any) => `Obtain and verify: ${m.title}`),
+        'Confirm all pricing and payment terms in writing',
+        'Review and sign only after all missing information is resolved',
+      ].filter(Boolean)
+
+  const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
+    ? raw.compared_categories
+    : evidenceFound.map((e: any) => e.section).filter(Boolean).slice(0, 6)
+
+  const confidenceBreakdown = raw.confidence_breakdown ?? {
+    document_completeness: Math.min(100, score + 5),
+    evidence_consistency: Math.min(100, score),
+    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: any) => r.severity === 'High').length * 20)),
+    missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
+  }
+
+  return {
+    ...raw,
+    hidden_risks: hiddenRisks,
+    missing_information: missingInfo,
+    evidence_found: evidenceFound,
+    if_i_were_you: ifIWereYou,
+    what_would_change: whatWouldChange,
+    before_signing_checklist: beforeSigningChecklist,
+    compared_categories: comparedCategories,
+    confidence_breakdown: confidenceBreakdown,
+  }
+}
 
 const MAX_FILES = 10
 const MAX_FILE_SIZE_MB = 10
@@ -116,8 +195,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         })
       }
 
-      const data = await generateDecisionReport(documents, language, decisionGoal.trim())
-      return res.json({ data: { ...(data as object), pages_analyzed: totalPages } })
+      const raw = await generateDecisionReport(documents, language, decisionGoal.trim())
+      const data = normalizeReport(raw as Record<string, unknown>)
+      return res.json({ data: { ...data, pages_analyzed: totalPages } })
     } catch (e) {
       console.error('[DECISION ERROR]', e)
       const message = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e)

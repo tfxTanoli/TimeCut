@@ -103,6 +103,8 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null)
   const [analysisLanguage, setAnalysisLanguage] = useState('English')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [currentDecisionGoal, setCurrentDecisionGoal] = useState('')
 
   const anonRemaining = getAnonRemaining()
   const userRemaining = user ? Math.max(0, planLimit - monthlyUsage) : null
@@ -202,6 +204,8 @@ export default function HomePage() {
     setIsLoading(true)
     setShowDecisionLoader(true)
     setAnalysisLanguage(language)
+    setUploadedFiles(files)
+    setCurrentDecisionGoal(goal)
 
     if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language })
 
@@ -234,12 +238,21 @@ export default function HomePage() {
     setError(null)
     setShowUpgradeModal(false)
     setShowDecisionLoader(false)
+    setUploadedFiles([])
+    setCurrentDecisionGoal('')
   }
 
   if (decisionReport) {
     return (
       <Suspense fallback={<div className="page-loading" />}>
-        <DecisionResultPage report={decisionReport} onBack={handleBack} language={analysisLanguage} />
+        <DecisionResultPage
+          report={decisionReport}
+          onBack={handleBack}
+          language={analysisLanguage}
+          uploadedFiles={uploadedFiles}
+          decisionGoal={currentDecisionGoal}
+          plan={plan}
+        />
       </Suspense>
     )
   }
