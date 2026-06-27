@@ -5484,8 +5484,9 @@
   .lp-hiw-step { margin: 0; }
 }
 @media (max-width: 760px) {
-  .lp-hero { padding: 48px 0 40px; }
-  .lp-section { padding: 48px 0; }
+  .lp-hero { padding: 24px 0 24px; }
+  .lp-hero-badges { margin-bottom: 18px; }
+  .lp-section { padding: 40px 0; }
   .lp-usecases-grid { grid-template-columns: repeat(2, 1fr); }
   .lp-hiw-grid { grid-template-columns: 1fr; gap: 10px; }
   .lp-comp-header, .lp-comp-row { grid-template-columns: 1fr 1fr; }
