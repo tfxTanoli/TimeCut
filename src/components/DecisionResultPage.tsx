@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem } from '../types'
+import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -53,12 +53,6 @@ function normalizeEvidence(raw: any[]): EvidenceItem[] {
   }))
 }
 function normalizeReport(report: DecisionReport): DecisionReport {
-  // DEBUG: log raw GPT fields
-  console.log('[TimeCut DEBUG] raw missing_information:', JSON.stringify(report.missing_information, null, 2))
-  console.log('[TimeCut DEBUG] raw hidden_risks:', JSON.stringify(report.hidden_risks, null, 2))
-  console.log('[TimeCut DEBUG] if_i_were_you:', JSON.stringify((report as any).if_i_were_you))
-  console.log('[TimeCut DEBUG] what_would_change:', JSON.stringify((report as any).what_would_change))
-  console.log('[TimeCut DEBUG] before_signing_checklist:', JSON.stringify((report as any).before_signing_checklist))
   return {
     ...report,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -67,6 +61,19 @@ function normalizeReport(report: DecisionReport): DecisionReport {
     hidden_risks: normalizeRisks(report.hidden_risks as any),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     evidence_found: normalizeEvidence(report.evidence_found as any),
+    verification_questions: (report.verification_questions ?? []).filter(
+      (q: VerificationQuestion) => q.question
+    ),
+    recommended_actions: (report.recommended_actions ?? []).filter(
+      (a: RecommendedAction) => a.action
+    ),
+    negotiation_suggestions: (report.negotiation_suggestions ?? []).filter(
+      (n: NegotiationSuggestion) => n.clause
+    ),
+    weak_evidence: (report.weak_evidence ?? []).filter(
+      (w: WeakEvidenceItem) => w.claim
+    ),
+    interview_red_flags: Array.isArray(report.interview_red_flags) ? report.interview_red_flags : [],
   }
 }
 
@@ -852,6 +859,373 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
   )
 }
 
+/* ── Framework type helpers ── */
+const FRAMEWORK_META: Record<string, { label: string; expert: string; icon: string; color: string }> = {
+  cv: { label: 'CV / Hiring Analysis', expert: 'Senior HR Director', icon: '👤', color: '#3B82F6' },
+  supplier_quotation: { label: 'Supplier Quotation Analysis', expert: 'Senior Procurement Manager', icon: '📦', color: '#F59E0B' },
+  contract: { label: 'Contract Review', expert: 'Commercial Contract Reviewer', icon: '📋', color: '#8B5CF6' },
+  business_proposal: { label: 'Business Proposal Review', expert: 'Senior Business Consultant', icon: '📊', color: '#10B981' },
+  general: { label: 'Decision Intelligence Analysis', expert: 'Critical Decision Reviewer', icon: '🧠', color: '#3B82F6' },
+}
+
+function getFrameworkMeta(docType?: string) {
+  return FRAMEWORK_META[docType ?? 'general'] ?? FRAMEWORK_META.general
+}
+
+function getVerificationLabel(docType?: string): string {
+  if (docType === 'cv') return 'Competency Verification Questions'
+  if (docType === 'supplier_quotation') return 'Questions to Ask Supplier Before Signing'
+  if (docType === 'contract') return 'Clarification Questions Before Signing'
+  if (docType === 'business_proposal') return 'Critical Questions for the Proposer'
+  return 'Verification Questions'
+}
+
+/* ── Expert Framework Badge ── */
+function ExpertFrameworkBadge({ docType }: { docType?: string }) {
+  const meta = getFrameworkMeta(docType)
+  return (
+    <div className="dr-framework-badge" style={{ borderColor: `${meta.color}40`, background: `${meta.color}12` }}>
+      <span className="dr-framework-icon">{meta.icon}</span>
+      <div className="dr-framework-info">
+        <span className="dr-framework-label" style={{ color: meta.color }}>{meta.label}</span>
+        <span className="dr-framework-expert">Analyzed by: {meta.expert}</span>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 2: Verification Questions ── */
+function VerificationQuestionsSection({ questions, docType }: { questions: VerificationQuestion[]; docType?: string }) {
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
+  if (!questions || questions.length === 0) return null
+
+  const label = getVerificationLabel(docType)
+  const isCV = docType === 'cv'
+
+  return (
+    <div className="dr-section-card dr-verification-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">🎯</span>
+        <h3 className="dr-section-title">{label}</h3>
+        <span className="dr-section-badge">{questions.length} questions</span>
+      </div>
+      <div className="dr-section-body">
+        {isCV && (
+          <p className="dr-verification-intro">
+            These questions are designed to verify whether the candidate genuinely possesses the claimed experience — not just what is written on the CV.
+          </p>
+        )}
+        <div className="dr-vq-list">
+          {questions.map((q, i) => (
+            <div key={i} className="dr-vq-item">
+              <button
+                className="dr-vq-header"
+                onClick={() => setOpenIdx(openIdx === i ? null : i)}
+              >
+                <span className="dr-vq-num">{i + 1}</span>
+                <span className="dr-vq-question">{q.question}</span>
+                <IconChevronDown open={openIdx === i} />
+              </button>
+              {openIdx === i && (
+                <div className="dr-vq-body">
+                  {q.strong_answer_should_include && q.strong_answer_should_include.length > 0 && (
+                    <div className="dr-vq-block dr-vq-block--strong">
+                      <p className="dr-vq-block-label">✅ Strong Answer Should Include:</p>
+                      <ul className="dr-vq-block-list">
+                        {q.strong_answer_should_include.map((item, j) => (
+                          <li key={j} className="dr-vq-block-item">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {q.red_flags && q.red_flags.length > 0 && (
+                    <div className="dr-vq-block dr-vq-block--red">
+                      <p className="dr-vq-block-label">🚩 Red Flags to Watch For:</p>
+                      <ul className="dr-vq-block-list">
+                        {q.red_flags.map((flag, j) => (
+                          <li key={j} className="dr-vq-block-item">{flag}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {q.why_it_matters && (
+                    <div className="dr-vq-block dr-vq-block--why">
+                      <p className="dr-vq-block-label">💡 Why This Question Matters:</p>
+                      <p className="dr-vq-block-text">{q.why_it_matters}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Interview Red Flags (CV only) ── */
+function InterviewRedFlagsSection({ flags }: { flags: string[] }) {
+  if (!flags || flags.length === 0) return null
+  return (
+    <div className="dr-section-card dr-interview-flags-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">🚩</span>
+        <h3 className="dr-section-title">Interview Red Flags</h3>
+        <span className="dr-section-badge">{flags.length} flags</span>
+      </div>
+      <div className="dr-section-body">
+        <p className="dr-verification-intro">Behavioral patterns and answer styles that suggest claimed experience may not be genuine.</p>
+        <ul className="dr-flags-list">
+          {flags.map((flag, i) => (
+            <li key={i} className="dr-flags-item">
+              <span className="dr-flags-dot">🔴</span>
+              <span>{flag}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 3: Recommended Actions ── */
+function RecommendedActionsSection({ actions }: { actions: RecommendedAction[] }) {
+  if (!actions || actions.length === 0) return null
+
+  const priorityConfig = {
+    High: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: 'High Priority' },
+    Medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'Medium Priority' },
+    Low: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', label: 'Low Priority' },
+  }
+
+  return (
+    <div className="dr-section-card dr-actions-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">⚡</span>
+        <h3 className="dr-section-title">Recommended Actions</h3>
+        <span className="dr-section-badge">{actions.length} steps</span>
+      </div>
+      <div className="dr-section-body">
+        <div className="dr-actions-list">
+          {actions.map((action, i) => {
+            const cfg = priorityConfig[action.priority] ?? priorityConfig.Medium
+            return (
+              <div key={i} className="dr-action-item">
+                <div className="dr-action-top">
+                  <span className="dr-action-num">{i + 1}</span>
+                  <p className="dr-action-text">{action.action}</p>
+                  <span className="dr-action-priority" style={{ color: cfg.color, background: cfg.bg }}>
+                    {cfg.label}
+                  </span>
+                </div>
+                {action.reason && (
+                  <p className="dr-action-reason">{action.reason}</p>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 4: Negotiation Suggestions ── */
+function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: NegotiationSuggestion[]; docType?: string }) {
+  if (!suggestions || suggestions.length === 0) return null
+  const [openIdx, setOpenIdx] = useState<number | null>(null)
+
+  const title = docType === 'cv' ? '' : docType === 'business_proposal' ? 'Negotiation & Commitment Points' : 'Negotiation Suggestions'
+  if (!title) return null
+
+  return (
+    <div className="dr-section-card dr-negotiation-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">🤝</span>
+        <h3 className="dr-section-title">{title}</h3>
+        <span className="dr-section-badge">{suggestions.length} points</span>
+      </div>
+      <div className="dr-section-body">
+        <div className="dr-neg-list">
+          {suggestions.map((s, i) => (
+            <div key={i} className="dr-neg-item">
+              <button className="dr-neg-header" onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+                <span className="dr-neg-clause">{s.clause}</span>
+                <IconChevronDown open={openIdx === i} />
+              </button>
+              {openIdx === i && (
+                <div className="dr-neg-body">
+                  {s.issue && (
+                    <div className="dr-neg-row">
+                      <span className="dr-neg-key">Issue</span>
+                      <span className="dr-neg-val">{s.issue}</span>
+                    </div>
+                  )}
+                  {s.suggested_improvement && (
+                    <div className="dr-neg-row dr-neg-row--suggest">
+                      <span className="dr-neg-key">Request</span>
+                      <span className="dr-neg-val dr-neg-val--suggest">{s.suggested_improvement}</span>
+                    </div>
+                  )}
+                  {s.leverage && (
+                    <div className="dr-neg-row">
+                      <span className="dr-neg-key">Leverage</span>
+                      <span className="dr-neg-val dr-neg-val--leverage">{s.leverage}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Weak Evidence (Proposal only) ── */
+function WeakEvidenceSection({ items }: { items: WeakEvidenceItem[] }) {
+  if (!items || items.length === 0) return null
+  return (
+    <div className="dr-section-card dr-weak-evidence-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">⚠️</span>
+        <h3 className="dr-section-title">Weak Evidence & Unsupported Claims</h3>
+        <span className="dr-section-badge">{items.length} claims</span>
+      </div>
+      <div className="dr-section-body">
+        <p className="dr-verification-intro">Claims made in the proposal that lack adequate supporting data or evidence.</p>
+        <div className="dr-we-list">
+          {items.map((item, i) => (
+            <div key={i} className="dr-we-item">
+              <div className="dr-we-claim">
+                <span className="dr-we-icon">💬</span>
+                <p className="dr-we-claim-text">"{item.claim}"</p>
+              </div>
+              <div className="dr-we-details">
+                {item.issue && (
+                  <div className="dr-we-row">
+                    <span className="dr-we-key">Why Weak</span>
+                    <span className="dr-we-val">{item.issue}</span>
+                  </div>
+                )}
+                {item.recommendation && (
+                  <div className="dr-we-row dr-we-row--rec">
+                    <span className="dr-we-key">Evidence Needed</span>
+                    <span className="dr-we-val dr-we-val--rec">{item.recommendation}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ── Stage 5: Decision Playbook ── */
+function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlaybook; docType?: string }) {
+  const [checked, setChecked] = useState<Record<number, boolean>>({})
+  if (!playbook || !playbook.final_recommendation) return null
+
+  const doneCount = Object.values(checked).filter(Boolean).length
+  const total = playbook.action_checklist?.length ?? 0
+
+  const decisionLabels: Record<string, { color: string; bg: string }> = {
+    hire: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+    approve: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+    sign: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+    award: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
+    conditional: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+    negotiate: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+    caution: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+    reject: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+    'do not': { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+    not: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
+  }
+
+  const finalRecLower = playbook.final_recommendation.toLowerCase()
+  const matchedKey = Object.keys(decisionLabels).find(k => finalRecLower.includes(k))
+  const decisionStyle = matchedKey ? decisionLabels[matchedKey] : { color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' }
+
+  const sectionTitle = docType === 'cv'
+    ? 'Hiring Decision Playbook'
+    : docType === 'supplier_quotation'
+      ? 'Procurement Decision Playbook'
+      : docType === 'contract'
+        ? 'Contract Decision Playbook'
+        : docType === 'business_proposal'
+          ? 'Investment Decision Playbook'
+          : 'Decision Playbook'
+
+  return (
+    <div className="dr-section-card dr-playbook-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">📖</span>
+        <h3 className="dr-section-title">{sectionTitle}</h3>
+      </div>
+      <div className="dr-section-body">
+        {/* Final Recommendation */}
+        <div className="dr-playbook-final" style={{ background: decisionStyle.bg, borderColor: `${decisionStyle.color}40` }}>
+          <p className="dr-playbook-final-label">Final Recommendation</p>
+          <p className="dr-playbook-final-text" style={{ color: decisionStyle.color }}>
+            {playbook.final_recommendation}
+          </p>
+        </div>
+
+        <div className="dr-playbook-grid">
+          {/* Key Reasons */}
+          {playbook.key_reasons && playbook.key_reasons.length > 0 && (
+            <div className="dr-playbook-block">
+              <p className="dr-playbook-block-label">✅ Key Reasons</p>
+              <ul className="dr-playbook-block-list">
+                {playbook.key_reasons.map((r, i) => (
+                  <li key={i} className="dr-playbook-block-item dr-playbook-block-item--green">{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Remaining Risks */}
+          {playbook.remaining_risks && playbook.remaining_risks.length > 0 && (
+            <div className="dr-playbook-block">
+              <p className="dr-playbook-block-label">⚠️ Remaining Risks</p>
+              <ul className="dr-playbook-block-list">
+                {playbook.remaining_risks.map((r, i) => (
+                  <li key={i} className="dr-playbook-block-item dr-playbook-block-item--orange">{r}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* Action Checklist */}
+        {playbook.action_checklist && playbook.action_checklist.length > 0 && (
+          <div className="dr-playbook-checklist">
+            <p className="dr-playbook-block-label">
+              Action Checklist Before Deciding
+              <span className="dr-playbook-checklist-count"> — {doneCount}/{total} done</span>
+            </p>
+            {playbook.action_checklist.map((item, i) => (
+              <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
+                <input
+                  type="checkbox"
+                  className="dr-checklist-checkbox"
+                  checked={!!checked[i]}
+                  onChange={() => setChecked(prev => ({ ...prev, [i]: !prev[i] }))}
+                />
+                <span className="dr-checklist-text">{item}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /* ── Main component ── */
 export default function DecisionResultPage({ report: rawReport, onBack, uploadedFiles, decisionGoal, plan }: Props) {
   const report = normalizeReport(rawReport)
@@ -899,6 +1273,13 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
 
   const hasComparedCategories = report.compared_categories && report.compared_categories.length > 0
   const hasChecklist = report.before_signing_checklist && report.before_signing_checklist.length > 0
+  const docType = report.document_type
+  const hasVerificationQuestions = report.verification_questions && report.verification_questions.length > 0
+  const hasInterviewFlags = report.interview_red_flags && report.interview_red_flags.length > 0
+  const hasRecommendedActions = report.recommended_actions && report.recommended_actions.length > 0
+  const hasNegotiationSuggestions = report.negotiation_suggestions && report.negotiation_suggestions.length > 0
+  const hasWeakEvidence = report.weak_evidence && report.weak_evidence.length > 0
+  const hasPlaybook = report.decision_playbook && !!report.decision_playbook.final_recommendation
 
   return (
     <div className="dr-page">
@@ -930,6 +1311,9 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
       )}
 
       <div className="container dr-content">
+
+        {/* Expert Framework Badge */}
+        <ExpertFrameworkBadge docType={docType} />
 
         {/* 1. Executive Summary */}
         <ExecutiveSummary report={report} />
@@ -966,12 +1350,51 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
         {/* If I Were You (Pro) */}
         <IfIWereYou text={report.if_i_were_you} isPro={isPro} />
 
-        {/* 8. Before You Sign Checklist */}
+        {/* ── STAGE 2: VERIFICATION ── */}
+        {hasVerificationQuestions && (
+          <VerificationQuestionsSection
+            questions={report.verification_questions!}
+            docType={docType}
+          />
+        )}
+
+        {/* Interview Red Flags (CV only) */}
+        {hasInterviewFlags && (
+          <InterviewRedFlagsSection flags={report.interview_red_flags!} />
+        )}
+
+        {/* ── STAGE 3: RECOMMENDED ACTIONS ── */}
+        {hasRecommendedActions && (
+          <RecommendedActionsSection actions={report.recommended_actions!} />
+        )}
+
+        {/* ── STAGE 4: NEGOTIATION ── */}
+        {hasNegotiationSuggestions && (
+          <NegotiationSuggestionsSection
+            suggestions={report.negotiation_suggestions!}
+            docType={docType}
+          />
+        )}
+
+        {/* Weak Evidence (Proposal only) */}
+        {hasWeakEvidence && (
+          <WeakEvidenceSection items={report.weak_evidence!} />
+        )}
+
+        {/* Before You Sign Checklist */}
         {hasChecklist && (
           <BeforeSigningChecklist items={report.before_signing_checklist!} />
         )}
 
-        {/* 9. Challenge AI */}
+        {/* ── STAGE 5: DECISION PLAYBOOK ── */}
+        {hasPlaybook && (
+          <DecisionPlaybookSection
+            playbook={report.decision_playbook!}
+            docType={docType}
+          />
+        )}
+
+        {/* Challenge AI */}
         <div id="dr-challenge-panel">
           <ChallengeAIPanel
             report={report}

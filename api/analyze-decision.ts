@@ -38,6 +38,47 @@ function normalizeReport(raw: Record<string, any>): Record<string, any> {
     document: e.document ?? e.document_name ?? e.source ?? null,
   }))
 
+  // Normalize verification_questions
+  const verificationQuestions = (raw.verification_questions ?? []).map((q: any) => ({
+    question: q.question ?? q.q ?? '',
+    strong_answer_should_include: Array.isArray(q.strong_answer_should_include)
+      ? q.strong_answer_should_include
+      : (Array.isArray(q.strong_answer) ? q.strong_answer : []),
+    red_flags: Array.isArray(q.red_flags) ? q.red_flags : [],
+    why_it_matters: q.why_it_matters ?? q.why ?? q.importance ?? '',
+  })).filter((q: any) => q.question)
+
+  // Normalize recommended_actions
+  const recommendedActions = (raw.recommended_actions ?? []).map((a: any) => ({
+    action: a.action ?? a.step ?? a.recommendation ?? '',
+    reason: a.reason ?? a.why ?? a.rationale ?? '',
+    priority: (['High', 'Medium', 'Low'].includes(a.priority)) ? a.priority : 'Medium',
+  })).filter((a: any) => a.action)
+
+  // Normalize negotiation_suggestions
+  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: any) => ({
+    clause: n.clause ?? n.term ?? n.item ?? '',
+    issue: n.issue ?? n.problem ?? n.concern ?? '',
+    suggested_improvement: n.suggested_improvement ?? n.improvement ?? n.suggestion ?? n.recommended_change ?? '',
+    leverage: n.leverage ?? n.leverage_point ?? n.rationale ?? undefined,
+  })).filter((n: any) => n.clause)
+
+  // Normalize weak_evidence
+  const weakEvidence = (raw.weak_evidence ?? []).map((w: any) => ({
+    claim: w.claim ?? w.statement ?? '',
+    issue: w.issue ?? w.problem ?? w.why_weak ?? '',
+    recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
+  })).filter((w: any) => w.claim)
+
+  // Normalize decision_playbook
+  const dp = raw.decision_playbook ?? {}
+  const decisionPlaybook = {
+    final_recommendation: dp.final_recommendation ?? dp.recommendation ?? '',
+    key_reasons: Array.isArray(dp.key_reasons) ? dp.key_reasons : [],
+    remaining_risks: Array.isArray(dp.remaining_risks) ? dp.remaining_risks : [],
+    action_checklist: Array.isArray(dp.action_checklist) ? dp.action_checklist : [],
+  }
+
   // Derive fallbacks for fields GPT sometimes omits
   const score = raw.confidence_score ?? 75
 
@@ -48,15 +89,15 @@ function normalizeReport(raw: Record<string, any>): Record<string, any> {
 
   const whatWouldChange = raw.what_would_change?.trim() ||
     (hiddenRisks.length > 0
-      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before signing.`
+      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before proceeding.`
       : 'This recommendation would change if new evidence emerges that contradicts the current findings or if significant risks are discovered in additional documentation.')
 
   const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
     ? raw.before_signing_checklist
     : [
         ...missingInfo.slice(0, 3).map((m: any) => `Obtain and verify: ${m.title}`),
-        'Confirm all pricing and payment terms in writing',
-        'Review and sign only after all missing information is resolved',
+        'Confirm all key terms in writing before proceeding',
+        'Resolve all identified missing information before signing or deciding',
       ].filter(Boolean)
 
   const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
@@ -80,6 +121,12 @@ function normalizeReport(raw: Record<string, any>): Record<string, any> {
     before_signing_checklist: beforeSigningChecklist,
     compared_categories: comparedCategories,
     confidence_breakdown: confidenceBreakdown,
+    verification_questions: verificationQuestions,
+    recommended_actions: recommendedActions,
+    negotiation_suggestions: negotiationSuggestions,
+    weak_evidence: weakEvidence,
+    decision_playbook: decisionPlaybook,
+    interview_red_flags: Array.isArray(raw.interview_red_flags) ? raw.interview_red_flags : [],
   }
 }
 
@@ -127,6 +174,9 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
 
     const language =
       (Array.isArray(fields.language) ? fields.language[0] : fields.language) ?? 'English'
+
+    const documentType =
+      (Array.isArray(fields.documentType) ? fields.documentType[0] : fields.documentType) ?? 'auto'
 
     // Normalise files[] — formidable returns array or single object
     const rawFiles = files['files[]'] ?? files.files ?? []
@@ -195,7 +245,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
         })
       }
 
-      const raw = await generateDecisionReport(documents, language, decisionGoal.trim())
+      const raw = await generateDecisionReport(documents, language, decisionGoal.trim(), documentType)
       const data = normalizeReport(raw as Record<string, unknown>)
       return res.json({ data: { ...data, pages_analyzed: totalPages } })
     } catch (e) {

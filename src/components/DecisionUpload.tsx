@@ -1,5 +1,6 @@
 import { useRef, useState, useCallback } from 'react'
 import type { PlanType } from '../lib/userService'
+import type { DocumentType } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 
 const LANGUAGES = [
@@ -18,8 +19,16 @@ const PAGE_LIMITS: Record<PlanType, number> = {
 const MAX_FILES = 10
 const ACCEPT = '.pdf,.txt,application/pdf,text/plain'
 
+const DOCUMENT_TYPES: { value: DocumentType; label: string; description: string; icon: string }[] = [
+  { value: 'auto', label: 'Auto-Detect', description: 'AI detects the document type automatically', icon: '🔍' },
+  { value: 'cv', label: 'CV / Resume', description: 'Hiring analysis by an HR Director', icon: '👤' },
+  { value: 'supplier_quotation', label: 'Supplier Quotation', description: 'Procurement analysis by a Procurement Manager', icon: '📦' },
+  { value: 'contract', label: 'Contract / Agreement', description: 'Legal risk review by a Contract Reviewer', icon: '📋' },
+  { value: 'business_proposal', label: 'Business Proposal', description: 'Strategic review by a Business Consultant', icon: '📊' },
+]
+
 interface Props {
-  onDecisionSubmit: (files: File[], decisionGoal: string, language: string) => void
+  onDecisionSubmit: (files: File[], decisionGoal: string, language: string, documentType: DocumentType) => void
   isLoading: boolean
   error: string | null
   plan?: PlanType
@@ -76,6 +85,7 @@ export default function DecisionUpload({
   const [decisionGoal, setDecisionGoal] = useState('')
   const [language, setLanguage] = useState('English')
   const [dragOver, setDragOver] = useState(false)
+  const [documentType, setDocumentType] = useState<DocumentType>('auto')
 
   const pageLimit = PAGE_LIMITS[plan]
   const usagePct = planLimit > 0 ? Math.min(100, Math.round((monthlyUsage / planLimit) * 100)) : 100
@@ -105,7 +115,7 @@ export default function DecisionUpload({
     e.preventDefault()
     if (!isLoggedIn) { onOpenAuth?.(); return }
     if (files.length === 0 || !decisionGoal.trim()) return
-    onDecisionSubmit(files, decisionGoal.trim(), language)
+    onDecisionSubmit(files, decisionGoal.trim(), language, documentType)
   }
 
   const canSubmit =
@@ -188,10 +198,35 @@ export default function DecisionUpload({
           </div>
         </div>
 
-        {/* ── Step 2: Decision Goal ── */}
+        {/* ── Step 2: Document Type ── */}
         <div className="du-step">
           <div className="du-step-header">
             <span className="du-step-num">2</span>
+            <div>
+              <p className="du-step-title">Select Expert Framework</p>
+              <p className="du-step-sub">Choose the type of document so the AI applies the right expert analysis.</p>
+            </div>
+          </div>
+          <div className="du-doctype-grid">
+            {DOCUMENT_TYPES.map(dt => (
+              <button
+                key={dt.value}
+                type="button"
+                className={`du-doctype-btn${documentType === dt.value ? ' du-doctype-btn--active' : ''}`}
+                onClick={() => setDocumentType(dt.value)}
+              >
+                <span className="du-doctype-icon">{dt.icon}</span>
+                <span className="du-doctype-label">{dt.label}</span>
+                <span className="du-doctype-desc">{dt.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Step 3: Decision Goal ── */}
+        <div className="du-step">
+          <div className="du-step-header">
+            <span className="du-step-num">3</span>
             <div>
               <p className="du-step-title">{t('decision.step2Title')}</p>
               <p className="du-step-sub">{t('decision.step2Sub')}</p>

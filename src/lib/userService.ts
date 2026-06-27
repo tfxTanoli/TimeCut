@@ -54,6 +54,7 @@ interface ActivityMetadata {
   valueScore?: number
   timeSavedMinutes?: number
   attentionQuality?: string
+  documentType?: string
 }
 
 export async function createUserDocument(user: User, name?: string) {

@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { analyzeText, analyzePdf, analyzeDecision } from '../api'
-import type { TimeCutReport, InputTab, DecisionReport } from '../types'
+import type { TimeCutReport, InputTab, DecisionReport, DocumentType } from '../types'
 import LandingPage from '../components/LandingPage'
 import DecisionUpload from '../components/DecisionUpload'
 import AnalysisLoader from '../components/AnalysisLoader'
@@ -182,7 +182,7 @@ export default function HomePage() {
     setIsLoading(false)
   }
 
-  async function handleDecisionSubmit(files: File[], goal: string, language: string) {
+  async function handleDecisionSubmit(files: File[], goal: string, language: string, documentType: DocumentType = 'auto') {
     setError(null)
 
     if (isAtLimit) { setShowUpgradeModal(true); return }
@@ -207,16 +207,16 @@ export default function HomePage() {
     setUploadedFiles(files)
     setCurrentDecisionGoal(goal)
 
-    if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language })
+    if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language, documentType })
 
     try {
-      const result = await analyzeDecision(files, goal, language, pageLimit)
+      const result = await analyzeDecision(files, goal, language, pageLimit, documentType)
       if (result.data) {
         setDecisionReport(result.data)
         if (user) {
           await Promise.all([
             refreshUsage(),
-            logActivity(user.uid, 'analysis_completed', { language }),
+            logActivity(user.uid, 'analysis_completed', { language, documentType }),
           ])
         }
       } else {

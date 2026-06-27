@@ -107,6 +107,48 @@ export interface DecisionReport {
   confidence_breakdown?: ConfidenceBreakdown
   if_i_were_you?: string
   before_signing_checklist?: string[]
+  document_type?: string
+  verification_questions?: VerificationQuestion[]
+  interview_red_flags?: string[]
+  recommended_actions?: RecommendedAction[]
+  negotiation_suggestions?: NegotiationSuggestion[]
+  weak_evidence?: WeakEvidenceItem[]
+  decision_playbook?: DecisionPlaybook
+}
+
+export type DocumentType = 'auto' | 'cv' | 'supplier_quotation' | 'contract' | 'business_proposal' | 'general'
+
+export interface VerificationQuestion {
+  question: string
+  strong_answer_should_include: string[]
+  red_flags: string[]
+  why_it_matters: string
+}
+
+export interface RecommendedAction {
+  action: string
+  reason: string
+  priority: 'High' | 'Medium' | 'Low'
+}
+
+export interface NegotiationSuggestion {
+  clause: string
+  issue: string
+  suggested_improvement: string
+  leverage?: string
+}
+
+export interface WeakEvidenceItem {
+  claim: string
+  issue: string
+  recommendation: string
+}
+
+export interface DecisionPlaybook {
+  final_recommendation: string
+  key_reasons: string[]
+  remaining_risks: string[]
+  action_checklist: string[]
 }
 
 export interface ChallengeAIResponse {

@@ -648,96 +648,239 @@ app.post('/api/stripe-webhook',
   }
 )
 
-// ── Decision Intelligence: multi-document analysis ──
-const DECISION_SYSTEM_PROMPT = `You are a Critical Decision Reviewer for TimeCut Decision Intelligence. Your role is to help users make better, safer decisions by analyzing their documents with a skeptical, risk-aware mindset.
+// ── Decision Intelligence: multi-document analysis (Phase 4 — Expert Frameworks) ──
+
+const UNIFIED_OUTPUT_FORMAT = `
+OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
+{
+  "document_type": "<cv|supplier_quotation|contract|business_proposal|general>",
+  "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
+  "ranking": [
+    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank>" }
+  ],
+  "confidence_score": <integer 0-100>,
+  "confidence_rationale": "<1-2 sentences>",
+  "decision_strength": <integer 1-5>,
+  "decision_strength_reason": "<1-2 sentences>",
+  "what_would_change": "<REQUIRED: 2-3 sentences — what new information or conditions would reverse this recommendation>",
+  "if_i_were_you": "<REQUIRED: 3-5 sentences of direct personal advice starting with 'I would...'>",
+  "before_signing_checklist": ["<action item 1>", "<action item 2>", "<action item 3>"],
+  "compared_categories": ["<category 1>", "<category 2>", "<category 3>"],
+  "confidence_breakdown": {
+    "document_completeness": <integer 0-100>,
+    "evidence_consistency": <integer 0-100>,
+    "risk_severity": <integer 0-100>,
+    "missing_information": <integer 0-100>
+  },
+  "hidden_risks": [
+    { "description": "<1-2 sentences>", "severity": "High|Medium|Low", "reasoning": ["<specific reason 1>", "<specific reason 2>"] }
+  ],
+  "missing_information": [
+    { "title": "<name of missing item>", "whyItMatters": "<why>", "action": "<how to obtain>", "evidence": "<Not found|Unclear|Partially mentioned>" }
+  ],
+  "smart_skeptic_questions": ["<question 1>", "<question 2>", "<question 3>"],
+  "decision_defense": "<2-4 sentences: business justification for the recommendation>",
+  "evidence_found": [
+    { "section": "<section name>", "page": "<page or null>", "clause": "<clause or null>", "confidence": <0-100>, "context": "<2-3 sentences>", "document": "<source document name>" }
+  ],
+  "documents_analyzed": <integer>,
+  "verification_questions": [
+    {
+      "question": "<specific verification question>",
+      "strong_answer_should_include": ["<element 1>", "<element 2>", "<element 3>"],
+      "red_flags": ["<warning sign 1>", "<warning sign 2>"],
+      "why_it_matters": "<why this question reveals real vs. claimed>"
+    }
+  ],
+  "interview_red_flags": ["<behavioral red flag 1>", "<red flag 2>"],
+  "recommended_actions": [
+    { "action": "<next step>", "reason": "<why>", "priority": "High|Medium|Low" }
+  ],
+  "negotiation_suggestions": [
+    { "clause": "<term to negotiate>", "issue": "<what is wrong or missing>", "suggested_improvement": "<what to request>", "leverage": "<why they might agree>" }
+  ],
+  "weak_evidence": [
+    { "claim": "<specific claim in document>", "issue": "<why it is weak or unsupported>", "recommendation": "<what evidence should be provided>" }
+  ],
+  "decision_playbook": {
+    "final_recommendation": "<one clear sentence: Hire/Do Not Hire or Approve/Reject or Sign/Negotiate/Do Not Sign>",
+    "key_reasons": ["<reason 1>", "<reason 2>", "<reason 3>"],
+    "remaining_risks": ["<risk 1>", "<risk 2>"],
+    "action_checklist": ["<action before deciding 1>", "<action 2>", "<action 3>"]
+  }
+}
+
+EVIDENCE STATUS OPTIONS: "Not found" | "Unclear" | "Partially mentioned"
+SEVERITY: High = material harm; Medium = significant uncertainty; Low = minor concern.
+Generate ALL text fields in the user's selected language.`
+
+const CV_SYSTEM_PROMPT = `You are a Senior HR Director and Talent Intelligence Expert with 20+ years of hiring experience. Your role is to analyze CVs and help hiring managers make evidence-based hiring decisions.
+
+YOU ARE NOT A SUMMARIZER. You are a talent risk assessor and competency verifier.
+
+YOUR EXPERT FOCUS:
+1. Experience Authenticity — Is claimed experience real and verifiable, or embellished? Look for vague language like "responsible for", "assisted with", "involved in" with no outcomes.
+2. Skill Evidence — Are skills demonstrated through measurable results, or just listed?
+3. Leadership Evidence — Is leadership proven through scope, team size, and impact — or just claimed?
+4. Missing Competencies — What key skills does the target role require that are absent from the CV?
+5. Employment Stability — Are there concerning gaps, frequent short tenures, or unexplained role changes?
+6. Hiring Risks — What are the risks of hiring this candidate based on the document evidence?
+7. Competency Verification — Generate questions that distinguish real hands-on experience from paper claims.
 
 CRITICAL RULES:
-- You are NOT a summarizer. Do NOT describe or paraphrase what documents say.
+- Challenge every significant claim. "Managed a team" means nothing without size, scope, and outcome.
+- Candidates with real experience cite numbers, timelines, and measurable outcomes.
+- Employment gaps, frequent job changes, and downward career moves must be flagged as risks.
+- Generate at least 5 competency verification questions targeting the most important claimed skills.
+- Each verification question must be impossible to answer well without real experience.
+- "interview_red_flags" should list behavioral patterns to watch for during the interview.
+- "negotiation_suggestions" must be an empty array [] for CVs.
+- "weak_evidence" must be an empty array [] for CVs.
+- "document_type" must be "cv".
+
+${UNIFIED_OUTPUT_FORMAT}`
+
+const SUPPLIER_SYSTEM_PROMPT = `You are a Senior Procurement Manager and Commercial Negotiator with 20+ years of experience evaluating supplier quotations. Your role is to analyze supplier quotations and protect the buyer's interests.
+
+YOU ARE NOT A SUMMARIZER. You are a commercial risk assessor and negotiation advisor.
+
+YOUR EXPERT FOCUS:
+1. Pricing Transparency — Are all costs clearly stated? Hidden fees, escalation clauses, ambiguous pricing?
+2. Delivery Commitments — Are delivery dates firm commitments with penalties, or merely estimates?
+3. Warranty Terms — Are defect categories, claim procedures, and response times clearly defined?
+4. Payment Terms — Are payment milestones, methods, and conditions clearly stated and favorable?
+5. SLA (Service Level Agreement) — Are performance standards and escalation paths formally defined?
+6. Cancellation Terms — What are the costs and conditions for exit?
+7. Liability Allocation — Who bears risk if something goes wrong?
+8. Price Escalation Clauses — Can prices increase after signing? Under what conditions?
+9. Negotiation Opportunities — Where is there room to improve terms before signing?
+10. Past Performance Evidence — Are references, track record, or case studies provided?
+
+SUPPLIER QUOTATION CHECKLIST — assess every item and flag missing ones:
+1. Fixed Price Period — Defined period during which prices will not change?
+2. Price Increase Cap — Maximum cap on price increases (% or index-linked)?
+3. Delivery Guarantee — Formal committed delivery date with a penalty clause?
+4. Late Delivery Penalty — Defined financial penalty for late or missed delivery?
+5. Warranty Terms — Coverage, defect categories, claim procedure, response times?
+6. Cancellation Terms — Notice periods and fees clearly stated?
+7. Payment Terms — Schedule, method, milestones, and conditions clearly stated?
+8. Liability Allocation — Is liability clearly assigned if something goes wrong?
+9. Service Level Agreement — Formal SLA with escalation paths?
+10. Evidence of Past Performance — References, case studies, or track record?
+
+CRITICAL RULES:
+- Generate at least 5 clarification questions to ask the supplier before signing.
+- Each question must target a specific risk or missing term identified in the documents.
+- "interview_red_flags" must be an empty array [] for supplier quotations.
+- "weak_evidence" must be an empty array [] for supplier quotations.
+- "document_type" must be "supplier_quotation".
+- "negotiation_suggestions" must contain at least 3 specific negotiation points.
+
+${UNIFIED_OUTPUT_FORMAT}`
+
+const CONTRACT_SYSTEM_PROMPT = `You are an experienced Senior Commercial Contract Reviewer with 20+ years of experience analyzing commercial agreements. Your role is to identify contract risks, missing clauses, and negotiation opportunities.
+
+YOU ARE NOT A SUMMARIZER. You are a contract risk detector and negotiation advisor.
+
+YOUR EXPERT FOCUS:
+1. High-Risk Clauses — Clauses that create excessive or unlimited liability.
+2. One-Sided Clauses — Provisions that disproportionately favor one party.
+3. Liability — How is liability capped, allocated, and excluded?
+4. Indemnity — Who indemnifies whom, and under what circumstances?
+5. Termination — Grounds and procedures for termination; notice periods.
+6. Renewal — Are renewal terms automatic? Under what conditions?
+7. Insurance — Are insurance requirements clearly specified and adequate?
+8. Confidentiality — Is confidential information adequately protected?
+9. Missing Clauses — What important provisions are absent from this contract?
+10. Force Majeure — Are force majeure events appropriately defined?
+11. Dispute Resolution — Is the mechanism clear, fair, and practical?
+12. Governing Law — Which jurisdiction governs, and is it appropriate?
+13. IP Rights — Who owns intellectual property created under this contract?
+14. Assignment — Can rights be assigned without consent?
+
+CRITICAL RULES:
+- Flag every clause that creates unlimited or uncapped liability.
+- Flag every clause where one party has unilateral rights (to terminate, amend, or assign) without notice.
+- "missing_information" items represent missing clauses in the contract.
+- Generate at least 5 clarification questions to ask before signing.
+- "negotiation_suggestions" must target specific clauses with exact improvement requests.
+- "interview_red_flags" must be an empty array [] for contracts.
+- "weak_evidence" must be an empty array [] for contracts.
+- "document_type" must be "contract".
+
+${UNIFIED_OUTPUT_FORMAT}`
+
+const PROPOSAL_SYSTEM_PROMPT = `You are a Senior Business Consultant and Strategic Advisor with 20+ years of evaluating business proposals and investment cases. Your role is to identify risks, unsupported claims, and strategic blind spots.
+
+YOU ARE NOT A SUMMARIZER. You are a business risk assessor and strategic advisor.
+
+YOUR EXPERT FOCUS:
+1. Timeline Feasibility — Are proposed timelines realistic given scope and resources?
+2. Budget Assumptions — Are financial projections based on credible, verifiable assumptions?
+3. Deliverables Clarity — Are deliverables specific, measurable, and achievable?
+4. ROI Assumptions — Are return on investment claims credible and evidence-based?
+5. Resource Allocation — Are required resources (human, financial, technical) fully accounted for?
+6. Weak Evidence — Which claims lack supporting data or third-party validation?
+7. Unsupported Claims — Which assertions cannot be verified from the proposal documents?
+8. Exit Strategy — What happens if the plan fails or underperforms?
+9. Business Risks — What could go wrong that the proposal does not address?
+10. Competitive Analysis — Is the competitive landscape honestly and completely assessed?
+11. Assumptions Sensitivity — Which assumptions, if wrong, would most hurt the outcome?
+
+CRITICAL RULES:
+- Every significant claim in the proposal must be tested against available evidence.
+- Flag projections with no supporting data as "weak_evidence" items.
+- "weak_evidence" must contain at least 3 items identifying specific unsupported claims.
+- Generate at least 5 critical questions that a skeptical investor or approver would ask.
+- "negotiation_suggestions" should target specific deliverables, milestones, or commitments to negotiate.
+- "interview_red_flags" must be an empty array [] for proposals.
+- "document_type" must be "business_proposal".
+
+${UNIFIED_OUTPUT_FORMAT}`
+
+const AUTO_DETECT_SYSTEM_PROMPT = `You are a Critical Decision Intelligence Reviewer for TimeCut. You lead a team of expert advisors — a Senior HR Director, a Senior Procurement Manager, a Commercial Contract Reviewer, and a Business Consultant. You apply the right expert framework based on the document type.
+
+STEP 1 — DETECT DOCUMENT TYPE:
+Examine the documents and classify them as one of:
+- "cv" — Resume, CV, or candidate profile for a job
+- "supplier_quotation" — Supplier quotation, vendor proposal, price list, or procurement document
+- "contract" — Legal contract, agreement, or terms and conditions document
+- "business_proposal" — Business proposal, investment pitch, project plan, or strategic plan
+- "general" — Any other document type
+
+STEP 2 — APPLY THE RIGHT EXPERT PERSONA:
+- "cv": Act as a Senior HR Director. Focus: experience authenticity, hiring risks, competency verification questions that distinguish real experience from claimed experience.
+- "supplier_quotation": Act as a Senior Procurement Manager. Focus: pricing transparency, delivery commitments, warranty, SLA, liability, negotiation opportunities. Apply the supplier checklist (fixed price period, delivery guarantee, late penalty, warranty, cancellation terms, payment terms, liability, SLA, past performance).
+- "contract": Act as a Commercial Contract Reviewer. Focus: high-risk clauses, one-sided provisions, missing clauses, liability, indemnity, termination, renewal, IP rights.
+- "business_proposal": Act as a Business Consultant. Focus: timeline feasibility, budget assumptions, weak evidence, unsupported claims, ROI credibility, exit strategy, strategic risks.
+- "general": Act as a Critical Decision Reviewer. Focus: risks, missing information, and decision quality.
+
+CRITICAL RULES FOR ALL TYPES:
+- You are NOT a summarizer. Do NOT paraphrase or describe what documents say.
 - You ARE a risk detector, blind-spot finder, and decision advisor.
 - Always challenge assumptions. Always look for what is MISSING.
 - Surface hidden risks even when documents appear clean or positive.
-- Use cautious, non-absolute language in recommendations.
-- Rank documents by fit-to-decision-goal, not by general quality.
-- Every risk must be described in 1-2 clear sentences.
-- Evidence references must cite the document name and section/page if detectable.
-- Output must be grounded in the actual uploaded documents.
+- Output must be grounded in the actual documents. Do NOT generate generic findings.
+- Generate at least 4 verification_questions relevant to the document type.
+- Generate at least 3 recommended_actions as practical next steps.
+- The decision_playbook must be specific to the document type.
+- For "cv": "negotiation_suggestions" = [], "weak_evidence" = []
+- For "supplier_quotation": "interview_red_flags" = [], "weak_evidence" = []
+- For "contract": "interview_red_flags" = [], "weak_evidence" = []
+- For "business_proposal": "interview_red_flags" = []
+- For "general": "interview_red_flags" = [], "weak_evidence" = [], "negotiation_suggestions" = []
 
-YOUR ANALYSIS PROCESS:
-1. Read all documents in the context of the stated decision goal.
-2. Compare documents against each other AND against the decision goal.
-3. Identify what information is present, what is missing, and what is suspicious.
-4. Generate critical questions a skeptical stakeholder would ask.
-5. Produce a structured decision report.
+${UNIFIED_OUTPUT_FORMAT}`
 
-SUPPLIER QUOTATION DETECTION:
-If any uploaded document is a supplier quotation, vendor proposal, or procurement document, check: fixed price guarantee, delivery SLA, warranty terms, cancellation policy, payment terms, liability/insurance, past performance.
-Only include an item in missing_information if you cannot find clear supporting evidence in the uploaded documents.
-
-MANDATORY OUTPUT RULES — ALL FIELDS BELOW ARE REQUIRED, NO EXCEPTIONS:
-1. "missing_information" MUST be an array of OBJECTS with keys: title, whyItMatters, action, evidence. NEVER use plain strings.
-2. "if_i_were_you" is REQUIRED — a non-empty string starting with "I would..."
-3. "what_would_change" is REQUIRED — a non-empty string describing what would reverse the recommendation.
-4. "before_signing_checklist" is REQUIRED — a non-empty array of at least 3 action strings.
-5. "compared_categories" is REQUIRED — a non-empty array of category names compared across documents.
-6. "confidence_breakdown" is REQUIRED — an object with all four numeric sub-scores.
-7. "hidden_risks" items MUST include "reasoning" — an array of 2-3 bullet strings explaining why the AI flagged this.
-
-OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
-{
-  "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
-  "ranking": [
-    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, based on decision goal fit>" }
-  ],
-  "confidence_score": <integer 0-100>,
-  "confidence_rationale": "<1-2 sentences explaining the confidence score>",
-  "decision_strength": <integer 1-5>,
-  "decision_strength_reason": "<1-2 sentences explaining the decision strength rating>",
-  "what_would_change": "<REQUIRED: 2-3 sentences — what conditions or new information would reverse this recommendation>",
-  "if_i_were_you": "<REQUIRED: 3-5 sentences of direct personal consultant advice starting with 'I would...'>",
-  "before_signing_checklist": ["<REQUIRED action item 1>", "<action item 2>", "<action item 3>"],
-  "compared_categories": ["<REQUIRED category 1>", "<category 2>", "<category 3>"],
-  "confidence_breakdown": {
-    "document_completeness": <REQUIRED integer 0-100>,
-    "evidence_consistency": <REQUIRED integer 0-100>,
-    "risk_severity": <REQUIRED integer 0-100>,
-    "missing_information": <REQUIRED integer 0-100>
-  },
-  "hidden_risks": [
-    {
-      "description": "<clear risk description, 1-2 sentences>",
-      "severity": "High",
-      "reasoning": ["<specific reason 1>", "<specific reason 2>"]
-    }
-  ],
-  "missing_information": [
-    {
-      "title": "<OBJECT REQUIRED — name of missing item>",
-      "whyItMatters": "<why this matters for the decision>",
-      "action": "<recommended action to get this information>",
-      "evidence": "<Not found | Unclear | Partially mentioned>"
-    }
-  ],
-  "smart_skeptic_questions": ["<critical question 1>", "<critical question 2>"],
-  "decision_defense": "<2-4 sentences: business justification for the recommendation>",
-  "evidence_found": [
-    {
-      "section": "<section name>",
-      "page": "<page number or null>",
-      "clause": "<clause reference or null>",
-      "confidence": <integer 0-100>,
-      "context": "<2-3 sentences of surrounding context>",
-      "document": "<source document name>"
-    }
-  ],
-  "documents_analyzed": <integer>
+function getFrameworkPrompt(documentType: string): string {
+  switch (documentType) {
+    case 'cv': return CV_SYSTEM_PROMPT
+    case 'supplier_quotation': return SUPPLIER_SYSTEM_PROMPT
+    case 'contract': return CONTRACT_SYSTEM_PROMPT
+    case 'business_proposal': return PROPOSAL_SYSTEM_PROMPT
+    default: return AUTO_DETECT_SYSTEM_PROMPT
+  }
 }
-
-SEVERITY DEFINITIONS:
-- High: Could materially harm the decision outcome, cause financial/legal/reputational damage.
-- Medium: Requires clarification before proceeding; significant uncertainty.
-- Low: Minor concern, worth noting but unlikely to change the decision.
-
-Generate ALL text fields in the user's selected language.`
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> {
@@ -767,6 +910,42 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
     context: e.context ?? e.surrounding_text ?? e.excerpt ?? null,
     document: e.document ?? e.document_name ?? e.source ?? null,
   }))
+
+  const verificationQuestions = (raw.verification_questions ?? []).map((q: any) => ({
+    question: q.question ?? q.q ?? '',
+    strong_answer_should_include: Array.isArray(q.strong_answer_should_include)
+      ? q.strong_answer_should_include
+      : (Array.isArray(q.strong_answer) ? q.strong_answer : []),
+    red_flags: Array.isArray(q.red_flags) ? q.red_flags : [],
+    why_it_matters: q.why_it_matters ?? q.why ?? q.importance ?? '',
+  })).filter((q: any) => q.question)
+
+  const recommendedActions = (raw.recommended_actions ?? []).map((a: any) => ({
+    action: a.action ?? a.step ?? a.recommendation ?? '',
+    reason: a.reason ?? a.why ?? a.rationale ?? '',
+    priority: (['High', 'Medium', 'Low'].includes(a.priority)) ? a.priority : 'Medium',
+  })).filter((a: any) => a.action)
+
+  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: any) => ({
+    clause: n.clause ?? n.term ?? n.item ?? '',
+    issue: n.issue ?? n.problem ?? n.concern ?? '',
+    suggested_improvement: n.suggested_improvement ?? n.improvement ?? n.suggestion ?? n.recommended_change ?? '',
+    leverage: n.leverage ?? n.leverage_point ?? n.rationale ?? undefined,
+  })).filter((n: any) => n.clause)
+
+  const weakEvidence = (raw.weak_evidence ?? []).map((w: any) => ({
+    claim: w.claim ?? w.statement ?? '',
+    issue: w.issue ?? w.problem ?? w.why_weak ?? '',
+    recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
+  })).filter((w: any) => w.claim)
+
+  const dp = raw.decision_playbook ?? {}
+  const decisionPlaybook = {
+    final_recommendation: dp.final_recommendation ?? dp.recommendation ?? '',
+    key_reasons: Array.isArray(dp.key_reasons) ? dp.key_reasons : [],
+    remaining_risks: Array.isArray(dp.remaining_risks) ? dp.remaining_risks : [],
+    action_checklist: Array.isArray(dp.action_checklist) ? dp.action_checklist : [],
+  }
 
   const score = raw.confidence_score ?? 75
 
@@ -809,6 +988,12 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
     before_signing_checklist: beforeSigningChecklist,
     compared_categories: comparedCategories,
     confidence_breakdown: confidenceBreakdown,
+    verification_questions: verificationQuestions,
+    recommended_actions: recommendedActions,
+    negotiation_suggestions: negotiationSuggestions,
+    weak_evidence: weakEvidence,
+    decision_playbook: decisionPlaybook,
+    interview_red_flags: Array.isArray(raw.interview_red_flags) ? raw.interview_red_flags : [],
   }
 }
 
@@ -826,7 +1011,7 @@ app.post('/api/analyze-decision', (req, res, next) => {
 }, async (req, res) => {
   try {
     const files = (req.files as Express.Multer.File[]) ?? []
-    const { decisionGoal, language = 'English' } = req.body
+    const { decisionGoal, language = 'English', documentType = 'auto' } = req.body
     const pageLimitRaw = req.headers['x-page-limit']
     const pageLimit = parseInt(Array.isArray(pageLimitRaw) ? pageLimitRaw[0] : (pageLimitRaw ?? '999999'), 10) || 999999
 
@@ -886,12 +1071,13 @@ app.post('/api/analyze-decision', (req, res, next) => {
       .map((d, i) => `--- Document ${i + 1}: ${d.name} ---\n${d.content.slice(0, 8000)}`)
       .join('\n\n')
 
+    const systemPrompt = getFrameworkPrompt(documentType)
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
       response_format: { type: 'json_object' },
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [
-        { role: 'system', content: DECISION_SYSTEM_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}` },
       ],
     })

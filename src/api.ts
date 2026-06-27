@@ -22,11 +22,13 @@ export async function analyzeDecision(
   decisionGoal: string,
   language: string,
   pageLimit: number = 999999,
+  documentType: string = 'auto',
 ): Promise<DecisionAnalyzeResponse> {
   const form = new FormData()
   files.forEach(f => form.append('files[]', f))
   form.append('decisionGoal', decisionGoal)
   form.append('language', language)
+  form.append('documentType', documentType)
   const res = await fetch('/api/analyze-decision', {
     method: 'POST',
     headers: { 'x-page-limit': String(pageLimit) },
