@@ -907,6 +907,55 @@ app.post('/api/analyze-decision', (req, res, next) => {
   }
 })
 
+// Challenge AI — question a specific conclusion from a decision report
+app.post('/api/challenge-ai', express.json(), async (req, res) => {
+  const { question, reportContext, decisionGoal } = req.body as {
+    question?: string
+    reportContext?: string
+    decisionGoal?: string
+  }
+
+  if (!question || !reportContext) {
+    res.status(400).json({ error: 'question and reportContext are required' })
+    return
+  }
+
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      max_tokens: 600,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI Decision Reviewer assistant for TimeCut.
+A user has received an AI-generated decision analysis report and wants to challenge or question a specific aspect of it.
+
+Your role:
+- Answer the user's question based ONLY on evidence and data in the provided report context
+- Be direct, honest, and transparent about your reasoning
+- Reference specific findings, risks, or evidence from the report when answering
+- If asked for supporting or opposing evidence, give a balanced response
+- Acknowledge uncertainty when the report lacks data to answer fully
+- Keep responses concise (3-5 sentences typically)
+
+Never fabricate information not found in the report.`,
+        },
+        {
+          role: 'user',
+          content: `Decision Goal: ${decisionGoal ?? 'Not specified'}\n\nReport Data:\n${reportContext}\n\nUser Question: ${question}`,
+        },
+      ],
+    })
+
+    const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
+    res.json({ answer })
+  } catch (err) {
+    console.error('[challenge-ai] Error:', err)
+    const message = err instanceof Error ? err.message : 'Challenge AI failed'
+    res.status(500).json({ error: message })
+  }
+})
+
 // Text or URL analysis
 app.post('/api/analyze', express.json(), async (req, res) => {
   const { type, content, url, language = 'English' } = req.body
