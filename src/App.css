@@ -5454,7 +5454,15 @@
   .lp-eo-card { padding: 20px 18px; }
   .lp-eo-label { min-width: 130px; font-size: 10px; }
   .lp-eo-row { flex-direction: column; gap: 4px; }
-  .lp-eo-top-row { flex-direction: column; gap: 12px; }
+  .lp-eo-top-row {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+  .lp-eo-rec { flex: 1 1 auto; min-width: 0; }
+  .lp-eo-score { flex: 0 0 auto; min-width: 0; align-items: flex-end; }
+  .lp-eo-score .lp-eo-label { text-align: right; }
   .lp-eo-label { min-width: unset; }
 }
 
