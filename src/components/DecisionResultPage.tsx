@@ -74,6 +74,75 @@ function IconBook({ className }: { className?: string }) {
   )
 }
 
+/* ── Executive Summary ── */
+function ExecutiveSummary({ report }: { report: DecisionReport }) {
+  const score = report.confidence_score
+  const decisionLabel = score >= 70 ? 'Proceed' : score >= 40 ? 'Proceed with Caution' : 'Do Not Proceed'
+  const decisionEmoji = score >= 70 ? '🟢' : score >= 40 ? '🟡' : '🔴'
+  const decisionColor = score >= 70 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444'
+
+  const hasHigh = report.hidden_risks.some(r => r.severity === 'High')
+  const hasMedium = report.hidden_risks.some(r => r.severity === 'Medium')
+  const overallRisk = hasHigh ? 'High' : hasMedium ? 'Medium' : 'Low'
+  const riskColor = hasHigh ? '#EF4444' : hasMedium ? '#F59E0B' : '#22C55E'
+
+  const bestOption = report.ranking[0]?.name ?? '—'
+
+  const pages = report.pages_analyzed ?? 0
+  const timeSaved = pages > 0 ? `${(Math.round(pages * 4 / 60 * 10) / 10).toFixed(1)} hrs` : '—'
+
+  return (
+    <div className="dr-exec-summary">
+      <div className="dr-exec-top">
+        <div className="dr-exec-decision-block">
+          <p className="dr-exec-eyebrow">Overall Decision</p>
+          <div className="dr-exec-verdict">
+            <span className="dr-exec-emoji">{decisionEmoji}</span>
+            <span className="dr-exec-verdict-text" style={{ color: decisionColor }}>{decisionLabel}</span>
+          </div>
+        </div>
+        <div className="dr-exec-quick-stats">
+          <div className="dr-exec-qs-item">
+            <span className="dr-exec-qs-val">{score}%</span>
+            <span className="dr-exec-qs-label">Confidence</span>
+          </div>
+          <div className="dr-exec-qs-item">
+            <span className="dr-exec-qs-val" style={{ color: riskColor }}>{overallRisk}</span>
+            <span className="dr-exec-qs-label">Overall Risk</span>
+          </div>
+          <div className="dr-exec-qs-item dr-exec-qs-item--wide">
+            <span className="dr-exec-qs-val dr-exec-qs-val--sm">{bestOption}</span>
+            <span className="dr-exec-qs-label">Best Option</span>
+          </div>
+        </div>
+      </div>
+      <div className="dr-exec-divider" />
+      <div className="dr-exec-stats-row">
+        {timeSaved !== '—' && (
+          <div className="dr-exec-stat">
+            <span className="dr-exec-stat-val">{timeSaved}</span>
+            <span className="dr-exec-stat-label">Estimated Time Saved</span>
+          </div>
+        )}
+        <div className="dr-exec-stat">
+          <span className="dr-exec-stat-val">{report.documents_analyzed}</span>
+          <span className="dr-exec-stat-label">Documents Compared</span>
+        </div>
+        {pages > 0 && (
+          <div className="dr-exec-stat">
+            <span className="dr-exec-stat-val">{pages}</span>
+            <span className="dr-exec-stat-label">Pages Analyzed</span>
+          </div>
+        )}
+        <div className="dr-exec-stat">
+          <span className="dr-exec-stat-val">{report.evidence_found.length}</span>
+          <span className="dr-exec-stat-label">Evidence References</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Section card wrapper ── */
 function SectionCard({ icon, title, className = '', children }: { icon: React.ReactNode; title: string; className?: string; children: React.ReactNode }) {
   return (
@@ -356,6 +425,9 @@ export default function DecisionResultPage({ report, onBack }: Props) {
       )}
 
       <div className="container dr-content">
+        {/* Executive Summary */}
+        <ExecutiveSummary report={report} />
+
         {/* 1 */}
         <RecommendationCard recommendation={report.recommendation} t={t} />
 

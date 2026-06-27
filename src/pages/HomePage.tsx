@@ -4,6 +4,7 @@ import { analyzeText, analyzePdf, analyzeDecision } from '../api'
 import type { TimeCutReport, InputTab, DecisionReport } from '../types'
 import LandingPage from '../components/LandingPage'
 import DecisionUpload from '../components/DecisionUpload'
+import AnalysisLoader from '../components/AnalysisLoader'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -98,6 +99,7 @@ export default function HomePage() {
   const [report, setReport] = useState<TimeCutReport | null>(null)
   const [decisionReport, setDecisionReport] = useState<DecisionReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showDecisionLoader, setShowDecisionLoader] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [analysisLanguage, setAnalysisLanguage] = useState('English')
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
@@ -198,6 +200,7 @@ export default function HomePage() {
     }
 
     setIsLoading(true)
+    setShowDecisionLoader(true)
     setAnalysisLanguage(language)
 
     if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language })
@@ -214,10 +217,12 @@ export default function HomePage() {
         }
       } else {
         if (user) refreshUsage()
+        setShowDecisionLoader(false)
         setError(result.error ?? t('home.errorGeneral'))
       }
     } catch {
       if (user) refreshUsage()
+      setShowDecisionLoader(false)
       setError(t('home.errorNetwork'))
     }
     setIsLoading(false)
@@ -228,6 +233,7 @@ export default function HomePage() {
     setDecisionReport(null)
     setError(null)
     setShowUpgradeModal(false)
+    setShowDecisionLoader(false)
   }
 
   if (decisionReport) {
@@ -236,6 +242,10 @@ export default function HomePage() {
         <DecisionResultPage report={decisionReport} onBack={handleBack} language={analysisLanguage} />
       </Suspense>
     )
+  }
+
+  if (showDecisionLoader) {
+    return <AnalysisLoader isComplete={!isLoading} />
   }
 
   if (report) {

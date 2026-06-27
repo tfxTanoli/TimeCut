@@ -117,7 +117,7 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       }
 
       const data = await generateDecisionReport(documents, language, decisionGoal.trim())
-      return res.json({ data })
+      return res.json({ data: { ...(data as object), pages_analyzed: totalPages } })
     } catch (e) {
       console.error('[DECISION ERROR]', e)
       const message = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e)

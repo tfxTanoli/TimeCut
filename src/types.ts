@@ -88,6 +88,7 @@ export interface DecisionReport {
   decision_defense: string
   evidence_found: EvidenceItem[]
   documents_analyzed: number
+  pages_analyzed?: number
 }
 
 export interface DecisionAnalyzeResponse {

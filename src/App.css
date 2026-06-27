@@ -5752,3 +5752,190 @@
   .lp-risk-detail__row { grid-template-columns: 1fr; gap: 3px; }
   .lp-risk-detail__key { font-size: 10px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   EXECUTIVE SUMMARY  (Decision Result Page)
+   ════════════════════════════════════════════════════════════════ */
+.dr-exec-summary {
+  background: linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(16,185,129,0.04) 100%);
+  border: 1px solid rgba(37,99,235,0.25);
+  border-radius: 16px;
+  padding: 24px 28px;
+  margin-bottom: 20px;
+}
+.dr-exec-top {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+.dr-exec-decision-block { flex-shrink: 0; }
+.dr-exec-eyebrow {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #6B7280;
+  margin: 0 0 8px;
+}
+.dr-exec-verdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.dr-exec-emoji { font-size: 28px; line-height: 1; }
+.dr-exec-verdict-text {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+}
+.dr-exec-quick-stats {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  flex: 1;
+  flex-wrap: wrap;
+}
+.dr-exec-qs-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 20px;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  min-width: 90px;
+}
+.dr-exec-qs-item--wide { min-width: 140px; }
+.dr-exec-qs-val {
+  font-size: 18px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1;
+}
+.dr-exec-qs-val--sm { font-size: 15px; font-weight: 700; }
+.dr-exec-qs-label {
+  font-size: 11px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+.dr-exec-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.07);
+  margin: 20px 0;
+}
+.dr-exec-stats-row {
+  display: flex;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.dr-exec-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 100px;
+  padding: 0 16px;
+  border-left: 1px solid rgba(255,255,255,0.07);
+}
+.dr-exec-stat:first-child { padding-left: 0; border-left: none; }
+.dr-exec-stat-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #FFFFFF;
+  line-height: 1;
+}
+.dr-exec-stat-label {
+  font-size: 11px;
+  color: #6B7280;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+@media (max-width: 700px) {
+  .dr-exec-summary { padding: 18px 16px; }
+  .dr-exec-top { gap: 16px; }
+  .dr-exec-qs-item { padding: 0 14px; min-width: 70px; }
+  .dr-exec-qs-val { font-size: 15px; }
+  .dr-exec-verdict-text { font-size: 18px; }
+  .dr-exec-stat { min-width: 80px; padding: 0 10px; }
+  .dr-exec-stat-val { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .dr-exec-top { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .dr-exec-quick-stats { width: 100%; }
+  .dr-exec-qs-item:first-child { padding-left: 0; border-left: none; }
+  .dr-exec-stats-row { gap: 12px 0; }
+  .dr-exec-stat { min-width: calc(50% - 8px); }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ANALYSIS LOADER  (upload → analysis animation)
+   ════════════════════════════════════════════════════════════════ */
+.al-overlay {
+  position: fixed;
+  inset: 0;
+  background: #09090B;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.al-box {
+  width: 100%;
+  max-width: 460px;
+  padding: 0 24px;
+}
+.al-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 32px;
+  text-align: center;
+  letter-spacing: -0.3px;
+}
+.al-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.al-step { display: flex; flex-direction: column; gap: 7px; }
+.al-step-label {
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.3s;
+}
+.al-step-label--pending { color: #374151; }
+.al-step-label--active  { color: #E5E7EB; }
+.al-step-label--done    { color: #22C55E; }
+.al-step-icon {
+  width: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.al-step-track {
+  height: 5px;
+  background: #1F2937;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.al-step-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.55s ease, background 0.3s ease;
+}
+.al-done {
+  text-align: center;
+  margin-top: 28px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #22C55E;
+  letter-spacing: 0.2px;
+}
