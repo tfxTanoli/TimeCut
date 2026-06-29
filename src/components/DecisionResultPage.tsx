@@ -791,8 +791,8 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
         onClick={() => setOpen(o => !o)}
       >
         <IconMessageCircle />
-        <span>Challenge AI</span>
-        <span className="dr-challenge-toggle-sub">Question any conclusion</span>
+        <span>Decision Advisor</span>
+        <span className="dr-challenge-toggle-sub">Continue this decision — question any conclusion</span>
         <IconChevronDown open={open} />
       </button>
 
@@ -1226,6 +1226,152 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
   )
 }
 
+/* ── Executive Decision Package (closing summary of the 8 decision questions) ── */
+function ExecutiveDecisionPackage({
+  report,
+  t,
+  onContinue,
+}: {
+  report: DecisionReport
+  t: (k: string) => string
+  onContinue: () => void
+}) {
+  const SEV_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
+
+  // 2 — Why this recommendation
+  const why = report.decision_defense?.trim() || report.confidence_rationale?.trim() || ''
+
+  // 3 — Biggest remaining concerns (highest-severity risks first)
+  const concerns = [...report.hidden_risks]
+    .sort((a, b) => (SEV_RANK[a.severity] ?? 3) - (SEV_RANK[b.severity] ?? 3))
+    .slice(0, 3)
+    .map(r => r.description)
+
+  // 4 — Verify before deciding
+  const verify = (
+    report.before_signing_checklist?.length
+      ? report.before_signing_checklist
+      : report.verification_questions?.length
+        ? report.verification_questions.map(q => q.question)
+        : report.missing_information.map(m => m.title)
+  ).slice(0, 4)
+
+  // 5 — Next actions
+  const actions = (
+    report.recommended_actions?.length
+      ? report.recommended_actions.map(a => a.action)
+      : report.before_signing_checklist ?? []
+  ).slice(0, 4)
+
+  // 6 — Questions to ask
+  const questions = (
+    report.smart_skeptic_questions?.length
+      ? report.smart_skeptic_questions
+      : report.verification_questions?.map(q => q.question) ?? []
+  ).slice(0, 4)
+
+  // 7 — What could change the recommendation
+  const whatChanges = report.what_would_change?.trim() || ''
+
+  // 8 — Decision readiness
+  const conf = report.confidence_score ?? 0
+  const strength = report.decision_strength
+  const readiness = strength ? Math.round((conf + strength * 20) / 2) : conf
+  const readyLabel =
+    readiness >= 70 ? t('report.edpReadyHigh') : readiness >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
+  const readyColor = readiness >= 70 ? '#22C55E' : readiness >= 45 ? '#F59E0B' : '#EF4444'
+
+  const Bullets = ({ items, fallback }: { items: string[]; fallback: string }) =>
+    items.length ? (
+      <ul className="edp-bullets">
+        {items.map((it, i) => (
+          <li key={i} className="edp-bullet"><span className="edp-bullet-mark">›</span>{it}</li>
+        ))}
+      </ul>
+    ) : (
+      <p className="edp-answer edp-answer--muted">{fallback}</p>
+    )
+
+  return (
+    <section className="edp-card">
+      <div className="edp-header">
+        <span className="edp-eyebrow">{t('report.edpEyebrow')}</span>
+        <h2 className="edp-title">{t('report.edpTitle')}</h2>
+        <p className="edp-subtitle">{t('report.edpSubtitle')}</p>
+      </div>
+
+      <div className="edp-grid">
+        {/* 1 — The recommendation */}
+        <div className="edp-item edp-item--highlight">
+          <div className="edp-item-head"><span className="edp-num">1</span><span className="edp-icon">✅</span><h3 className="edp-q">{t('report.edpQ1')}</h3></div>
+          <p className="edp-answer edp-answer--rec">{report.recommendation}</p>
+        </div>
+
+        {/* 2 — Why */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">2</span><span className="edp-icon">💡</span><h3 className="edp-q">{t('report.edpQ2')}</h3></div>
+          <p className="edp-answer">{why || t('report.edpNoneGeneric')}</p>
+        </div>
+
+        {/* 3 — Concerns */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">3</span><span className="edp-icon">⚠️</span><h3 className="edp-q">{t('report.edpQ3')}</h3></div>
+          <Bullets items={concerns} fallback={t('report.edpNoneConcerns')} />
+        </div>
+
+        {/* 4 — Verify */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">4</span><span className="edp-icon">🔍</span><h3 className="edp-q">{t('report.edpQ4')}</h3></div>
+          <Bullets items={verify} fallback={t('report.edpNoneVerify')} />
+        </div>
+
+        {/* 5 — Next actions */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">5</span><span className="edp-icon">🎯</span><h3 className="edp-q">{t('report.edpQ5')}</h3></div>
+          <Bullets items={actions} fallback={t('report.edpNoneGeneric')} />
+        </div>
+
+        {/* 6 — Questions to ask */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">6</span><span className="edp-icon">❓</span><h3 className="edp-q">{t('report.edpQ6')}</h3></div>
+          <Bullets items={questions} fallback={t('report.edpNoneGeneric')} />
+        </div>
+
+        {/* 7 — What could change this */}
+        <div className="edp-item">
+          <div className="edp-item-head"><span className="edp-num">7</span><span className="edp-icon">🔄</span><h3 className="edp-q">{t('report.edpQ7')}</h3></div>
+          <p className="edp-answer">{whatChanges || t('report.edpNoneGeneric')}</p>
+        </div>
+
+        {/* 8 — Readiness */}
+        <div className="edp-item edp-item--readiness">
+          <div className="edp-item-head"><span className="edp-num">8</span><span className="edp-icon">📊</span><h3 className="edp-q">{t('report.edpQ8')}</h3></div>
+          <div className="edp-readiness">
+            <div className="edp-readiness-top">
+              <span className="edp-readiness-pct" style={{ color: readyColor }}>{readiness}%</span>
+              <span className="edp-readiness-label" style={{ color: readyColor }}>{readyLabel}</span>
+            </div>
+            <div className="edp-readiness-track">
+              <div className="edp-readiness-fill" style={{ width: `${readiness}%`, background: readyColor }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Continue this decision → Decision Advisor */}
+      <div className="edp-continue">
+        <div className="edp-continue-text">
+          <p className="edp-continue-title">{t('report.edpContinueTitle')}</p>
+          <p className="edp-continue-sub">{t('report.edpContinueSub')}</p>
+        </div>
+        <button className="edp-continue-btn" onClick={onContinue}>
+          {t('report.edpContinueCta')}
+        </button>
+      </div>
+    </section>
+  )
+}
+
 /* ── Main component ── */
 export default function DecisionResultPage({ report: rawReport, onBack, uploadedFiles, decisionGoal, plan }: Props) {
   const report = normalizeReport(rawReport)
@@ -1269,6 +1415,10 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
     setTimeout(() => {
       document.getElementById('dr-challenge-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
+  }
+
+  function handleContinueDecision() {
+    document.getElementById('dr-challenge-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const hasComparedCategories = report.compared_categories && report.compared_categories.length > 0
@@ -1394,7 +1544,10 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
           />
         )}
 
-        {/* Challenge AI */}
+        {/* ── EXECUTIVE DECISION PACKAGE (closing summary) ── */}
+        <ExecutiveDecisionPackage report={report} t={t} onContinue={handleContinueDecision} />
+
+        {/* Decision Advisor (Challenge AI) */}
         <div id="dr-challenge-panel">
           <ChallengeAIPanel
             report={report}

@@ -46,118 +46,57 @@ interface DemoData {
   recReasons: string[]
 }
 
-const DEMO_DATA: Record<DemoTab, DemoData> = {
-  supplier: {
-    tabLabel: 'Supplier Quotation',
-    goal: 'Choose the best supplier',
-    recommendation: 'Supplier B',
-    confidence: 82,
-    evidenceSummary: 'Page 7, Section 4.2',
-    risks: [
-      {
-        title: 'Automatic Annual Price Increase Clause',
-        level: 'High',
-        whyItMatters: 'Supplier A may raise prices every year with no predefined cap, creating unpredictable long-term cost exposure.',
-        action: 'Request fixed pricing or a maximum annual increase cap (e.g. ≤ 3% CPI-linked) before signing.',
-        evidence: 'Page 7, Section 4.2',
-      },
-      {
-        title: 'No Late Delivery Penalty Defined',
-        level: 'High',
-        whyItMatters: 'The quotation contains no penalty clause for missed delivery deadlines, leaving you with no financial recourse if timelines slip.',
-        action: 'Add a penalty clause specifying a daily or weekly fee for each day delivery is delayed beyond the agreed date.',
-        evidence: 'Page 12, Section 6.1',
-      },
-      {
-        title: 'Unclear Warranty Terms',
-        level: 'Medium',
-        whyItMatters: 'The warranty section is vague about what defects are covered, the claims process, and the response time — creating disputes at the point of failure.',
-        action: 'Request a clear warranty schedule covering defect categories, claim procedures, and guaranteed response times.',
-        evidence: 'Page 9, Section 5.3',
-      },
-    ],
-    missing: [
-      {
-        title: 'Delivery Guarantee Missing',
-        whyItMatters: 'The quotation states target delivery windows but provides no formal guarantee or committed SLA for on-time delivery.',
-        action: 'Request a written delivery guarantee with a committed date and escalation path if the date is missed.',
-        evidence: 'Page 12',
-      },
-      {
-        title: 'Cancellation Terms Not Specified',
-        whyItMatters: 'There is no information on how either party may cancel the contract, what notice period is required, or whether cancellation fees apply.',
-        action: 'Request a cancellation clause covering notice period (e.g. 30 days), any applicable fees, and asset return obligations.',
-        evidence: 'Page 14',
-      },
-    ],
-    recReasons: [
-      'Lowest long-term cost projection with no automatic escalation',
-      'Clear delivery commitment with SLA and penalty clause',
-      'Explicit warranty terms with defined response times',
-      'Lower overall contract risk score across all evaluated criteria',
-    ],
-  },
-  cv: {
-    tabLabel: 'CV / HR',
-    goal: 'Hire the best Sales Manager',
-    recommendation: 'Candidate B',
-    confidence: 88,
-    evidenceSummary: 'Resume Page 2',
-    risks: [
-      {
-        title: 'Job Hopping Pattern — Candidate A',
-        level: 'High',
-        whyItMatters: 'Candidate A changed jobs 5 times in 4 years, suggesting potential instability or performance issues not visible on the CV.',
-        action: 'Ask directly about the reason for each job change in the interview. Request references from all employers.',
-        evidence: 'Resume Page 2',
-      },
-    ],
-    missing: [
-      {
-        title: 'Sales Team Management Evidence — Candidate C',
-        whyItMatters: 'Candidate C claims team leadership experience but provides no evidence of managing a sales team or measurable results.',
-        action: 'Request a reference from a direct report and documented revenue results before advancing to final interview.',
-        evidence: 'Resume Page 3',
-      },
-    ],
-    recReasons: [
-      'Consistent 3+ year tenures at previous roles',
-      'Documented 40% revenue growth in last position',
-      'Team management experience independently verified',
-      'Strong references from two prior direct managers',
-    ],
-  },
-  proposal: {
-    tabLabel: 'Business Proposal',
-    goal: 'Evaluate the business proposal for partnership',
-    recommendation: 'Accept with conditions',
-    confidence: 74,
-    evidenceSummary: 'Page 5, Section 3.1',
-    risks: [
-      {
-        title: 'Unsupported Revenue Projections',
-        level: 'High',
-        whyItMatters: 'The proposal claims 3× revenue growth in Year 2 with no supporting financial model, market data, or historical basis.',
-        action: 'Request the full financial model, key assumptions, and comparable market data before committing to the partnership.',
-        evidence: 'Page 5, Section 3.1',
-      },
-    ],
-    missing: [
-      {
-        title: 'No Exit or Termination Clause',
-        whyItMatters: 'If the partnership underperforms, there is no defined exit process, notice period, or mutual termination terms.',
-        action: 'Add a mutual exit clause with a 90-day written notice requirement and clear asset division terms.',
-        evidence: 'Page 8',
-      },
-    ],
-    recReasons: [
-      'Strong and validated market analysis',
-      'Experienced founding team with relevant track record',
-      'Requires clarified financial projections and assumptions',
-      'Requires exit and termination clause before signing',
-    ],
-  },
+function buildDemoData(t: (k: string) => string): Record<DemoTab, DemoData> {
+  return {
+    supplier: {
+      tabLabel: t('home.demoSupTab'),
+      goal: t('home.demoSupGoal'),
+      recommendation: t('home.demoSupRec'),
+      confidence: 82,
+      evidenceSummary: t('home.demoSupEvidence'),
+      risks: [
+        { title: t('home.demoSupR1T'), level: 'High', whyItMatters: t('home.demoSupR1W'), action: t('home.demoSupR1A'), evidence: t('home.demoSupR1E') },
+        { title: t('home.demoSupR2T'), level: 'High', whyItMatters: t('home.demoSupR2W'), action: t('home.demoSupR2A'), evidence: t('home.demoSupR2E') },
+        { title: t('home.demoSupR3T'), level: 'Medium', whyItMatters: t('home.demoSupR3W'), action: t('home.demoSupR3A'), evidence: t('home.demoSupR3E') },
+      ],
+      missing: [
+        { title: t('home.demoSupM1T'), whyItMatters: t('home.demoSupM1W'), action: t('home.demoSupM1A'), evidence: t('home.demoSupM1E') },
+        { title: t('home.demoSupM2T'), whyItMatters: t('home.demoSupM2W'), action: t('home.demoSupM2A'), evidence: t('home.demoSupM2E') },
+      ],
+      recReasons: [t('home.demoSupRea1'), t('home.demoSupRea2'), t('home.demoSupRea3'), t('home.demoSupRea4')],
+    },
+    cv: {
+      tabLabel: t('home.demoCvTab'),
+      goal: t('home.demoCvGoal'),
+      recommendation: t('home.demoCvRec'),
+      confidence: 88,
+      evidenceSummary: t('home.demoCvEvidence'),
+      risks: [
+        { title: t('home.demoCvR1T'), level: 'High', whyItMatters: t('home.demoCvR1W'), action: t('home.demoCvR1A'), evidence: t('home.demoCvR1E') },
+      ],
+      missing: [
+        { title: t('home.demoCvM1T'), whyItMatters: t('home.demoCvM1W'), action: t('home.demoCvM1A'), evidence: t('home.demoCvM1E') },
+      ],
+      recReasons: [t('home.demoCvRea1'), t('home.demoCvRea2'), t('home.demoCvRea3'), t('home.demoCvRea4')],
+    },
+    proposal: {
+      tabLabel: t('home.demoProTab'),
+      goal: t('home.demoProGoal'),
+      recommendation: t('home.demoProRec'),
+      confidence: 74,
+      evidenceSummary: t('home.demoProEvidence'),
+      risks: [
+        { title: t('home.demoProR1T'), level: 'High', whyItMatters: t('home.demoProR1W'), action: t('home.demoProR1A'), evidence: t('home.demoProR1E') },
+      ],
+      missing: [
+        { title: t('home.demoProM1T'), whyItMatters: t('home.demoProM1W'), action: t('home.demoProM1A'), evidence: t('home.demoProM1E') },
+      ],
+      recReasons: [t('home.demoProRea1'), t('home.demoProRea2'), t('home.demoProRea3'), t('home.demoProRea4')],
+    },
+  }
 }
+
+const LEVEL_LABEL_KEY: Record<string, string> = { High: 'home.lpLevelHigh', Medium: 'home.lpLevelMedium', Low: 'home.lpLevelLow' }
 
 const LEVEL_COLOR: Record<string, string> = { High: '#EF4444', Medium: '#FB923C', Low: '#22C55E' }
 const LEVEL_BG: Record<string, string> = {
@@ -217,6 +156,7 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
     setIsExpanded(false)
   }
 
+  const DEMO_DATA = buildDemoData(t)
   const demo = DEMO_DATA[activeDemo]
 
   return (
@@ -243,9 +183,9 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
               {t('home.lpDemoCta')}
             </button>
             <div className="lp-trust-badges">
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Finds hidden risks</span>
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Explains why</span>
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> Ranks the best option</span>
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust1')}</span>
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust2')}</span>
+              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust3')}</span>
             </div>
             <p className="lp-no-cc">{t('home.lpNoCc')}</p>
           </div>
@@ -280,17 +220,17 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
           {/* Summary card */}
           <div className="lp-eo-card fade-up" style={{ transitionDelay: '160ms' }}>
             <div className="lp-eo-row lp-eo-row--goal">
-              <span className="lp-eo-label">Decision Goal</span>
+              <span className="lp-eo-label">{t('home.lpEoGoalLabel')}</span>
               <span className="lp-eo-value">{demo.goal}</span>
             </div>
             <div className="lp-eo-divider" />
             <div className="lp-eo-top-row">
               <div className="lp-eo-rec">
-                <span className="lp-eo-label">Recommendation</span>
+                <span className="lp-eo-label">{t('home.lpEoRecLabel')}</span>
                 <span className="lp-eo-rec-value">{demo.recommendation}</span>
               </div>
               <div className="lp-eo-score">
-                <span className="lp-eo-label">Confidence Score</span>
+                <span className="lp-eo-label">{t('home.lpEoScoreLabel')}</span>
                 <div className="lp-eo-gauge">
                   {(() => {
                     const pct = demo.confidence
@@ -319,13 +259,13 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
               <div className="lp-eo-stat">
                 <span className="lp-eo-stat-icon lp-eo-stat-icon--risk">🔴</span>
                 <span className="lp-eo-stat-count">{demo.risks.length}</span>
-                <span className="lp-eo-stat-label">Hidden Risk{demo.risks.length !== 1 ? 's' : ''} Found</span>
+                <span className="lp-eo-stat-label">{t('home.lpEoStatRisks')}</span>
               </div>
               <div className="lp-eo-stat-divider" />
               <div className="lp-eo-stat">
                 <span className="lp-eo-stat-icon lp-eo-stat-icon--missing">🟠</span>
                 <span className="lp-eo-stat-count">{demo.missing.length}</span>
-                <span className="lp-eo-stat-label">Missing Info Found</span>
+                <span className="lp-eo-stat-label">{t('home.lpEoStatMissing')}</span>
               </div>
               <div className="lp-eo-stat-divider" />
               <div className="lp-eo-stat">
@@ -341,7 +281,7 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
               className="lp-eo-expand-btn"
               onClick={() => setIsExpanded(v => !v)}
             >
-              {isExpanded ? '▲ Hide Full Sample Report' : '▼ View Full Sample Report'}
+              {isExpanded ? `▲ ${t('home.lpEoCollapse')}` : `▼ ${t('home.lpEoExpand')}`}
             </button>
 
             {/* ── Expanded detail view ── */}
@@ -351,26 +291,26 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 {demo.risks.map((risk, i) => (
                   <div key={i} className="lp-risk-item lp-risk-item--risk">
                     <div className="lp-risk-item__header">
-                      <span className="lp-risk-item__badge">🔴 Hidden Risk #{i + 1}</span>
+                      <span className="lp-risk-item__badge">🔴 {t('home.lpEoRiskBadge')} #{i + 1}</span>
                       <span
                         className="lp-risk-level-badge"
                         style={{ color: LEVEL_COLOR[risk.level], background: LEVEL_BG[risk.level] }}
                       >
-                        Risk Level: {risk.level}
+                        {t('home.lpEoRiskLevel')} {t(LEVEL_LABEL_KEY[risk.level])}
                       </span>
                     </div>
                     <h4 className="lp-risk-item__title">{risk.title}</h4>
                     <div className="lp-risk-detail">
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key">Why It Matters</span>
+                        <span className="lp-risk-detail__key">{t('home.lpEoWhy')}</span>
                         <span className="lp-risk-detail__val">{risk.whyItMatters}</span>
                       </div>
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key">Recommended Action</span>
+                        <span className="lp-risk-detail__key">{t('home.lpEoAction')}</span>
                         <span className="lp-risk-detail__val">{risk.action}</span>
                       </div>
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key lp-risk-detail__key--evidence">Evidence</span>
+                        <span className="lp-risk-detail__key lp-risk-detail__key--evidence">{t('home.lpEoEvidence')}</span>
                         <span className="lp-risk-detail__val lp-risk-detail__val--evidence">{risk.evidence}</span>
                       </div>
                     </div>
@@ -381,20 +321,20 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 {demo.missing.map((item, i) => (
                   <div key={i} className="lp-risk-item lp-risk-item--missing">
                     <div className="lp-risk-item__header">
-                      <span className="lp-risk-item__badge lp-risk-item__badge--missing">🟠 Missing Information #{i + 1}</span>
+                      <span className="lp-risk-item__badge lp-risk-item__badge--missing">🟠 {t('home.lpEoMissingBadge')} #{i + 1}</span>
                     </div>
                     <h4 className="lp-risk-item__title">{item.title}</h4>
                     <div className="lp-risk-detail">
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key">Why It Matters</span>
+                        <span className="lp-risk-detail__key">{t('home.lpEoWhy')}</span>
                         <span className="lp-risk-detail__val">{item.whyItMatters}</span>
                       </div>
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key">Recommended Action</span>
+                        <span className="lp-risk-detail__key">{t('home.lpEoAction')}</span>
                         <span className="lp-risk-detail__val">{item.action}</span>
                       </div>
                       <div className="lp-risk-detail__row">
-                        <span className="lp-risk-detail__key lp-risk-detail__key--evidence">Evidence</span>
+                        <span className="lp-risk-detail__key lp-risk-detail__key--evidence">{t('home.lpEoEvidence')}</span>
                         <span className="lp-risk-detail__val lp-risk-detail__val--evidence">{item.evidence}</span>
                       </div>
                     </div>
@@ -404,11 +344,11 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 {/* Recommendation detail */}
                 <div className="lp-risk-item lp-risk-item--rec">
                   <div className="lp-risk-item__header">
-                    <span className="lp-risk-item__badge lp-risk-item__badge--rec">🟢 Recommendation</span>
+                    <span className="lp-risk-item__badge lp-risk-item__badge--rec">🟢 {t('home.lpEoRecBadge')}</span>
                   </div>
                   <h4 className="lp-risk-item__title lp-risk-item__title--rec">{demo.recommendation}</h4>
                   <div className="lp-rec-reasons">
-                    <span className="lp-rec-reasons__label">Reasons:</span>
+                    <span className="lp-rec-reasons__label">{t('home.lpEoReasons')}</span>
                     <ul className="lp-rec-reasons__list">
                       {demo.recReasons.map((r, i) => (
                         <li key={i} className="lp-rec-reasons__item">
@@ -476,7 +416,7 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                     className="lp-uc-demo-btn"
                     onClick={() => viewDemo(uc.demo as DemoTab)}
                   >
-                    View Sample Report →
+                    {t('home.lpDemoCta')}
                   </button>
                 )}
               </div>

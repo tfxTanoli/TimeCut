@@ -1,4 +1,4 @@
-import { useRef, useState, useCallback } from 'react'
+import { useRef, useState, useCallback, useEffect } from 'react'
 import type { PlanType } from '../lib/userService'
 import type { DocumentType } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
@@ -111,12 +111,29 @@ export default function DecisionUpload({
     addFiles(e.dataTransfer.files)
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!isLoggedIn) { onOpenAuth?.(); return }
-    if (files.length === 0 || !decisionGoal.trim()) return
+  // Guests must sign in first; remember their intent so analysis runs
+  // automatically right after they authenticate (no second click needed).
+  const [pendingSubmit, setPendingSubmit] = useState(false)
+
+  function runAnalysis() {
+    if (files.length === 0 || decisionGoal.trim().length < 5) return
     onDecisionSubmit(files, decisionGoal.trim(), language, documentType)
   }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isLoggedIn) { setPendingSubmit(true); onOpenAuth?.(); return }
+    runAnalysis()
+  }
+
+  // When a guest signs in after pressing the button, auto-start their analysis.
+  useEffect(() => {
+    if (isLoggedIn && pendingSubmit && !isLoading && !isAtLimit) {
+      setPendingSubmit(false)
+      runAnalysis()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn, pendingSubmit, isLoading, isAtLimit])
 
   const canSubmit =
     !isLoading && !isAtLimit && files.length > 0 && decisionGoal.trim().length >= 5
@@ -261,10 +278,13 @@ export default function DecisionUpload({
             {isLoading
               ? t('decision.analyzing')
               : !isLoggedIn
-                ? t('decision.signInToAnalyze')
-                : t('decision.analyzeBtn')}
+                ? `🔒 ${t('decision.signInToAnalyze')}`
+                : `✨ ${t('decision.analyzeBtn')}`}
           </button>
         </div>
+        {!isLoggedIn && !isLoading && (
+          <p className="du-signin-hint">{t('decision.signInHint')}</p>
+        )}
 
         {/* ── Plan usage bar ── */}
         <div className={`plan-usage-bar${!isLoggedIn ? ' plan-usage-bar--guest' : ''}`}>
