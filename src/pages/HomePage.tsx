@@ -12,9 +12,10 @@ import {
   logActivity,
   incrementAnalysisStats,
   saveAnalysis,
-  checkAndIncrementUsage,
-  PAGE_LIMITS,
+  consumeCredits,
+  consumeFreeReport,
 } from '../lib/userService'
+import { computeReportCost } from '../lib/planConfig'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
@@ -93,7 +94,10 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth, t }: U
 }
 
 export default function HomePage() {
-  const { user, plan, planLimit, monthlyUsage, refreshUsage } = useAuth()
+  const {
+    user, plan, refreshUsage,
+    planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+  } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const { t } = useTranslation()
   const [report, setReport] = useState<TimeCutReport | null>(null)
@@ -106,11 +110,20 @@ export default function HomePage() {
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [currentDecisionGoal, setCurrentDecisionGoal] = useState('')
 
+  const isFreePlan = plan === 'free'
   const anonRemaining = getAnonRemaining()
-  const userRemaining = user ? Math.max(0, planLimit - monthlyUsage) : null
+  // Logged-in: paid plans gate on AI Credits, free plan gates on free reports.
+  const userRemaining = user ? (isFreePlan ? freeReportsRemaining : creditsRemaining) : null
   const remaining = userRemaining ?? anonRemaining
   const isAtLimit = remaining <= 0
-  const pageLimit = PAGE_LIMITS[plan]
+  const pageLimit = planConfig.plans[plan]?.maxPages ?? 9999
+  // Values for the usage bar (credits for paid, free reports for free)
+  const displayLimit = user
+    ? (isFreePlan ? Math.max(1, freeReportsRemaining + creditsUsage.reportsUsed) : creditsAllocated)
+    : ANON_LIMIT
+  const displayUsed = user
+    ? (isFreePlan ? creditsUsage.reportsUsed : creditsUsage.used)
+    : (ANON_LIMIT - anonRemaining)
 
   async function handleSubmit(tab: InputTab, value: string | File, language: string) {
     setError(null)
@@ -121,19 +134,9 @@ export default function HomePage() {
       return
     }
 
-    // ── Plan enforcement (atomic Firestore transaction for logged-in users) ──
+    // ── Pre-check available credits / free reports (consumption happens post-analysis) ──
     if (user) {
-      try {
-        await checkAndIncrementUsage(user.uid, plan)
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : ''
-        if (msg.startsWith('LIMIT_EXCEEDED')) {
-          setShowUpgradeModal(true)
-          return
-        }
-        setError(t('home.errorGeneral'))
-        return
-      }
+      if (isAtLimit) { setShowUpgradeModal(true); return }
     } else {
       if (anonRemaining <= 0) {
         setShowUpgradeModal(true)
@@ -158,6 +161,17 @@ export default function HomePage() {
       if (result.data) {
         setReport(result.data)
         if (user) {
+          // Content analysis has no page count → charge the base report cost.
+          try {
+            if (isFreePlan) {
+              await consumeFreeReport(user.uid, planConfig.plans.free.freeReports ?? 1, 1)
+            } else {
+              const cost = computeReportCost(planConfig, { pages: 0, docs: 1 })
+              await consumeCredits(user.uid, creditsAllocated, cost, { reports: 1, documents: 1, clamp: true })
+            }
+          } catch (e) {
+            console.warn('[credits] consume failed:', e)
+          }
           await Promise.all([
             saveAnalysis(user.uid, result.data, tab, language),
             logActivity(user.uid, 'analysis_completed', {
@@ -185,17 +199,9 @@ export default function HomePage() {
   async function handleDecisionSubmit(files: File[], goal: string, language: string, documentType: DocumentType = 'auto') {
     setError(null)
 
-    if (isAtLimit) { setShowUpgradeModal(true); return }
-
+    // ── Pre-check (consumption happens post-analysis using actual pages/docs) ──
     if (user) {
-      try {
-        await checkAndIncrementUsage(user.uid, plan)
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : ''
-        if (msg.startsWith('LIMIT_EXCEEDED')) { setShowUpgradeModal(true); return }
-        setError(t('home.errorGeneral'))
-        return
-      }
+      if (isAtLimit) { setShowUpgradeModal(true); return }
     } else {
       if (anonRemaining <= 0) { setShowUpgradeModal(true); return }
       incrementAnonUsage()
@@ -214,6 +220,19 @@ export default function HomePage() {
       if (result.data) {
         setDecisionReport(result.data)
         if (user) {
+          // Charge AI Credits based on actual pages & documents analyzed.
+          const pages = result.data.pages_analyzed ?? 0
+          const docs = result.data.documents_analyzed ?? files.length
+          try {
+            if (isFreePlan) {
+              await consumeFreeReport(user.uid, planConfig.plans.free.freeReports ?? 1, docs)
+            } else {
+              const cost = computeReportCost(planConfig, { pages, docs })
+              await consumeCredits(user.uid, creditsAllocated, cost, { reports: 1, documents: docs, clamp: true })
+            }
+          } catch (e) {
+            console.warn('[credits] consume failed:', e)
+          }
           await Promise.all([
             refreshUsage(),
             logActivity(user.uid, 'analysis_completed', { language, documentType }),
@@ -276,8 +295,8 @@ export default function HomePage() {
       isLoading={isLoading}
       error={error}
       plan={plan}
-      planLimit={user ? planLimit : 2}
-      monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
+      planLimit={displayLimit}
+      monthlyUsage={displayUsed}
       isLoggedIn={!!user}
       onOpenAuth={openAuthModal}
       remaining={remaining}
@@ -290,7 +309,7 @@ export default function HomePage() {
       {showUpgradeModal && (
         <UpgradeModal
           plan={plan}
-          planLimit={user ? planLimit : 4}
+          planLimit={displayLimit}
           isLoggedIn={!!user}
           onClose={() => setShowUpgradeModal(false)}
           onOpenAuth={openAuthModal}
@@ -302,8 +321,8 @@ export default function HomePage() {
         isLoading={isLoading}
         error={error}
         plan={plan}
-        planLimit={user ? planLimit : 4}
-        monthlyUsage={user ? monthlyUsage : ANON_LIMIT - anonRemaining}
+        planLimit={displayLimit}
+        monthlyUsage={displayUsed}
         isLoggedIn={!!user}
         onOpenAuth={openAuthModal}
         remaining={remaining}

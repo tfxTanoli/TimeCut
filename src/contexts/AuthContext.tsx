@@ -28,8 +28,10 @@ import {
   getCurrentMonthKey,
   type UserData,
   type PlanType,
+  type CreditsUsage,
   PLAN_LIMITS,
 } from '../lib/userService'
+import { getCachedPlanConfig, getPlanConfig, type PlanConfig } from '../lib/planConfig'
 
 interface AuthContextValue {
   user: User | null
@@ -40,6 +42,12 @@ interface AuthContextValue {
   planLimit: number
   planExpiresAt: Date | null
   monthlyUsage: number
+  // AI Credits
+  planConfig: PlanConfig
+  creditsAllocated: number
+  creditsRemaining: number
+  creditsUsage: CreditsUsage
+  freeReportsRemaining: number
   refreshUsage: () => void
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
@@ -58,16 +66,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading]             = useState(true)
   const [monthlyUsage, setMonthlyUsage]   = useState(0)
   const [planExpiresAt, setPlanExpiresAt] = useState<Date | null>(null)
+  const [planConfig, setPlanConfig]       = useState<PlanConfig>(getCachedPlanConfig())
+  const [creditsUsage, setCreditsUsage]   = useState<CreditsUsage>({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
 
   // Keep refs to active Firestore unsubscribers so we can clean up on sign-out
-  const unsubUserRef  = useRef<(() => void) | null>(null)
-  const unsubUsageRef = useRef<(() => void) | null>(null)
+  const unsubUserRef    = useRef<(() => void) | null>(null)
+  const unsubUsageRef   = useRef<(() => void) | null>(null)
+  const unsubCreditsRef = useRef<(() => void) | null>(null)
+
+  // Load live, admin-editable plan/credit config once.
+  useEffect(() => { getPlanConfig().then(setPlanConfig).catch(() => {}) }, [])
 
   function detachListeners() {
     unsubUserRef.current?.()
     unsubUserRef.current = null
     unsubUsageRef.current?.()
     unsubUsageRef.current = null
+    unsubCreditsRef.current?.()
+    unsubCreditsRef.current = null
   }
 
   function attachListeners(uid: string) {
@@ -107,6 +123,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       doc(db, 'users', uid, 'usage', monthKey),
       snap => setMonthlyUsage(snap.exists() ? (snap.data().count as number) : 0),
     )
+
+    // Real-time AI Credits ledger for the current month
+    unsubCreditsRef.current = onSnapshot(
+      doc(db, 'users', uid, 'credits', monthKey),
+      snap => {
+        const d = snap.exists() ? snap.data() : {}
+        setCreditsUsage({
+          used: d.used ?? 0,
+          reportsUsed: d.reportsUsed ?? 0,
+          assistantUsed: d.assistantUsed ?? 0,
+          documentsUploaded: d.documentsUploaded ?? 0,
+        })
+      },
+    )
   }
 
   useEffect(() => {
@@ -118,6 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         detachListeners()
         setUserData(null)
         setMonthlyUsage(0)
+        setCreditsUsage({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
         setPlanExpiresAt(null)
         setLoading(false)
       }
@@ -133,7 +164,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const plan: PlanType = (userData?.plan as PlanType) ?? 'free'
   const planLimit = PLAN_LIMITS[plan]
 
-  // No-op:onSnapshot keeps monthlyUsage live automatically
+  // ── AI Credits derived values ──
+  const creditsAllocated = planConfig.plans[plan]?.credits ?? 0
+  const creditsRemaining = Math.max(0, creditsAllocated - creditsUsage.used)
+  const baseFreeReports = planConfig.plans.free.freeReports ?? 1
+  const freeReportsAllowed = baseFreeReports + ((userData as { freeReportsEarned?: number } | null)?.freeReportsEarned ?? 0)
+  const freeReportsUsed = (userData as { freeReportsUsed?: number } | null)?.freeReportsUsed ?? 0
+  const freeReportsRemaining = Math.max(0, freeReportsAllowed - freeReportsUsed)
+
+  // No-op:onSnapshot keeps monthlyUsage & credits live automatically
   function refreshUsage() {}
 
   async function login(email: string, password: string) {
@@ -189,6 +228,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await signOut(auth)
     setUserData(null)
     setMonthlyUsage(0)
+    setCreditsUsage({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
     setPlanExpiresAt(null)
   }
 
@@ -216,7 +256,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, userData, displayName, loading,
-      plan, planLimit, planExpiresAt, monthlyUsage, refreshUsage,
+      plan, planLimit, planExpiresAt, monthlyUsage,
+      planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+      refreshUsage,
       login, signup, loginWithGoogle, logout,
       updateDisplayName, changePassword, reauthAndChangePassword,
     }}>

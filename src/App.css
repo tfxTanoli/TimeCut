@@ -1622,6 +1622,19 @@
   .navbar-mobile-right { display: flex; }
 }
 
+/* Compact Log in button shown in the mobile top-right (logged-out only) */
+.btn-login--mobile { display: none; }
+@media (max-width: 900px) {
+  .btn-login--mobile {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+}
+
 /* ── Hamburger & Mobile Menu ── */
 .hamburger-btn {
   display: flex;
@@ -2501,6 +2514,221 @@
   text-align: center;
   opacity: 0.7;
 }
+
+/* Small-font credit disclaimer under paid plan cards */
+.pricing-disclaimer {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
+  opacity: 0.6;
+  margin: 14px 0 0;
+  text-align: left;
+}
+
+/* Referral note under the Free card features */
+.pricing-note {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--accent, #2563EB);
+  margin: 14px 0 0;
+  text-align: left;
+}
+
+/* ── Report Feedback ("Help Make TimeCut Smarter") ── */
+.rf-card {
+  margin: 28px 0;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-secondary, #fff);
+}
+.rf-card--done {
+  text-align: center;
+  padding: 32px 24px;
+}
+.rf-header {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+.rf-icon { font-size: 22px; line-height: 1.2; }
+.rf-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0;
+}
+.rf-sub {
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.75;
+  margin: 2px 0 0;
+}
+.rf-q { margin-bottom: 18px; }
+.rf-q-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 10px;
+}
+.rf-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rf-option {
+  padding: 8px 14px;
+  font-size: 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.rf-option:hover { border-color: var(--accent, #2563EB); }
+.rf-option--active {
+  border-color: var(--accent, #2563EB);
+  background: var(--accent, #2563EB);
+  color: #fff;
+}
+.rf-textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg, #fff);
+  color: var(--text-h);
+  resize: vertical;
+}
+.rf-textarea:focus { outline: none; border-color: var(--accent, #2563EB); }
+.rf-submit { margin-top: 6px; }
+.rf-error { color: #dc2626; font-size: 13px; margin: 4px 0 10px; }
+.rf-thanks-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 6px;
+}
+.rf-thanks-sub {
+  font-size: 14px;
+  color: var(--text);
+  opacity: 0.8;
+  margin: 0;
+}
+
+/* ── Usage Dashboard (Profile) ── */
+.usage-dashboard { margin-bottom: 24px; }
+.usage-credits { margin: 8px 0 20px; }
+.usage-credits-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+.usage-credits-label { font-size: 14px; color: var(--text); }
+.usage-credits-value {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.usage-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+.usage-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563EB 0%, #60a5fa 100%);
+  transition: width 0.4s ease;
+}
+.usage-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 14px;
+  margin-top: 8px;
+}
+.usage-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.usage-stat-val {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.usage-stat-label {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.75;
+  margin-top: 4px;
+  text-align: center;
+}
+.usage-note {
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.6;
+  margin: 16px 0 0;
+}
+
+/* ── Admin Dashboard ── */
+.admin-page { padding: 100px 0 60px; min-height: 70vh; }
+.admin-title { font-size: 28px; font-weight: 800; color: var(--text-h); margin: 0 0 20px; }
+.admin-denied { color: var(--text); opacity: 0.8; }
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); }
+.admin-tab {
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-tab--active { color: var(--accent, #2563EB); border-bottom-color: var(--accent, #2563EB); }
+.admin-section { margin-bottom: 32px; }
+.admin-hint { font-size: 13px; color: var(--text); opacity: 0.75; margin: 0 0 18px; }
+.admin-subtitle { font-size: 16px; font-weight: 700; color: var(--text-h); margin: 24px 0 12px; }
+.admin-table-wrap { overflow-x: auto; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.admin-table th, .admin-table td {
+  border: 1px solid var(--border);
+  padding: 8px 10px;
+  text-align: left;
+  color: var(--text-h);
+}
+.admin-table th { background: var(--bg-secondary); font-weight: 600; }
+.admin-input {
+  width: 100%;
+  min-width: 70px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg, #fff);
+  color: var(--text-h);
+  font-size: 13px;
+}
+.admin-input:focus { outline: none; border-color: var(--accent, #2563EB); }
+.admin-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+}
+.admin-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--text); }
+.admin-save-row { display: flex; align-items: center; gap: 14px; margin-top: 24px; }
+.admin-saved { color: #16a34a; font-size: 13px; font-weight: 600; }
+.admin-error { color: #dc2626; font-size: 13px; }
+.admin-insight { max-width: 360px; white-space: pre-wrap; }
 .pricing-cta {
   display: flex;
   align-items: center;

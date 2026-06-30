@@ -3,9 +3,10 @@ import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInf
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
-import { logActivity } from '../lib/userService'
+import { logActivity, consumeCredits } from '../lib/userService'
 import { challengeAI } from '../api'
 import type { PlanType } from '../lib/userService'
+import ReportFeedback from './ReportFeedback'
 
 /* ── Client-side field normalization ───────────────────────────────────────
    GPT-4o sometimes returns snake_case or variant field names. We normalize
@@ -728,6 +729,7 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
   suggestedQuestion?: string
   onClearSuggestion?: () => void
 }) {
+  const { user, plan, planConfig, creditsAllocated, creditsUsage } = useAuth()
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -756,6 +758,26 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
     setMessages(prev => [...prev, { role: 'user', text: q }])
     setQuestion('')
     setLoading(true)
+
+    // ── Decision Assistant credit enforcement ──
+    if (user) {
+      const cfgPlan = planConfig.plans[plan]
+      const isFree = plan === 'free'
+      if (isFree && creditsUsage.assistantUsed >= (cfgPlan?.assistantQuestions ?? 3)) {
+        setMessages(prev => [...prev, { role: 'ai', text: 'You have reached your free Decision Assistant question limit. Upgrade to ask more questions.' }])
+        setLoading(false)
+        return
+      }
+      try {
+        // Free plan: track usage without charging credits. Paid: charge per question.
+        const cost = isFree ? 0 : planConfig.creditCosts.assistantQuestion
+        await consumeCredits(user.uid, isFree ? 0 : creditsAllocated, cost, { assistant: 1 })
+      } catch {
+        setMessages(prev => [...prev, { role: 'ai', text: 'You are out of AI Credits. Upgrade or wait until your next cycle to continue.' }])
+        setLoading(false)
+        return
+      }
+    }
 
     const reportContext = JSON.stringify({
       recommendation: report.recommendation,
@@ -1373,7 +1395,7 @@ function ExecutiveDecisionPackage({
 }
 
 /* ── Main component ── */
-export default function DecisionResultPage({ report: rawReport, onBack, uploadedFiles, decisionGoal, plan }: Props) {
+export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal, plan }: Props) {
   const report = normalizeReport(rawReport)
   const { user } = useAuth()
   const { openSignup } = useAuthModal()
@@ -1564,6 +1586,13 @@ export default function DecisionResultPage({ report: rawReport, onBack, uploaded
             onClearSuggestion={() => setChallengeQuestion(undefined)}
           />
         </div>
+
+        {/* Help Make TimeCut Smarter — report feedback */}
+        <ReportFeedback
+          decisionGoal={decisionGoal}
+          language={language}
+          documentType={report.document_type}
+        />
 
         {/* Legal disclaimer */}
         <div className="dr-disclaimer">

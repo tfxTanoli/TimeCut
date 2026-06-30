@@ -5,7 +5,15 @@ import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 
 export default function ProfilePage() {
-  const { user, userData, displayName, updateDisplayName, reauthAndChangePassword, plan, planLimit, planExpiresAt, monthlyUsage } = useAuth()
+  const {
+    user, userData, displayName, updateDisplayName, reauthAndChangePassword,
+    plan, planExpiresAt, loading,
+    creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+  } = useAuth()
+  const isFreePlan = plan === 'free'
+  const creditsPct = creditsAllocated > 0
+    ? Math.min(100, Math.round((creditsRemaining / creditsAllocated) * 100))
+    : 0
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -22,8 +30,10 @@ export default function ProfilePage() {
   const [pwError, setPwError]     = useState('')
 
   useEffect(() => {
-    if (!user) navigate('/', { replace: true })
-  }, [user, navigate])
+    // Wait for auth to finish restoring before redirecting, otherwise a page
+    // refresh on /profile bounces a logged-in user to home.
+    if (!loading && !user) navigate('/', { replace: true })
+  }, [user, loading, navigate])
 
   useEffect(() => {
     if (displayName) setName(displayName)
@@ -101,13 +111,13 @@ export default function ProfilePage() {
             {userData && (
               <div className="profile-hero-stats">
                 <div className="profile-stat">
-                  <span className="profile-stat-val">{monthlyUsage}</span>
-                  <span className="profile-stat-label">Used This Month</span>
+                  <span className="profile-stat-val">{isFreePlan ? freeReportsRemaining : creditsRemaining.toLocaleString()}</span>
+                  <span className="profile-stat-label">{isFreePlan ? 'Free Reports Left' : 'Credits Left'}</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
-                  <span className="profile-stat-val">{planLimit}</span>
-                  <span className="profile-stat-label">Monthly Limit</span>
+                  <span className="profile-stat-val">{creditsUsage.reportsUsed}</span>
+                  <span className="profile-stat-label">Reports This Month</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
@@ -123,6 +133,50 @@ export default function ProfilePage() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* ── Usage Dashboard ── */}
+          <div className="profile-card usage-dashboard">
+            <div className="profile-card-header">
+              <IconUsage />
+              <h2 className="profile-card-title">{t('usage.title')}</h2>
+            </div>
+
+            {!isFreePlan && (
+              <div className="usage-credits">
+                <div className="usage-credits-head">
+                  <span className="usage-credits-label">{t('usage.creditsRemaining')}</span>
+                  <span className="usage-credits-value">
+                    {creditsRemaining.toLocaleString()} / {creditsAllocated.toLocaleString()}
+                  </span>
+                </div>
+                <div className="usage-bar">
+                  <div className="usage-bar-fill" style={{ width: `${creditsPct}%` }} />
+                </div>
+              </div>
+            )}
+
+            <div className="usage-stat-grid">
+              {isFreePlan && (
+                <div className="usage-stat">
+                  <span className="usage-stat-val">{freeReportsRemaining}</span>
+                  <span className="usage-stat-label">{t('usage.freeReportsRemaining')}</span>
+                </div>
+              )}
+              <div className="usage-stat">
+                <span className="usage-stat-val">{creditsUsage.reportsUsed}</span>
+                <span className="usage-stat-label">{t('usage.reportsUsed')}</span>
+              </div>
+              <div className="usage-stat">
+                <span className="usage-stat-val">{creditsUsage.documentsUploaded}</span>
+                <span className="usage-stat-label">{t('usage.documentsUploaded')}</span>
+              </div>
+              <div className="usage-stat">
+                <span className="usage-stat-val">{creditsUsage.assistantUsed}</span>
+                <span className="usage-stat-label">{t('usage.assistantUsage')}</span>
+              </div>
+            </div>
+            <p className="usage-note">{t('usage.note')}</p>
           </div>
 
           <div className="profile-grid">
@@ -298,6 +352,16 @@ function IconSubscription() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
       <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  )
+}
+
+function IconUsage() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   )
 }

@@ -3,6 +3,13 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // True when the signed-in user's email is listed in config/admins.emails
+    function isAdmin() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/config/admins)
+        && request.auth.token.email in get(/databases/$(database)/documents/config/admins).data.emails;
+    }
+
     // Users can only read and write their own document
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
@@ -21,6 +28,40 @@ service cloud.firestore {
       match /usage/{monthKey} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // Users can read and write their own monthly AI Credits ledger
+      match /credits/{monthKey} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Admin allowlist — bootstrap-safe:
+    //  • readable by everyone (the client gate reads it)
+    //  • writable when no admins doc exists yet (first admin self-registers) OR
+    //    by an existing admin, and the writer must keep their own email in the
+    //    list (prevents lock-out / hijack after bootstrap).
+    match /config/admins {
+      allow read: if true;
+      allow write: if request.auth != null
+        && request.auth.token.email is string
+        && request.auth.token.email in request.resource.data.emails
+        && (
+          !exists(/databases/$(database)/documents/config/admins)
+          || isAdmin()
+        );
+    }
+
+    // Other config (plan limits, credit costs):
+    // readable by everyone (needed for pricing/limits), writable only by admins.
+    match /config/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Report feedback: anyone may submit; only admins may read/manage.
+    match /feedback/{feedbackId} {
+      allow create: if request.resource.data.keys().hasAll(['helped', 'confidence', 'wouldHaveMissed']);
+      allow read, update, delete: if isAdmin();
     }
 
     // Anyone can submit a contact message (no auth required)

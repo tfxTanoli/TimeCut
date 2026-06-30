@@ -88,6 +88,11 @@ export default function Navbar({ onLogoClick }: Props) {
 
         {/* Mobile right group: lang switcher + hamburger tightly together */}
         <div className="navbar-mobile-right">
+          {!user && (
+            <button className="btn-login btn-login--mobile" onClick={openLogin}>
+              {t('nav.logIn')}
+            </button>
+          )}
           <select
             className="lang-switcher lang-switcher--mobile-nav"
             value={lang}

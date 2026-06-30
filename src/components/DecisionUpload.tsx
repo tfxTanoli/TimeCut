@@ -292,7 +292,8 @@ export default function DecisionUpload({
             <span className={`plan-badge plan-badge--${plan}`}>{plan.charAt(0).toUpperCase() + plan.slice(1)}</span>
             <span className="plan-usage-text">
               {isLoggedIn
-                ? t('decision.usageText').replace('{remaining}', String(remaining)).replace('{limit}', String(planLimit))
+                ? t(plan === 'free' ? 'decision.usageTextReports' : 'decision.usageTextCredits')
+                    .replace('{remaining}', String(remaining)).replace('{limit}', String(planLimit))
                 : t('decision.usageGuest')}
             </span>
           </div>

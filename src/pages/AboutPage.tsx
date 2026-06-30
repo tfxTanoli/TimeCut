@@ -26,16 +26,15 @@ export default function AboutPage() {
             <p>We believe that protecting your attention is one of the most important things you can do for your productivity, your decision-making, and your wellbeing. Every minute you don't waste on low-value content is a minute you can invest in something that actually moves you forward.</p>
 
             <h2>How It Works</h2>
-            <p>TimeCut uses AI to analyze any piece of text or PDF and produce a Time Intelligence Report in seconds. The report gives you:</p>
+            <p>TimeCut uses AI to analyze your documents and produce an AI Decision Report in seconds. The report gives you:</p>
             <ul>
-              <li>A clear verdict: <strong>MUST READ</strong>, <strong>SKIM ONLY</strong>, or <strong>SKIP IT</strong></li>
-              <li>An overall value score from 0 to 10</li>
-              <li>An estimate of how many minutes you can safely skip</li>
-              <li>The key insights worth absorbing</li>
-              <li>Specific sections to skip</li>
-              <li>A final, plain-language decision</li>
+              <li>A clear recommendation backed by a <strong>confidence score</strong></li>
+              <li><strong>Hidden risks</strong> and red flags surfaced from your documents</li>
+              <li><strong>Missing information</strong> you should ask for before deciding</li>
+              <li>The <strong>evidence found</strong> that supports the recommendation</li>
+              <li>A decision playbook with clear next steps</li>
             </ul>
-            <p>It's not a summary. It's a decision tool designed to tell you whether to engage, not to replace the reading itself.</p>
+            <p>It's not a summary. It's a decision tool designed to tell you whether to commit, and exactly why.</p>
 
             <h2>What We Stand For</h2>
             <p>We believe:</p>

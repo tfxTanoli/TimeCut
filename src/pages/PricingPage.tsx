@@ -5,6 +5,7 @@ import PaymentModal from '../components/PaymentModal'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
+import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
 
 export default function PricingPage() {
   const { t } = useTranslation()
@@ -13,7 +14,14 @@ export default function PricingPage() {
   const [searchParams] = useSearchParams()
   const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | 'business' | null>(null)
   const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
+  const [cfg, setCfg] = useState<PlanConfig>(getCachedPlanConfig())
   const navigate = useNavigate()
+
+  // Pull live, admin-editable plan/credit figures so prices update without a redeploy.
+  useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
+
+  const starterCredits = (cfg.plans.starter.credits ?? 0).toLocaleString()
+  const proCredits = (cfg.plans.pro.credits ?? 0).toLocaleString()
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') setBanner('success')
@@ -83,7 +91,7 @@ export default function PricingPage() {
               <p className="pricing-plan-name">{t('pricing.free')}</p>
               <p className="pricing-plan-tagline">{t('pricing.freeTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price">{t('pricing.freePrice')}</span>
+                <span className="pricing-price">{formatPrice(cfg.plans.free.priceCents)}</span>
               </div>
               <Link to="/get-started" className="pricing-cta btn-outline">
                 {t('pricing.freeCta')}
@@ -91,7 +99,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.freeSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['freeF1','freeF2','freeF3','freeF4'] as const).map(k => (
+                {(['freeF1','freeF2','freeF3','freeF4','freeF5','freeF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
                   </li>
@@ -102,6 +110,7 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
+              <p className="pricing-note">{t('pricing.freeNote')}</p>
             </div>
 
             {/* STARTER */}
@@ -110,7 +119,7 @@ export default function PricingPage() {
               <p className="pricing-plan-name">{t('pricing.starter')}</p>
               <p className="pricing-plan-tagline">{t('pricing.starterTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price">{t('pricing.starterPrice')}</span>
+                <span className="pricing-price">{formatPrice(cfg.plans.starter.priceCents)}</span>
                 <span className="pricing-period">{t('pricing.starterPeriod')}</span>
               </div>
               <button
@@ -122,12 +131,13 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.starterSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['starterF1','starterF2','starterF3','starterF4','starterF5','starterF6','starterF7'] as const).map(k => (
+                {(['starterF1','starterF2','starterF3','starterF4','starterF5','starterF6','starterF7','starterF8','starterF9'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
+                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', starterCredits)}
                   </li>
                 ))}
               </ul>
+              <p className="pricing-disclaimer">{t('pricing.creditDisclaimer')}</p>
             </div>
 
             {/* PRO */}
@@ -136,7 +146,7 @@ export default function PricingPage() {
               <p className="pricing-plan-name">{t('pricing.pro')}</p>
               <p className="pricing-plan-tagline">{t('pricing.proTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price">{t('pricing.proPrice')}</span>
+                <span className="pricing-price">{formatPrice(cfg.plans.pro.priceCents)}</span>
                 <span className="pricing-period">{t('pricing.proPeriod')}</span>
               </div>
               <button
@@ -150,10 +160,11 @@ export default function PricingPage() {
               <ul className="pricing-features">
                 {(['proF1','proF2','proF3','proF4','proF5','proF6','proF7','proF8'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
+                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', proCredits)}
                   </li>
                 ))}
               </ul>
+              <p className="pricing-disclaimer">{t('pricing.creditDisclaimer')}</p>
             </div>
 
             {/* BUSINESS */}
@@ -162,7 +173,7 @@ export default function PricingPage() {
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price">{t('pricing.customPrice')}</span>
+                <span className="pricing-price">{formatPrice(cfg.plans.business.priceCents)}</span>
                 <span className="pricing-period">{t('pricing.customPeriod')}</span>
               </div>
               <button
@@ -174,7 +185,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['customF1','customF2','customF3','customF4','customF5'] as const).map(k => (
+                {(['customF1','customF2','customF3','customF4','customF5','customF6','customF7'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
                   </li>

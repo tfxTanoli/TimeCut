@@ -56,19 +56,19 @@ export async function sendWelcomeEmail(to: string, name: string) {
         </div>
         <h2 style="color:#ffffff;font-size:22px;">Welcome aboard, ${firstName}!</h2>
         <p style="color:#aaa;line-height:1.6;">
-          You've just unlocked smarter content decisions. TimeCut analyzes any article, email, PDF, or book chapter and tells you exactly whether it's worth your time — before you read a single word.
+          You've just unlocked smarter decisions. TimeCut analyzes your documents — contracts, proposals, CVs, supplier quotes and more — and gives you a clear AI Decision Report: the recommendation, the hidden risks, the missing information, and the evidence behind it.
         </p>
         <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:20px;margin:24px 0;">
           <h3 style="color:#d4af37;margin:0 0 16px;">What you can do with TimeCut:</h3>
           <table style="width:100%;border-collapse:collapse;">
-            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> Paste text or upload a PDF</td></tr>
-            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> Get a verdict: Must Read, Skim Only, or Skip It</td></tr>
-            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> See exactly how many minutes you can safely skip</td></tr>
+            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> Upload your documents and get a clear recommendation</td></tr>
+            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> See hidden risks, missing information &amp; a confidence score</td></tr>
+            <tr><td style="padding:8px 0;color:#aaa;font-size:14px;border-bottom:1px solid #222;"><span style="color:#d4af37;margin-right:8px;">✓</span> Review the evidence found across your documents</td></tr>
             <tr><td style="padding:8px 0;color:#aaa;font-size:14px;"><span style="color:#d4af37;margin-right:8px;">✓</span> Supports 12 languages</td></tr>
           </table>
         </div>
         <p style="color:#aaa;line-height:1.6;">
-          Your free plan includes <strong style="color:#ffffff;">5 analyses per month</strong>. Need more? Upgrade anytime from your dashboard.
+          Your free plan includes <strong style="color:#ffffff;">1 free report</strong> (up to 20 pages, 3 documents) with hidden risks, missing information, a confidence score and evidence found. Need more? Upgrade anytime from your dashboard.
         </p>
         <div style="text-align:center;margin:32px 0;">
           <a href="https://timecut.online" style="background:#d4af37;color:#0a0a0a;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">Start Your First Analysis</a>

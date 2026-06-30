@@ -181,3 +181,136 @@ export async function getUserData(uid: string): Promise<UserData | null> {
 export async function updateUserName(uid: string, name: string) {
   await updateDoc(doc(db, 'users', uid), { name })
 }
+
+// ── AI Credits ledger ────────────────────────────────────────────────────────
+// Monthly credit consumption is tracked per month at users/{uid}/credits/{monthKey}.
+// The monthly allowance is derived from the plan config (not persisted), so it
+// resets automatically each month and reflects plan changes immediately.
+
+export interface CreditsUsage {
+  used: number
+  reportsUsed: number
+  assistantUsed: number
+  documentsUploaded: number
+}
+
+export async function getCreditsUsage(
+  uid: string,
+  monthKey = getCurrentMonthKey(),
+): Promise<CreditsUsage> {
+  const snap = await getDoc(doc(db, 'users', uid, 'credits', monthKey))
+  const d = snap.exists() ? snap.data() : {}
+  return {
+    used: d.used ?? 0,
+    reportsUsed: d.reportsUsed ?? 0,
+    assistantUsed: d.assistantUsed ?? 0,
+    documentsUploaded: d.documentsUploaded ?? 0,
+  }
+}
+
+/**
+ * Atomically consume credits for the current month. `allowance` is the plan's
+ * monthly credit allowance (from config). Throws `INSUFFICIENT_CREDITS:{left}`
+ * when the cost would exceed the allowance.
+ */
+export async function consumeCredits(
+  uid: string,
+  allowance: number,
+  cost: number,
+  extra: { reports?: number; assistant?: number; documents?: number; clamp?: boolean } = {},
+): Promise<void> {
+  const monthKey = getCurrentMonthKey()
+  const ref = doc(db, 'users', uid, 'credits', monthKey)
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(ref)
+    const used: number = snap.exists() ? (snap.data().used ?? 0) : 0
+    if (used + cost > allowance) {
+      // clamp: the work already happened (e.g. report generated) — deduct what
+      // remains rather than erroring, so the next attempt is correctly blocked.
+      if (!extra.clamp) {
+        throw new Error(`INSUFFICIENT_CREDITS:${Math.max(0, allowance - used)}`)
+      }
+    }
+    const nextUsed = extra.clamp ? Math.min(allowance, used + cost) : used + cost
+    tx.set(
+      ref,
+      {
+        used: nextUsed,
+        allocated: allowance,
+        reportsUsed: increment(extra.reports ?? 0),
+        assistantUsed: increment(extra.assistant ?? 0),
+        documentsUploaded: increment(extra.documents ?? 0),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    )
+  })
+}
+
+/**
+ * Free plan: consume one free report. Allowance = base free reports + earned
+ * (referral) reports. Throws `FREE_REPORTS_EXHAUSTED` when none remain.
+ */
+export async function consumeFreeReport(
+  uid: string,
+  baseFreeReports: number,
+  documents = 0,
+): Promise<void> {
+  const userRef = doc(db, 'users', uid)
+  const monthKey = getCurrentMonthKey()
+  const creditsRef = doc(db, 'users', uid, 'credits', monthKey)
+  await runTransaction(db, async (tx) => {
+    const snap = await tx.get(userRef)
+    const data = snap.data() ?? {}
+    const usedFree: number = data.freeReportsUsed ?? 0
+    const earned: number = data.freeReportsEarned ?? 0
+    const allowed = baseFreeReports + earned
+    if (usedFree >= allowed) throw new Error('FREE_REPORTS_EXHAUSTED')
+    tx.set(userRef, { freeReportsUsed: usedFree + 1 }, { merge: true })
+    tx.set(
+      creditsRef,
+      {
+        reportsUsed: increment(1),
+        documentsUploaded: increment(documents),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    )
+  })
+}
+
+/** Generate and persist a short referral code on the user doc if missing. */
+export async function ensureReferralCode(uid: string): Promise<string> {
+  const userRef = doc(db, 'users', uid)
+  const snap = await getDoc(userRef)
+  const existing = snap.data()?.referralCode as string | undefined
+  if (existing) return existing
+  const code = uid.slice(0, 6).toUpperCase()
+  await updateDoc(userRef, { referralCode: code })
+  return code
+}
+
+export interface ReportFeedbackAnswers {
+  helped: string            // "Yes, definitely" | "Somewhat" | "Not really" | "No"
+  mostValuableInsight: string
+  confidence: string        // "Much more confident" | ...
+  wouldHaveMissed: string   // "Definitely" | "Probably" | "Not sure" | "No"
+}
+
+/**
+ * Store report feedback in a top-level `feedback` collection so it can be
+ * reviewed from the Admin Dashboard. Anonymous users are allowed (uid null).
+ */
+export async function saveReportFeedback(
+  answers: ReportFeedbackAnswers,
+  meta: { uid?: string | null; decisionGoal?: string; language?: string; documentType?: string } = {},
+) {
+  await addDoc(collection(db, 'feedback'), {
+    ...answers,
+    uid: meta.uid ?? null,
+    decisionGoal: meta.decisionGoal ?? null,
+    language: meta.language ?? null,
+    documentType: meta.documentType ?? null,
+    createdAt: serverTimestamp(),
+  })
+}
