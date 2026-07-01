@@ -694,6 +694,10 @@ const zhTW: Record<string, string> = {
   'feedback.q4o2': '可能會',
   'feedback.q4o3': '不確定',
   'feedback.q4o4': '不會',
+  'feedback.q5': '類似的決策，您還會再次使用 TimeCut 嗎？',
+  'feedback.q5o1': '會，一定會',
+  'feedback.q5o2': '也許',
+  'feedback.q5o3': '不會',
   'feedback.submit': '提交回饋',
   'feedback.submitting': '提交中…',
   'feedback.thanksTitle': '謝謝！🙏',
@@ -707,6 +711,7 @@ const zhTW: Record<string, string> = {
   'usage.documentsUploaded': '已上傳文件',
   'usage.assistantUsage': '助手提問次數',
   'usage.note': '點數與用量在每個計費週期開始時重置。',
+  'usage.typicalAnalyses': '剩餘約 {n} 次典型分析',
   // ── Executive Decision Package ──
   'report.edpEyebrow': '決策執行方案',
   'report.edpTitle': '你的決策，一覽總結',
@@ -728,6 +733,11 @@ const zhTW: Record<string, string> = {
   'report.edpContinueTitle': '繼續此決策',
   'report.edpContinueSub': '仍不確定？就這份分析向決策顧問提出任何問題。',
   'report.edpContinueCta': '諮詢決策顧問 →',
+  'report.readinessTitle': '決策準備度',
+  'report.readinessSub': '在做出最終決定前，請查證以下事項：',
+  'report.readinessEmpty': '沒有需要查證的關鍵事項。',
+  'report.challengeTitle': '繼續此決策',
+  'report.challengeSubtitle': '就這份分析提出任何問題',
 
   // ── New Landing Page (Phase 6) ──
   'home.lpBadge1': 'AI決策智能',

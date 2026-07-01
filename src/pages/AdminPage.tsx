@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs, orderBy, query, limit, type Timestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
@@ -19,6 +19,7 @@ interface FeedbackRow {
   mostValuableInsight?: string
   confidence?: string
   wouldHaveMissed?: string
+  wouldUseAgain?: string
   uid?: string | null
   decisionGoal?: string | null
   createdAt?: Timestamp | null
@@ -74,6 +75,20 @@ export default function AdminPage() {
     })()
     return () => { active = false }
   }, [allowed, user])
+
+  const feedbackStats = useMemo(() => {
+    const total = feedback.length
+    if (total === 0) return null
+    const helpedPositive = feedback.filter(f => f.helped === 'Yes, definitely' || f.helped === 'Somewhat').length
+    const confidencePositive = feedback.filter(f => f.confidence === 'Much more confident' || f.confidence === 'Somewhat more confident').length
+    const wouldUseAgainPositive = feedback.filter(f => f.wouldUseAgain === 'Yes, definitely').length
+    return {
+      total,
+      helpedPct: Math.round((helpedPositive / total) * 100),
+      confidencePct: Math.round((confidencePositive / total) * 100),
+      wouldUseAgainPct: Math.round((wouldUseAgainPositive / total) * 100),
+    }
+  }, [feedback])
 
   function setPlanField(plan: PlanType, key: keyof PlanLimits, raw: string) {
     const value = raw === '' ? null : Number(raw)
@@ -197,6 +212,26 @@ export default function AdminPage() {
 
         {tab === 'feedback' && (
           <div className="admin-section">
+            {feedbackStats && (
+              <div className="admin-stats-row">
+                <div className="admin-stat-card">
+                  <span className="admin-stat-val">{feedbackStats.helpedPct}%</span>
+                  <span className="admin-stat-label">Helped make a better decision</span>
+                </div>
+                <div className="admin-stat-card">
+                  <span className="admin-stat-val">{feedbackStats.confidencePct}%</span>
+                  <span className="admin-stat-label">More confident after reading</span>
+                </div>
+                <div className="admin-stat-card">
+                  <span className="admin-stat-val">{feedbackStats.wouldUseAgainPct}%</span>
+                  <span className="admin-stat-label">Would use TimeCut again</span>
+                </div>
+                <div className="admin-stat-card admin-stat-card--muted">
+                  <span className="admin-stat-val">{feedbackStats.total}</span>
+                  <span className="admin-stat-label">Responses (last 100)</span>
+                </div>
+              </div>
+            )}
             {feedback.length === 0 ? (
               <p className="admin-hint">No feedback yet.</p>
             ) : (
@@ -208,6 +243,7 @@ export default function AdminPage() {
                       <th>Helped?</th>
                       <th>Confidence</th>
                       <th>Would miss?</th>
+                      <th>Use again?</th>
                       <th>Most valuable insight</th>
                     </tr>
                   </thead>
@@ -218,6 +254,7 @@ export default function AdminPage() {
                         <td>{f.helped ?? '—'}</td>
                         <td>{f.confidence ?? '—'}</td>
                         <td>{f.wouldHaveMissed ?? '—'}</td>
+                        <td>{f.wouldUseAgain ?? '—'}</td>
                         <td className="admin-insight">{f.mostValuableInsight || '—'}</td>
                       </tr>
                     ))}

@@ -723,11 +723,49 @@ interface ChatMessage {
   text: string
 }
 
-function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSuggestion }: {
+const SUGGESTED_QUESTIONS_BY_TYPE: Record<string, string[]> = {
+  cv: [
+    'Which candidate has stronger evidence for the role?',
+    'What should I ask in the next interview round?',
+    'Which risk is the highest priority?',
+    'What would change my hiring decision?',
+  ],
+  supplier_quotation: [
+    'Compare Supplier A and Supplier B if pricing changes.',
+    'What should I negotiate before signing?',
+    'Which risk is the highest priority?',
+    'Draft a negotiation email.',
+  ],
+  contract: [
+    'Explain this clause in simple language.',
+    'What should I negotiate before signing?',
+    'Which risk is the highest priority?',
+    'Draft a negotiation email.',
+  ],
+  business_proposal: [
+    'Which risk is the highest priority?',
+    'What would change my recommendation?',
+    'What should I negotiate before signing?',
+    'Show me the strongest supporting evidence.',
+  ],
+  general: [
+    'Why did you recommend this option?',
+    'Show me the strongest supporting evidence.',
+    'Is there any evidence against this conclusion?',
+    'What assumptions did you make?',
+    'What would change your recommendation?',
+  ],
+}
+function getSuggestedQuestions(docType?: string): string[] {
+  return SUGGESTED_QUESTIONS_BY_TYPE[docType ?? 'general'] ?? SUGGESTED_QUESTIONS_BY_TYPE.general
+}
+
+function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSuggestion, t }: {
   report: DecisionReport
   decisionGoal?: string
   suggestedQuestion?: string
   onClearSuggestion?: () => void
+  t: (k: string) => string
 }) {
   const { user, plan, planConfig, creditsAllocated, creditsUsage } = useAuth()
   const [open, setOpen] = useState(false)
@@ -736,13 +774,7 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const SUGGESTED_QUESTIONS = [
-    'Why did you recommend this option?',
-    'Show me the strongest supporting evidence.',
-    'Is there any evidence against this conclusion?',
-    'What assumptions did you make?',
-    'What would change your recommendation?',
-  ]
+  const SUGGESTED_QUESTIONS = getSuggestedQuestions(report.document_type)
 
   // Auto-open and fill when a challenge button is clicked from another section
   if (suggestedQuestion && !open) {
@@ -813,8 +845,8 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
         onClick={() => setOpen(o => !o)}
       >
         <IconMessageCircle />
-        <span>Decision Advisor</span>
-        <span className="dr-challenge-toggle-sub">Continue this decision — question any conclusion</span>
+        <span>{t('report.challengeTitle')}</span>
+        <span className="dr-challenge-toggle-sub">{t('report.challengeSubtitle')}</span>
         <IconChevronDown open={open} />
       </button>
 
@@ -1394,6 +1426,69 @@ function ExecutiveDecisionPackage({
   )
 }
 
+/* ── Decision Readiness (standalone, end-of-report) ── */
+function DecisionReadinessSection({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
+  const [checked, setChecked] = useState<Record<number, boolean>>({})
+
+  function toggle(i: number) {
+    setChecked(prev => ({ ...prev, [i]: !prev[i] }))
+  }
+
+  const conf = report.confidence_score ?? 0
+  const strength = report.decision_strength
+  const readiness = strength ? Math.round((conf + strength * 20) / 2) : conf
+  const readyLabel =
+    readiness >= 70 ? t('report.edpReadyHigh') : readiness >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
+  const readyColor = readiness >= 70 ? '#22C55E' : readiness >= 45 ? '#F59E0B' : '#EF4444'
+
+  const verifyItems =
+    report.before_signing_checklist?.length
+      ? report.before_signing_checklist
+      : report.verification_questions?.length
+        ? report.verification_questions.map(q => q.question)
+        : report.missing_information.map(m => m.title)
+
+  const doneCount = Object.values(checked).filter(Boolean).length
+
+  return (
+    <div className="dr-section-card">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">📊</span>
+        <h3 className="dr-section-title">{t('report.readinessTitle')}</h3>
+        {verifyItems.length > 0 && (
+          <span className="dr-section-badge">{doneCount}/{verifyItems.length} done</span>
+        )}
+      </div>
+      <div className="dr-section-body">
+        <p className="dr-readiness-sub">{t('report.readinessSub')}</p>
+        <div className="edp-readiness">
+          <div className="edp-readiness-top">
+            <span className="edp-readiness-pct" style={{ color: readyColor }}>{readiness}%</span>
+            <span className="edp-readiness-label" style={{ color: readyColor }}>{readyLabel}</span>
+          </div>
+          <div className="edp-readiness-track">
+            <div className="edp-readiness-fill" style={{ width: `${readiness}%`, background: readyColor }} />
+          </div>
+        </div>
+        <div className="dr-checklist">
+          {verifyItems.map((item, i) => (
+            <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
+              <input
+                type="checkbox"
+                className="dr-checklist-checkbox"
+                checked={!!checked[i]}
+                onChange={() => toggle(i)}
+              />
+              <span className="dr-checklist-text">{item}</span>
+            </label>
+          ))}
+          {verifyItems.length === 0 && <p className="dr-empty">{t('report.readinessEmpty')}</p>}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Main component ── */
 export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal, plan }: Props) {
   const report = normalizeReport(rawReport)
@@ -1577,6 +1672,9 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         {/* ── EXECUTIVE DECISION PACKAGE (closing summary) ── */}
         <ExecutiveDecisionPackage report={report} t={t} onContinue={handleContinueDecision} />
 
+        {/* Decision Readiness */}
+        <DecisionReadinessSection report={report} t={t} />
+
         {/* Decision Advisor (Challenge AI) */}
         <div id="dr-challenge-panel">
           <ChallengeAIPanel
@@ -1584,6 +1682,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
             decisionGoal={decisionGoal}
             suggestedQuestion={challengeQuestion}
             onClearSuggestion={() => setChallengeQuestion(undefined)}
+            t={t}
           />
         </div>
 

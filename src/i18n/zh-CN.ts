@@ -694,6 +694,10 @@ const zhCN: Record<string, string> = {
   'feedback.q4o2': '可能会',
   'feedback.q4o3': '不确定',
   'feedback.q4o4': '不会',
+  'feedback.q5': '类似的决策，您还会再次使用 TimeCut 吗？',
+  'feedback.q5o1': '会，一定会',
+  'feedback.q5o2': '也许',
+  'feedback.q5o3': '不会',
   'feedback.submit': '提交反馈',
   'feedback.submitting': '提交中…',
   'feedback.thanksTitle': '谢谢！🙏',
@@ -707,6 +711,7 @@ const zhCN: Record<string, string> = {
   'usage.documentsUploaded': '已上传文档',
   'usage.assistantUsage': '助手提问次数',
   'usage.note': '积分与用量在每个计费周期开始时重置。',
+  'usage.typicalAnalyses': '剩余约 {n} 次典型分析',
   // ── Executive Decision Package ──
   'report.edpEyebrow': '决策执行方案',
   'report.edpTitle': '你的决策，一览总结',
@@ -728,6 +733,11 @@ const zhCN: Record<string, string> = {
   'report.edpContinueTitle': '继续此决策',
   'report.edpContinueSub': '仍不确定？就这份分析向决策顾问提出任何问题。',
   'report.edpContinueCta': '咨询决策顾问 →',
+  'report.readinessTitle': '决策准备度',
+  'report.readinessSub': '在做出最终决定前，请核实以下事项：',
+  'report.readinessEmpty': '没有需要核实的关键事项。',
+  'report.challengeTitle': '继续此决策',
+  'report.challengeSubtitle': '就这份分析提出任何问题',
 
   // ── New Landing Page (Phase 6) ──
   'home.lpBadge1': 'AI决策智能',

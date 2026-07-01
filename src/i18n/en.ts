@@ -694,6 +694,10 @@ const en: Record<string, string> = {
   'feedback.q4o2': 'Probably',
   'feedback.q4o3': 'Not sure',
   'feedback.q4o4': 'No',
+  'feedback.q5': 'Would you use TimeCut again for a similar decision?',
+  'feedback.q5o1': 'Yes, definitely',
+  'feedback.q5o2': 'Maybe',
+  'feedback.q5o3': 'No',
   'feedback.submit': 'Submit Feedback',
   'feedback.submitting': 'Submitting…',
   'feedback.thanksTitle': 'Thank you! 🙏',
@@ -707,6 +711,7 @@ const en: Record<string, string> = {
   'usage.documentsUploaded': 'Documents Uploaded',
   'usage.assistantUsage': 'Assistant Questions',
   'usage.note': 'Credits and usage reset at the start of each billing cycle.',
+  'usage.typicalAnalyses': 'Approx. {n} Typical Analyses Remaining',
   // ── Executive Decision Package ──
   'report.edpEyebrow': 'Executive Decision Package',
   'report.edpTitle': 'Your Decision, Summarized',
@@ -727,6 +732,11 @@ const en: Record<string, string> = {
   'report.edpNoneGeneric': 'No additional items identified for this decision.',
   'report.edpContinueTitle': 'Continue This Decision',
   'report.edpContinueSub': 'Still unsure? Ask the Decision Advisor anything about this analysis.',
+  'report.readinessTitle': 'Decision Readiness',
+  'report.readinessSub': 'Before making your final decision, please verify:',
+  'report.readinessEmpty': 'No critical items flagged for verification.',
+  'report.challengeTitle': 'Continue This Decision',
+  'report.challengeSubtitle': 'Ask anything about this analysis',
   'report.edpContinueCta': 'Ask the Decision Advisor →',
 
   // ── New Landing Page (Phase 6) ──

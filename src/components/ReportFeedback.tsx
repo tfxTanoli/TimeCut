@@ -9,7 +9,7 @@ interface Props {
   documentType?: string
 }
 
-type ChoiceKey = 'helped' | 'confidence' | 'wouldHaveMissed'
+type ChoiceKey = 'helped' | 'confidence' | 'wouldHaveMissed' | 'wouldUseAgain'
 
 export default function ReportFeedback({ decisionGoal, language, documentType }: Props) {
   const { user } = useAuth()
@@ -17,6 +17,7 @@ export default function ReportFeedback({ decisionGoal, language, documentType }:
   const [helped, setHelped] = useState('')
   const [confidence, setConfidence] = useState('')
   const [wouldHaveMissed, setWouldHaveMissed] = useState('')
+  const [wouldUseAgain, setWouldUseAgain] = useState('')
   const [insight, setInsight] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle')
 
@@ -24,17 +25,18 @@ export default function ReportFeedback({ decisionGoal, language, documentType }:
     helped: setHelped,
     confidence: setConfidence,
     wouldHaveMissed: setWouldHaveMissed,
+    wouldUseAgain: setWouldUseAgain,
   }
-  const values: Record<ChoiceKey, string> = { helped, confidence, wouldHaveMissed }
+  const values: Record<ChoiceKey, string> = { helped, confidence, wouldHaveMissed, wouldUseAgain }
 
-  const canSubmit = !!helped && !!confidence && !!wouldHaveMissed && status !== 'submitting'
+  const canSubmit = !!helped && !!confidence && !!wouldHaveMissed && !!wouldUseAgain && status !== 'submitting'
 
   async function handleSubmit() {
     if (!canSubmit) return
     setStatus('submitting')
     try {
       await saveReportFeedback(
-        { helped, mostValuableInsight: insight.trim(), confidence, wouldHaveMissed },
+        { helped, mostValuableInsight: insight.trim(), confidence, wouldHaveMissed, wouldUseAgain },
         { uid: user?.uid ?? null, decisionGoal, language, documentType },
       )
       setStatus('done')
@@ -57,6 +59,7 @@ export default function ReportFeedback({ decisionGoal, language, documentType }:
     { key: 'helped',          q: t('feedback.q1'), opts: [t('feedback.q1o1'), t('feedback.q1o2'), t('feedback.q1o3'), t('feedback.q1o4')] },
     { key: 'confidence',      q: t('feedback.q3'), opts: [t('feedback.q3o1'), t('feedback.q3o2'), t('feedback.q3o3'), t('feedback.q3o4')] },
     { key: 'wouldHaveMissed', q: t('feedback.q4'), opts: [t('feedback.q4o1'), t('feedback.q4o2'), t('feedback.q4o3'), t('feedback.q4o4')] },
+    { key: 'wouldUseAgain',   q: t('feedback.q5'), opts: [t('feedback.q5o1'), t('feedback.q5o2'), t('feedback.q5o3')] },
   ]
 
   return (

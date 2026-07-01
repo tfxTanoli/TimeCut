@@ -3,17 +3,22 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
+import { computeReportCost } from '../lib/planConfig'
+
+const TYPICAL_REPORT = { pages: 20, docs: 1 } // 20-page single doc, matches marketing copy
 
 export default function ProfilePage() {
   const {
     user, userData, displayName, updateDisplayName, reauthAndChangePassword,
-    plan, planExpiresAt, loading,
+    plan, planExpiresAt, loading, planConfig,
     creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
   } = useAuth()
   const isFreePlan = plan === 'free'
   const creditsPct = creditsAllocated > 0
     ? Math.min(100, Math.round((creditsRemaining / creditsAllocated) * 100))
     : 0
+  const typicalCost = computeReportCost(planConfig, TYPICAL_REPORT)
+  const typicalAnalysesRemaining = typicalCost > 0 ? Math.floor(creditsRemaining / typicalCost) : 0
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -153,6 +158,9 @@ export default function ProfilePage() {
                 <div className="usage-bar">
                   <div className="usage-bar-fill" style={{ width: `${creditsPct}%` }} />
                 </div>
+                <p className="usage-credits-estimate">
+                  {t('usage.typicalAnalyses').replace('{n}', String(typicalAnalysesRemaining))}
+                </p>
               </div>
             )}
 

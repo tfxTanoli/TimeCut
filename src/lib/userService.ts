@@ -295,6 +295,7 @@ export interface ReportFeedbackAnswers {
   mostValuableInsight: string
   confidence: string        // "Much more confident" | ...
   wouldHaveMissed: string   // "Definitely" | "Probably" | "Not sure" | "No"
+  wouldUseAgain: string     // "Yes, definitely" | "Maybe" | "No"
 }
 
 /**
