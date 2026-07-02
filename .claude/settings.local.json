@@ -21,7 +21,21 @@
       "Bash(npm uninstall *)",
       "Bash(curl -s http://localhost:3001/api/analyze -X POST -H \"Content-Type: application/json\" -d '{\"content\":\"test\",\"language\":\"English\"}')",
       "Bash(pkill -f \"tsx\")",
-      "Bash(node -e \"const P = require\\('pdf2json'\\); console.log\\('pdf2json loaded:', typeof P\\)\")"
+      "Bash(node -e \"const P = require\\('pdf2json'\\); console.log\\('pdf2json loaded:', typeof P\\)\")",
+      "Bash(npx playwright *)",
+      "Bash(node verify-fixes.mjs)",
+      "Bash(Remove-Item verify-fixes.mjs -Force)",
+      "Bash(Remove-Item verify-screenshots *)",
+      "Bash(Get-ChildItem src/pages/)",
+      "Bash(powershell -Command \"Get-Content 'C:\\\\Users\\\\HP\\\\.claude\\\\projects\\\\d--Fiverr-time-cut-ai\\\\2ca5c945-7d28-42fa-9973-2bfec3997a97.jsonl' | Select-String 'ivan1113\\\\|We created TimeCut\\\\|About Us' | Select-Object -First 10\")",
+      "Bash(node -e \"const fs=require\\('fs'\\); const c=fs.readFileSync\\('src/pages/ContactPage.tsx','utf8'\\); console.log\\(c.includes\\('contact-info-block'\\) ? 'exists' : 'not found'\\);\")",
+      "Bash(Start-Sleep -Seconds 4)",
+      "Bash(Get-Content \"C:\\\\Users\\\\HP\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Fiverr-time-cut-ai\\\\2ca5c945-7d28-42fa-9973-2bfec3997a97\\\\tasks\\\\b5l63fw6h.output\" -Tail 10)",
+      "mcp__chrome-devtools__emulate",
+      "Bash(mkdir -p \"C:/Users/HP/.claude/projects/d--Fiverr-time-cut-ai/memory\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\HP\\.claude\\projects\\d--Fiverr-time-cut-ai"
     ]
   }
 }
