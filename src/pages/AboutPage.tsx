@@ -8,7 +8,7 @@ export default function AboutPage() {
         <div className="container page-hero-inner">
           <span className="hero-badge">Our Story</span>
           <h1 className="page-hero-title">About TimeCut</h1>
-          <p className="page-hero-sub">We built TimeCut because time is the only resource that truly can't be replaced.</p>
+          <p className="page-hero-sub">Helping people make better decisions before they sign, hire, approve, invest, or decide.</p>
         </div>
       </section>
 
@@ -16,41 +16,24 @@ export default function AboutPage() {
         <div className="container" style={{ maxWidth: 760 }}>
           <div className="legal-doc">
 
-            <h2>Why We Built TimeCut</h2>
-            <p>We created TimeCut because of a simple realization: the amount of content demanding our attention grows every year, but the number of hours in a day stays the same.</p>
-            <p>Articles, newsletters, reports, emails, PDFs. The volume is endless. And most of it isn't worth your time. But you only find that out after you've already spent 20 minutes reading it.</p>
-            <p>TimeCut is designed to eliminate that gap between "should I read this?" and "I just wasted 30 minutes finding out I shouldn't have."</p>
-
-            <h2>Our Mission</h2>
-            <p>TimeCut's mission is to give every person a clear, honest signal before they commit their attention. Know the value before you spend your time.</p>
-            <p>We believe that protecting your attention is one of the most important things you can do for your productivity, your decision-making, and your wellbeing. Every minute you don't waste on low-value content is a minute you can invest in something that actually moves you forward.</p>
-
-            <h2>How It Works</h2>
-            <p>TimeCut uses AI to analyze your documents and produce an AI Decision Report in seconds. The report gives you:</p>
+            <p>Every important decision carries risk.</p>
+            <p>Sometimes the risk is hidden inside a contract. Sometimes it's buried in a quotation. Sometimes it's missing from a resume. Sometimes it's an assumption nobody questioned.</p>
+            <p>TimeCut was created to help individuals and businesses discover what they might otherwise overlook before making important decisions.</p>
+            <p>Unlike traditional AI tools that focus on reading or summarizing documents, TimeCut is designed around one goal: helping people make better decisions through AI-powered Decision Intelligence.</p>
+            <p>Every report combines:</p>
             <ul>
-              <li>A clear recommendation backed by a <strong>confidence score</strong></li>
-              <li><strong>Hidden risks</strong> and red flags surfaced from your documents</li>
-              <li><strong>Missing information</strong> you should ask for before deciding</li>
-              <li>The <strong>evidence found</strong> that supports the recommendation</li>
-              <li>A decision playbook with clear next steps</li>
+              <li>Executive Recommendation</li>
+              <li>Hidden Risk Detection</li>
+              <li>Missing Information Analysis</li>
+              <li>Evidence-Based Reasoning</li>
+              <li>Smart Skeptic Questions</li>
+              <li>Decision Readiness</li>
+              <li>Actionable Next Steps</li>
             </ul>
-            <p>It's not a summary. It's a decision tool designed to tell you whether to commit, and exactly why.</p>
-
-            <h2>What We Stand For</h2>
-            <p>We believe:</p>
-            <ul>
-              <li>Your attention is finite and precious, and it deserves to be protected.</li>
-              <li>Most content is not worth your full focus. That's not cynical; it's honest.</li>
-              <li>The right tool gives you clarity in seconds, not after you've already committed your time.</li>
-              <li>Transparency matters: we tell you exactly what we do with your data and why.</li>
-            </ul>
-
-            <h2>Who We're For</h2>
-            <p>TimeCut is built for people who take their time seriously: knowledge workers, researchers, professionals, students, and anyone who reads a lot and wants to read smarter, not more.</p>
-            <p>Whether you're sorting through your morning newsletter stack, evaluating a research paper, or deciding if a long report is worth your afternoon, TimeCut gives you the answer in under 20 seconds.</p>
+            <p>Our mission is simple: reduce costly mistakes before they happen.</p>
 
             <h2>Get In Touch</h2>
-            <p>We're a small, focused team and we care about every piece of feedback. If you have ideas, questions, or just want to tell us how TimeCut is saving you time, we'd love to hear from you.</p>
+            <p>We're a small, focused team and we care about every piece of feedback. If you have ideas, questions, or just want to tell us how TimeCut helped you decide, we'd love to hear from you.</p>
             <p>Reach us at <a href="mailto:support@timecut.online">support@timecut.online</a> or visit our <Link to="/contact">contact page</Link>.</p>
 
           </div>
@@ -59,8 +42,8 @@ export default function AboutPage() {
 
       <section className="page-cta-section">
         <div className="container page-cta-inner">
-          <h2>Start Protecting Your Time Today</h2>
-          <p>No account required. Analyze your first piece of content in seconds.</p>
+          <h2>Start Making Better Decisions Today</h2>
+          <p>No account required. Upload your first document and get your Executive Decision Package in seconds.</p>
           <Link to="/" className="btn-primary btn-cta">Try TimeCut Free</Link>
         </div>
       </section>

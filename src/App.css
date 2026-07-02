@@ -2332,6 +2332,14 @@
 .faq-item:last-child { border-bottom: none; }
 .faq-q { font-size: 15px; font-weight: 600; color: var(--text-h); margin: 0 0 8px; }
 .faq-a { font-size: 14px; color: var(--text); line-height: 1.65; margin: 0; }
+.faq-footer { text-align: center; margin-top: 28px; }
+.faq-footer p { color: var(--text); font-size: 14px; margin: 6px 0 0; }
+.faq-footer h3 { font-size: 17px; font-weight: 700; color: var(--text-h); margin: 0; }
+
+/* Closing message (How It Works page) */
+.hiw-closing-section { padding: 56px 0; text-align: center; }
+.hiw-closing-section .section-title { margin-bottom: 12px; }
+.hiw-closing-section p { max-width: 620px; margin: 0 auto; color: var(--text); font-size: 15px; line-height: 1.65; }
 
 /* ════════════════════════════════════════
    FEATURES PAGE
@@ -2357,6 +2365,20 @@
 .feature-big-emoji { font-size: 32px; }
 .feature-big-title { font-size: 17px; font-weight: 700; color: var(--text-h); margin: 0; }
 .feature-big-desc { font-size: 14px; color: var(--text); line-height: 1.6; margin: 0; }
+.feature-big-items { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 7px; }
+.feature-big-items li {
+  font-size: 13.5px; color: var(--text); line-height: 1.4;
+  padding-left: 18px; position: relative;
+}
+.feature-big-items li::before {
+  content: '✓'; position: absolute; left: 0; top: 0;
+  color: var(--accent); font-weight: 700; font-size: 12px;
+}
+
+/* Feature Section Bottom */
+.feature-bottom-section { padding: 56px 0; text-align: center; background: var(--code-bg); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.feature-bottom-section .section-title { margin-bottom: 12px; }
+.feature-bottom-section p { max-width: 640px; margin: 0 auto; color: var(--text); font-size: 15px; line-height: 1.65; }
 
 /* Comparison */
 .comparison-section { padding: 72px 0; background: var(--code-bg); border-top: 1px solid var(--border); }

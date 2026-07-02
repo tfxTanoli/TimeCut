@@ -19,7 +19,7 @@ interface Props {
 }
 
 // ── Demo data ──────────────────────────────────────────────────────────────
-const DEMO_TABS = ['supplier', 'cv', 'proposal'] as const
+const DEMO_TABS = ['supplier', 'hiring', 'contract', 'proposal', 'research'] as const
 type DemoTab = typeof DEMO_TABS[number]
 
 interface DemoRisk {
@@ -44,6 +44,8 @@ interface DemoData {
   risks: DemoRisk[]
   missing: DemoMissing[]
   recReasons: string[]
+  decisionReadiness?: number
+  decisionDefense?: string
 }
 
 function buildDemoData(t: (k: string) => string): Record<DemoTab, DemoData> {
@@ -52,7 +54,7 @@ function buildDemoData(t: (k: string) => string): Record<DemoTab, DemoData> {
       tabLabel: t('home.demoSupTab'),
       goal: t('home.demoSupGoal'),
       recommendation: t('home.demoSupRec'),
-      confidence: 82,
+      confidence: 92,
       evidenceSummary: t('home.demoSupEvidence'),
       risks: [
         { title: t('home.demoSupR1T'), level: 'High', whyItMatters: t('home.demoSupR1W'), action: t('home.demoSupR1A'), evidence: t('home.demoSupR1E') },
@@ -64,34 +66,69 @@ function buildDemoData(t: (k: string) => string): Record<DemoTab, DemoData> {
         { title: t('home.demoSupM2T'), whyItMatters: t('home.demoSupM2W'), action: t('home.demoSupM2A'), evidence: t('home.demoSupM2E') },
       ],
       recReasons: [t('home.demoSupRea1'), t('home.demoSupRea2'), t('home.demoSupRea3'), t('home.demoSupRea4')],
+      decisionDefense: t('home.demoSupDefense'),
     },
-    cv: {
+    hiring: {
       tabLabel: t('home.demoCvTab'),
       goal: t('home.demoCvGoal'),
       recommendation: t('home.demoCvRec'),
-      confidence: 88,
+      confidence: 94,
       evidenceSummary: t('home.demoCvEvidence'),
       risks: [
-        { title: t('home.demoCvR1T'), level: 'High', whyItMatters: t('home.demoCvR1W'), action: t('home.demoCvR1A'), evidence: t('home.demoCvR1E') },
+        { title: t('home.demoCvR1T'), level: 'Medium', whyItMatters: t('home.demoCvR1W'), action: t('home.demoCvR1A'), evidence: t('home.demoCvR1E') },
+        { title: t('home.demoCvR2T'), level: 'Medium', whyItMatters: t('home.demoCvR2W'), action: t('home.demoCvR2A'), evidence: t('home.demoCvR2E') },
       ],
       missing: [
         { title: t('home.demoCvM1T'), whyItMatters: t('home.demoCvM1W'), action: t('home.demoCvM1A'), evidence: t('home.demoCvM1E') },
       ],
       recReasons: [t('home.demoCvRea1'), t('home.demoCvRea2'), t('home.demoCvRea3'), t('home.demoCvRea4')],
+      decisionReadiness: 88,
+    },
+    contract: {
+      tabLabel: t('home.demoContractTab'),
+      goal: t('home.demoContractGoal'),
+      recommendation: t('home.demoContractRec'),
+      confidence: 89,
+      evidenceSummary: t('home.demoContractEvidence'),
+      risks: [
+        { title: t('home.demoContractR1T'), level: 'High', whyItMatters: t('home.demoContractR1W'), action: t('home.demoContractR1A'), evidence: t('home.demoContractR1E') },
+        { title: t('home.demoContractR2T'), level: 'High', whyItMatters: t('home.demoContractR2W'), action: t('home.demoContractR2A'), evidence: t('home.demoContractR2E') },
+        { title: t('home.demoContractR3T'), level: 'Medium', whyItMatters: t('home.demoContractR3W'), action: t('home.demoContractR3A'), evidence: t('home.demoContractR3E') },
+      ],
+      missing: [
+        { title: t('home.demoContractM1T'), whyItMatters: t('home.demoContractM1W'), action: t('home.demoContractM1A'), evidence: t('home.demoContractM1E') },
+      ],
+      recReasons: [t('home.demoContractRea1'), t('home.demoContractRea2'), t('home.demoContractRea3'), t('home.demoContractRea4')],
+      decisionReadiness: 75,
     },
     proposal: {
       tabLabel: t('home.demoProTab'),
       goal: t('home.demoProGoal'),
       recommendation: t('home.demoProRec'),
-      confidence: 74,
+      confidence: 81,
       evidenceSummary: t('home.demoProEvidence'),
       risks: [
         { title: t('home.demoProR1T'), level: 'High', whyItMatters: t('home.demoProR1W'), action: t('home.demoProR1A'), evidence: t('home.demoProR1E') },
+        { title: t('home.demoProR2T'), level: 'Medium', whyItMatters: t('home.demoProR2W'), action: t('home.demoProR2A'), evidence: t('home.demoProR2E') },
+        { title: t('home.demoProR3T'), level: 'Medium', whyItMatters: t('home.demoProR3W'), action: t('home.demoProR3A'), evidence: t('home.demoProR3E') },
       ],
       missing: [
         { title: t('home.demoProM1T'), whyItMatters: t('home.demoProM1W'), action: t('home.demoProM1A'), evidence: t('home.demoProM1E') },
       ],
       recReasons: [t('home.demoProRea1'), t('home.demoProRea2'), t('home.demoProRea3'), t('home.demoProRea4')],
+    },
+    research: {
+      tabLabel: t('home.demoResearchTab'),
+      goal: t('home.demoResearchGoal'),
+      recommendation: t('home.demoResearchRec'),
+      confidence: 93,
+      evidenceSummary: t('home.demoResearchEvidence'),
+      risks: [
+        { title: t('home.demoResearchR1T'), level: 'Medium', whyItMatters: t('home.demoResearchR1W'), action: t('home.demoResearchR1A'), evidence: t('home.demoResearchR1E') },
+        { title: t('home.demoResearchR2T'), level: 'Medium', whyItMatters: t('home.demoResearchR2W'), action: t('home.demoResearchR2A'), evidence: t('home.demoResearchR2E') },
+      ],
+      missing: [],
+      recReasons: [t('home.demoResearchRea1'), t('home.demoResearchRea2'), t('home.demoResearchRea3'), t('home.demoResearchRea4')],
     },
   }
 }
@@ -210,8 +247,10 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 onClick={() => switchDemo(tab)}
               >
                 {tab === 'supplier' && '📦 '}
-                {tab === 'cv' && '👤 '}
+                {tab === 'hiring' && '👤 '}
+                {tab === 'contract' && '📄 '}
                 {tab === 'proposal' && '📊 '}
+                {tab === 'research' && '🔬 '}
                 {DEMO_DATA[tab].tabLabel}
               </button>
             ))}
@@ -272,6 +311,16 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                 <span className="lp-eo-stat-icon lp-eo-stat-icon--evidence">📄</span>
                 <span className="lp-eo-stat-label lp-eo-stat-label--evidence">{demo.evidenceSummary}</span>
               </div>
+              {demo.decisionReadiness != null && (
+                <>
+                  <div className="lp-eo-stat-divider" />
+                  <div className="lp-eo-stat">
+                    <span className="lp-eo-stat-icon">🎯</span>
+                    <span className="lp-eo-stat-count">{demo.decisionReadiness}%</span>
+                    <span className="lp-eo-stat-label">{t('home.lpEoReadinessLabel')}</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="lp-eo-divider" />
@@ -357,6 +406,12 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                       ))}
                     </ul>
                   </div>
+                  {demo.decisionDefense && (
+                    <div className="lp-rec-reasons">
+                      <span className="lp-rec-reasons__label">{t('home.lpEoDefenseLabel')}</span>
+                      <p className="lp-risk-detail__val">{demo.decisionDefense}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -401,10 +456,10 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
             {[
               { icon: '📦', title: t('home.lpUc2Title'), desc: t('home.lpUc2Desc'), demo: 'supplier' as DemoTab },
               { icon: '📊', title: t('home.lpUc3Title'), desc: t('home.lpUc3Desc'), demo: 'proposal' as DemoTab },
-              { icon: '👥', title: t('home.lpUc1Title'), desc: t('home.lpUc1Desc'), demo: 'cv' as DemoTab },
+              { icon: '👥', title: t('home.lpUc1Title'), desc: t('home.lpUc1Desc'), demo: 'hiring' as DemoTab },
               { icon: '🤝', title: t('home.lpUc6Title'), desc: t('home.lpUc6Desc'), demo: null },
-              { icon: '📝', title: t('home.lpUc7Title'), desc: t('home.lpUc7Desc'), demo: null },
-              { icon: '🔬', title: t('home.lpUc4Title'), desc: t('home.lpUc4Desc'), demo: null },
+              { icon: '📝', title: t('home.lpUc7Title'), desc: t('home.lpUc7Desc'), demo: 'contract' as DemoTab },
+              { icon: '🔬', title: t('home.lpUc4Title'), desc: t('home.lpUc4Desc'), demo: 'research' as DemoTab },
               { icon: '📚', title: t('home.lpUc5Title'), desc: t('home.lpUc5Desc'), demo: null },
             ].map((uc, i) => (
               <div key={i} className="lp-uc-card fade-up" style={{ transitionDelay: `${i * 60}ms` }}>

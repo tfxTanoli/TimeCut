@@ -24,6 +24,18 @@ export default function HowItWorksPage() {
       desc: t('hiw.step3Desc'),
       details: [t('hiw.step3Detail1'), t('hiw.step3Detail2'), t('hiw.step3Detail3'), t('hiw.step3Detail4')],
     },
+    {
+      num: t('hiw.step4Num'),
+      title: t('hiw.step4Title'),
+      desc: t('hiw.step4Desc'),
+      details: [t('hiw.step4Detail1'), t('hiw.step4Detail2'), t('hiw.step4Detail3'), t('hiw.step4Detail4')],
+    },
+    {
+      num: t('hiw.step5Num'),
+      title: t('hiw.step5Title'),
+      desc: t('hiw.step5Desc'),
+      details: [t('hiw.step5Detail1'), t('hiw.step5Detail2'), t('hiw.step5Detail3'), t('hiw.step5Detail4')],
+    },
   ]
 
   const ANATOMY = [
@@ -43,6 +55,10 @@ export default function HowItWorksPage() {
     { q: t('hiw.faq3Q'), a: t('hiw.faq3A') },
     { q: t('hiw.faq4Q'), a: t('hiw.faq4A') },
     { q: t('hiw.faq5Q'), a: t('hiw.faq5A') },
+    { q: t('hiw.faq6Q'), a: t('hiw.faq6A') },
+    { q: t('hiw.faq7Q'), a: t('hiw.faq7A') },
+    { q: t('hiw.faq8Q'), a: t('hiw.faq8A') },
+    { q: t('hiw.faq9Q'), a: t('hiw.faq9A') },
   ]
 
   return (
@@ -104,6 +120,17 @@ export default function HowItWorksPage() {
               </div>
             ))}
           </div>
+          <div className="faq-footer">
+            <h3>{t('hiw.faqFooterTitle')}</h3>
+            <p>{t('hiw.faqFooterSub')}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="hiw-closing-section">
+        <div className="container">
+          <h2 className="section-title">{t('hiw.closingTitle')}</h2>
+          <p>{t('hiw.closingSub')}</p>
         </div>
       </section>
 
