@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
+import { isAdminEmail } from '../lib/admin'
+import { auth } from '../lib/firebase'
 
 export default function AuthModal() {
   const { mode, close } = useAuthModal()
   const { login, signup, loginWithGoogle } = useAuth()
   const { t } = useTranslation()
+  const navigate = useNavigate()
 
   const [tab, setTab]         = useState<'login' | 'signup'>('login')
   const [closing, setClosing] = useState(false)
@@ -70,7 +74,11 @@ export default function AuthModal() {
       if (tab === 'login') {
         await login(email, password)
         setSuccess(true)
-        setTimeout(handleClose, 900)
+        const admin = await isAdminEmail(email)
+        setTimeout(() => {
+          handleClose()
+          if (admin) navigate('/admin', { replace: true })
+        }, 900)
       } else {
         await signup(email, password, name)
         setSignupEmail(email)
@@ -105,7 +113,11 @@ export default function AuthModal() {
     try {
       await loginWithGoogle()
       setSuccess(true)
-      setTimeout(handleClose, 900)
+      const admin = await isAdminEmail(auth.currentUser?.email)
+      setTimeout(() => {
+        handleClose()
+        if (admin) navigate('/admin', { replace: true })
+      }, 900)
     } catch (err: any) {
       setError(authErrorMessage(err.code, tab, t))
     } finally {

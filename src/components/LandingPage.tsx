@@ -486,12 +486,12 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
       {uploadSection && (
         <section id="upload-section" className="lp-section lp-section--upload-wrapper">
           <div className="container">
-            <p className="lp-eyebrow fade-up">Start Your Analysis</p>
+            <p className="lp-eyebrow fade-up">{t('home.uploadEyebrow')}</p>
             <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>
-              Upload Your Documents
+              {t('home.uploadTitle')}
             </h2>
             <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms', fontSize: '14px' }}>
-              Upload documents and describe your goal. Get a full risk report in seconds.
+              {t('home.uploadSub')}
             </p>
             {uploadSection}
           </div>

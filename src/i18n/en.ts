@@ -1018,6 +1018,21 @@ const en: Record<string, string> = {
   'home.lpComp4Other': 'Conversational answer',
   'home.lpComp4Us': 'Structured decision report',
   'home.lpDisclaimer': 'TimeCut provides AI-assisted document analysis and decision support. It does not provide legal, financial, tax, hiring, compliance, or professional advice. Users remain responsible for all final decisions. AI analysis may contain errors — always verify critical information from authoritative sources.',
+  'home.uploadEyebrow': 'Start Your Analysis',
+  'home.uploadTitle': 'Upload Your Documents',
+  'home.uploadSub': 'Upload documents and describe your goal. Get a full risk report in seconds.',
+  'decision.selectFramework': 'Select Expert Framework',
+  'decision.selectFrameworkSub': 'Choose the type of document so the AI applies the right expert analysis.',
+  'decision.docTypeAutoLabel': 'Auto-Detect',
+  'decision.docTypeAutoDesc': 'AI detects the document type automatically',
+  'decision.docTypeCvLabel': 'CV / Resume',
+  'decision.docTypeCvDesc': 'Hiring analysis by an HR Director',
+  'decision.docTypeSupplierLabel': 'Supplier Quotation',
+  'decision.docTypeSupplierDesc': 'Procurement analysis by a Procurement Manager',
+  'decision.docTypeContractLabel': 'Contract / Agreement',
+  'decision.docTypeContractDesc': 'Legal risk review by a Contract Reviewer',
+  'decision.docTypeProposalLabel': 'Business Proposal',
+  'decision.docTypeProposalDesc': 'Strategic review by a Business Consultant',
 }
 
 export default en

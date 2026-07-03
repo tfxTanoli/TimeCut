@@ -1,11 +1,12 @@
-import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense, useEffect } from 'react'
+import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import './App.css'
 import Navbar from './components/Navbar'
 import ScrollToTop from './components/ScrollToTop'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
 import AuthModal from './components/AuthModal'
+import { isAdminEmail } from './lib/admin'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'))
@@ -22,12 +23,34 @@ const TermsPage   = lazy(() => import('./pages/TermsPage'))
 const AboutPage   = lazy(() => import('./pages/AboutPage'))
 const AdminPage   = lazy(() => import('./pages/AdminPage'))
 
+// Admins land on /admin only — keep them off the regular user dashboard
+// (e.g. if they hit the back button or open a bookmarked "/" link).
+function AdminRouteGuard() {
+  const { user } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!user?.email || location.pathname === '/admin') return
+    let active = true
+    isAdminEmail(user.email).then(ok => {
+      if (active && ok && location.pathname === '/') {
+        navigate('/admin', { replace: true })
+      }
+    })
+    return () => { active = false }
+  }, [user, location.pathname, navigate])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <AuthModalProvider>
           <ScrollToTop />
+          <AdminRouteGuard />
           <Navbar />
           <Suspense fallback={<div className="page-loading" />}>
             <Routes>

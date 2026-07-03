@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react'
 import type { PlanType } from '../lib/userService'
 import type { DocumentType } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
+import { useLanguage } from '../contexts/LanguageContext'
 
 const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Arabic',
@@ -19,12 +20,12 @@ const PAGE_LIMITS: Record<PlanType, number> = {
 const MAX_FILES = 10
 const ACCEPT = '.pdf,.txt,application/pdf,text/plain'
 
-const DOCUMENT_TYPES: { value: DocumentType; label: string; description: string; icon: string }[] = [
-  { value: 'auto', label: 'Auto-Detect', description: 'AI detects the document type automatically', icon: '🔍' },
-  { value: 'cv', label: 'CV / Resume', description: 'Hiring analysis by an HR Director', icon: '👤' },
-  { value: 'supplier_quotation', label: 'Supplier Quotation', description: 'Procurement analysis by a Procurement Manager', icon: '📦' },
-  { value: 'contract', label: 'Contract / Agreement', description: 'Legal risk review by a Contract Reviewer', icon: '📋' },
-  { value: 'business_proposal', label: 'Business Proposal', description: 'Strategic review by a Business Consultant', icon: '📊' },
+const DOCUMENT_TYPES: { value: DocumentType; labelKey: string; descKey: string; icon: string }[] = [
+  { value: 'auto', labelKey: 'decision.docTypeAutoLabel', descKey: 'decision.docTypeAutoDesc', icon: '🔍' },
+  { value: 'cv', labelKey: 'decision.docTypeCvLabel', descKey: 'decision.docTypeCvDesc', icon: '👤' },
+  { value: 'supplier_quotation', labelKey: 'decision.docTypeSupplierLabel', descKey: 'decision.docTypeSupplierDesc', icon: '📦' },
+  { value: 'contract', labelKey: 'decision.docTypeContractLabel', descKey: 'decision.docTypeContractDesc', icon: '📋' },
+  { value: 'business_proposal', labelKey: 'decision.docTypeProposalLabel', descKey: 'decision.docTypeProposalDesc', icon: '📊' },
 ]
 
 interface Props {
@@ -80,10 +81,13 @@ export default function DecisionUpload({
   hideHero = false,
 }: Props) {
   const { t } = useTranslation()
+  const { lang: uiLang } = useLanguage()
   const fileRef = useRef<HTMLInputElement>(null)
   const [files, setFiles] = useState<File[]>([])
   const [decisionGoal, setDecisionGoal] = useState('')
-  const [language, setLanguage] = useState('English')
+  // Default the analysis language to the site's UI language, so a Chinese
+  // reader gets a Chinese report without having to change this separately.
+  const [language, setLanguage] = useState(() => LANGUAGES.includes(uiLang) ? uiLang : 'English')
   const [dragOver, setDragOver] = useState(false)
   const [documentType, setDocumentType] = useState<DocumentType>('auto')
 
@@ -220,8 +224,8 @@ export default function DecisionUpload({
           <div className="du-step-header">
             <span className="du-step-num">2</span>
             <div>
-              <p className="du-step-title">Select Expert Framework</p>
-              <p className="du-step-sub">Choose the type of document so the AI applies the right expert analysis.</p>
+              <p className="du-step-title">{t('decision.selectFramework')}</p>
+              <p className="du-step-sub">{t('decision.selectFrameworkSub')}</p>
             </div>
           </div>
           <div className="du-doctype-grid">
@@ -233,8 +237,8 @@ export default function DecisionUpload({
                 onClick={() => setDocumentType(dt.value)}
               >
                 <span className="du-doctype-icon">{dt.icon}</span>
-                <span className="du-doctype-label">{dt.label}</span>
-                <span className="du-doctype-desc">{dt.description}</span>
+                <span className="du-doctype-label">{t(dt.labelKey)}</span>
+                <span className="du-doctype-desc">{t(dt.descKey)}</span>
               </button>
             ))}
           </div>

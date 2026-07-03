@@ -201,11 +201,14 @@ export default function AdminPage() {
             </div>
 
             <div className="admin-save-row">
-              <button className="btn-primary" onClick={handleSave} disabled={saveState === 'saving'}>
-                {saveState === 'saving' ? 'Saving…' : 'Save Changes'}
+              <button className="btn-primary admin-save-btn" onClick={handleSave} disabled={saveState === 'saving'}>
+                {saveState === 'saving'
+                  ? <><span className="btn-spinner" />Saving…</>
+                  : <><IconSave />Save Changes</>
+                }
               </button>
-              {saveState === 'saved' && <span className="admin-saved">Saved ✓</span>}
-              {saveState === 'error' && <span className="admin-error">Save failed — check your permissions.</span>}
+              {saveState === 'saved' && <span className="admin-saved"><IconCheck />Saved</span>}
+              {saveState === 'error' && <span className="admin-error"><IconAlert />Save failed — check your permissions.</span>}
             </div>
           </div>
         )}
@@ -267,5 +270,33 @@ export default function AdminPage() {
       </div>
       <Footer />
     </>
+  )
+}
+
+function IconSave() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z" />
+      <polyline points="17 21 17 13 7 13 7 21" />
+      <polyline points="7 3 7 8 15 8" />
+    </svg>
+  )
+}
+
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+function IconAlert() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="12" y1="8" x2="12" y2="13" />
+      <line x1="12" y1="16.5" x2="12.01" y2="16.5" />
+    </svg>
   )
 }
