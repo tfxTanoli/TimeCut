@@ -812,6 +812,7 @@ const en: Record<string, string> = {
   'home.lpBadge2': 'AI Risk Discovery',
   'home.lpBadge3': 'Document Risk Insights',
   'home.lpBadge4': 'Find The Risks Others Miss',
+  'home.lpTopHeading': 'Make Better Decisions',
   'home.lpHeadline': 'Before You Sign, Hire, Invest, Approve, or Decide... Find the Risks Others Miss.',
   'home.lpHeadlinePre': 'Before You Sign, Hire, Invest, Approve, or Decide...',
   'home.lpHeadlineMain': 'Find The Risks Others Miss.',

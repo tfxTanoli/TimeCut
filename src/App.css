@@ -2476,7 +2476,7 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 24px;
-  align-items: start;
+  align-items: stretch;
 }
 .pricing-grid--4col {
   grid-template-columns: repeat(4, 1fr);
@@ -2544,6 +2544,8 @@
   color: var(--text);
   opacity: 0.6;
   margin: 14px 0 0;
+  margin-top: auto;
+  padding-top: 14px;
   text-align: left;
 }
 
@@ -2552,7 +2554,8 @@
   font-size: 12px;
   line-height: 1.45;
   color: var(--accent, #2563EB);
-  margin: 14px 0 0;
+  margin: auto 0 0;
+  padding-top: 14px;
   text-align: left;
 }
 
@@ -5958,13 +5961,25 @@
   background: rgba(59,130,246,0.1); color: #60A5FA;
   border: 1px solid rgba(59,130,246,0.2);
 }
+/* Tier 1 — top heading */
+.lp-top-heading {
+  font-size: clamp(34px, 5.5vw, 60px); font-weight: 800; letter-spacing: -1.5px;
+  color: #FFFFFF; line-height: 1.1; margin: 0 0 16px; max-width: 900px; text-align: center;
+}
+/* Tier 2 — supporting tagline (was the headline) */
+.lp-hero-tagline {
+  font-size: clamp(20px, 3vw, 30px); font-weight: 700; letter-spacing: -0.5px;
+  color: #E5E7EB; line-height: 1.25; margin: 0 0 20px; max-width: 780px; text-align: center;
+}
+/* Kept for backward compatibility with other usages */
 .lp-headline {
   font-size: clamp(28px, 4vw, 52px); font-weight: 800; letter-spacing: -1px;
   color: #FFFFFF; line-height: 1.15; margin: 0 0 20px; max-width: 860px;
 }
+/* Tier 3 — descriptive paragraph */
 .lp-subheadline {
   font-size: 18px; color: #9CA3AF; line-height: 1.65;
-  margin: 0 0 36px; max-width: 620px;
+  margin: 0 0 36px; max-width: 620px; text-align: center;
 }
 .lp-hero-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
 .lp-primary-cta { padding: 14px 36px; font-size: 16px; font-weight: 700; }
@@ -6193,22 +6208,27 @@
 
 /* ── Demo type tabs ── */
 .lp-demo-tabs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
   justify-content: center;
-  margin-bottom: 4px;
+  max-width: 900px;
+  margin: 0 auto 4px;
 }
 .lp-demo-tab {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.1);
   color: #9CA3AF;
   border-radius: 8px;
-  padding: 9px 18px;
+  padding: 9px 14px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   font-family: var(--sans);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: background 0.18s, border-color 0.18s, color 0.18s;
 }
 .lp-demo-tab:hover {
@@ -6454,9 +6474,14 @@
 .lp-section--use-cases { background: #09090B; }
 
 /* ── Responsive for new elements ── */
+@media (max-width: 860px) {
+  .lp-demo-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 520px; }
+  /* Odd last tab spans the full row so the grid stays balanced */
+  .lp-demo-tab:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
 @media (max-width: 640px) {
   .lp-demo-tabs { gap: 8px; }
-  .lp-demo-tab { font-size: 13px; padding: 8px 13px; }
+  .lp-demo-tab { font-size: 13px; padding: 8px 12px; }
   .lp-eo-stats-row { flex-direction: column; gap: 4px; }
   .lp-eo-stat-divider { width: 100%; height: 1px; }
   .lp-risk-detail__row { grid-template-columns: 1fr; gap: 3px; }

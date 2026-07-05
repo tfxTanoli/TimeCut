@@ -744,6 +744,7 @@ const zhCN: Record<string, string> = {
   'home.lpBadge2': 'AI风险发现',
   'home.lpBadge3': '文件风险洞察',
   'home.lpBadge4': '找出他人忽略的风险',
+  'home.lpTopHeading': '做出更明智的决策',
   'home.lpHeadline': '在签字、招聘、投资、批准或决策之前... 找出他人忽略的风险。',
   'home.lpHeadlinePre': '在签字、招聘、投资、批准或决策之前...',
   'home.lpHeadlineMain': '找出他人忽略的风险。',

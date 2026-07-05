@@ -206,10 +206,13 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
           <div className="lp-hero-badges fade-up">
             <span className="lp-badge">{t('home.lpBadge1')}</span>
           </div>
-          <h1 className="lp-headline fade-up" style={{ transitionDelay: '60ms' }}>
-            {t('home.lpHeadline')}
+          <h1 className="lp-top-heading fade-up" style={{ transitionDelay: '40ms' }}>
+            {t('home.lpTopHeading')}
           </h1>
-          <p className="lp-subheadline fade-up" style={{ transitionDelay: '120ms' }}>
+          <p className="lp-hero-tagline fade-up" style={{ transitionDelay: '90ms' }}>
+            {t('home.lpHeadline')}
+          </p>
+          <p className="lp-subheadline fade-up" style={{ transitionDelay: '140ms' }}>
             {t('home.lpSubheadline')}
           </p>
           <div className="lp-hero-actions fade-up" style={{ transitionDelay: '180ms' }}>

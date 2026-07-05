@@ -744,6 +744,7 @@ const zhTW: Record<string, string> = {
   'home.lpBadge2': 'AI風險發現',
   'home.lpBadge3': '文件風險洞察',
   'home.lpBadge4': '找出他人忽略的風險',
+  'home.lpTopHeading': '做出更明智的決策',
   'home.lpHeadline': '在簽字、招聘、投資、批准或決策之前... 找出他人忽略的風險。',
   'home.lpHeadlinePre': '在簽字、招聘、投資、批准或決策之前...',
   'home.lpHeadlineMain': '找出他人忽略的風險。',
