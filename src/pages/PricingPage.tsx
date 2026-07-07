@@ -5,7 +5,7 @@ import PaymentModal from '../components/PaymentModal'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
-import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
+import { getCachedPlanConfig, getPlanConfig, formatPrice, computeReportCost, type PlanConfig } from '../lib/planConfig'
 
 export default function PricingPage() {
   const { t } = useTranslation()
@@ -15,6 +15,7 @@ export default function PricingPage() {
   const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | 'business' | null>(null)
   const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
   const [cfg, setCfg] = useState<PlanConfig>(getCachedPlanConfig())
+  const [reportsPerMonth, setReportsPerMonth] = useState<number | null>(null)
   const navigate = useNavigate()
 
   // Pull live, admin-editable plan/credit figures so prices update without a redeploy.
@@ -45,7 +46,24 @@ export default function PricingPage() {
     { q: t('pricing.faq3Q'), a: t('pricing.faq3A') },
     { q: t('pricing.faq4Q'), a: t('pricing.faq4A') },
     { q: t('pricing.faq5Q'), a: t('pricing.faq5A') },
+    {
+      q: t('pricing.faq6Q'),
+      a: t('pricing.faq6A'),
+      bullets: [t('pricing.faq6B1'), t('pricing.faq6B2'), t('pricing.faq6B3'), t('pricing.faq6B4')],
+      note: t('pricing.faq6Note'),
+    },
   ]
+
+  // Recommend a plan from the user's expected monthly volume. Config-driven:
+  // a "typical" analysis (~20 pages, single doc) sets the per-report credit cost,
+  // so if the estimated monthly credits fit inside Starter we suggest Starter, else Pro.
+  const typicalReportCost = Math.max(1, computeReportCost(cfg, { pages: 20, docs: 1 }))
+  const recommended: 'starter' | 'pro' | null =
+    reportsPerMonth == null
+      ? null
+      : reportsPerMonth * typicalReportCost <= (cfg.plans.starter.credits ?? 0)
+        ? 'starter'
+        : 'pro'
 
   return (
     <>
@@ -173,8 +191,7 @@ export default function PricingPage() {
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
               <div className="pricing-price-row">
-                <span className="pricing-price">{formatPrice(cfg.plans.business.priceCents)}</span>
-                <span className="pricing-period">{t('pricing.customPeriod')}</span>
+                <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
               </div>
               <button
                 className="pricing-cta btn-outline"
@@ -197,6 +214,38 @@ export default function PricingPage() {
         </div>
       </section>
 
+      <section className="plan-rec-section">
+        <div className="container plan-rec-inner">
+          <h2 className="plan-rec-title">{t('pricing.recTitle')}</h2>
+          <p className="plan-rec-question">{t('pricing.recQuestion')}</p>
+          <div className="plan-rec-options">
+            {[5, 20, 50, 100].map(n => (
+              <button
+                key={n}
+                type="button"
+                className={`plan-rec-option${reportsPerMonth === n ? ' plan-rec-option--active' : ''}`}
+                onClick={() => setReportsPerMonth(n)}
+              >
+                {n}
+              </button>
+            ))}
+          </div>
+          {recommended && (
+            <div className="plan-rec-result">
+              <p className="plan-rec-result-text">
+                {t(recommended === 'starter' ? 'pricing.recResultStarter' : 'pricing.recResultPro')}
+              </p>
+              <button
+                className="pricing-cta btn-primary plan-rec-cta"
+                onClick={() => handlePaidPlan(recommended)}
+              >
+                {t(recommended === 'starter' ? 'pricing.recCtaStarter' : 'pricing.recCtaPro')}
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+
       <section className="faq-section">
         <div className="container faq-inner">
           <h2 className="section-title">{t('pricing.faqTitle')}</h2>
@@ -205,6 +254,12 @@ export default function PricingPage() {
               <div key={i} className="faq-item">
                 <p className="faq-q">{faq.q}</p>
                 <p className="faq-a">{faq.a}</p>
+                {faq.bullets && (
+                  <ul className="faq-bullets">
+                    {faq.bullets.map((b, j) => <li key={j}>{b}</li>)}
+                  </ul>
+                )}
+                {faq.note && <p className="faq-a faq-a--note">{faq.note}</p>}
               </div>
             ))}
           </div>

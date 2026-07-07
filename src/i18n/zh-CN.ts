@@ -457,7 +457,7 @@ const zhCN: Record<string, string> = {
 
   // 入门版
   'pricing.starter': '入门版',
-  'pricing.starterTagline': '适合自由职业者和小型企业',
+  'pricing.starterTagline': '专为做出重要决策的专业人士打造',
   'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/月',
   'pricing.starterSubtitle': '每月约20–30次典型分析',
@@ -514,6 +514,25 @@ const zhCN: Record<string, string> = {
   'pricing.faq4A': '当然可以。随时从您的账户设置中取消，无需解释原因。您可继续使用至当前计费周期结束。',
   'pricing.faq5Q': '接受哪些支付方式？',
   'pricing.faq5A': '通过Stripe接受Visa、Mastercard、美国运通等。所有支付均安全处理。',
+  'pricing.faq6Q': 'AI积分是如何计算的？',
+  'pricing.faq6A': 'AI积分的消耗依据：',
+  'pricing.faq6B1': '页数',
+  'pricing.faq6B2': '文档数量',
+  'pricing.faq6B3': 'AI分析的复杂度',
+  'pricing.faq6B4': '后续AI提问',
+  'pricing.faq6Note': '大多数报告消耗10–25积分。在开始新的分析前，您随时可以查看剩余积分。',
+
+  // Plan recommender
+  'pricing.recTitle': '不确定该选哪个计划？',
+  'pricing.recQuestion': '您每月分析多少份报告？',
+  'pricing.recResultStarter': '我们为您推荐Starter计划。',
+  'pricing.recResultPro': '我们为您推荐Pro计划。',
+  'pricing.recCtaStarter': '选择Starter',
+  'pricing.recCtaPro': '选择Pro',
+
+  // Business "contact sales" price label
+  'pricing.customPriceLabel': '联系销售',
+
   'pricing.ctaTitle': '立即开始做出更明智的决策',
   'pricing.ctaSub': '免费开始。准备好时再升级。',
   'pricing.ctaBtn': '免费开始',

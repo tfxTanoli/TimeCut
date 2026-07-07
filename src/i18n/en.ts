@@ -516,7 +516,7 @@ const en: Record<string, string> = {
 
   // STARTER
   'pricing.starter': 'STARTER',
-  'pricing.starterTagline': 'Perfect for freelancers and small businesses',
+  'pricing.starterTagline': 'Perfect for professionals making important decisions',
   'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/month',
   'pricing.starterSubtitle': 'Around 20–30 typical analyses per month',
@@ -573,6 +573,25 @@ const en: Record<string, string> = {
   'pricing.faq4A': 'Absolutely. Cancel anytime from your account settings with no questions asked. You keep access until the end of your billing period.',
   'pricing.faq5Q': 'What payment methods do you accept?',
   'pricing.faq5A': 'Visa, Mastercard, Amex, and more via Stripe. All payments are secure.',
+  'pricing.faq6Q': 'How do AI Credits work?',
+  'pricing.faq6A': 'AI Credits are used based on:',
+  'pricing.faq6B1': 'Number of pages',
+  'pricing.faq6B2': 'Number of documents',
+  'pricing.faq6B3': 'AI analysis complexity',
+  'pricing.faq6B4': 'Follow-up AI questions',
+  'pricing.faq6Note': 'Most reports use between 10–25 credits. You can always see your remaining credits before starting another analysis.',
+
+  // Plan recommender
+  'pricing.recTitle': 'Not sure which plan you need?',
+  'pricing.recQuestion': 'How many reports do you analyze each month?',
+  'pricing.recResultStarter': 'We recommend the Starter plan for you.',
+  'pricing.recResultPro': 'We recommend the Pro plan for you.',
+  'pricing.recCtaStarter': 'Get Starter',
+  'pricing.recCtaPro': 'Get Pro',
+
+  // Business "contact sales" price label
+  'pricing.customPriceLabel': 'Contact Sales',
+
   'pricing.ctaTitle': 'Start Making Smarter Decisions Today',
   'pricing.ctaSub': "Free to start. Upgrade when you're ready.",
   'pricing.ctaBtn': 'Get Started Free',

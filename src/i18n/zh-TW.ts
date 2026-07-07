@@ -457,7 +457,7 @@ const zhTW: Record<string, string> = {
 
   // 入門版
   'pricing.starter': '入門版',
-  'pricing.starterTagline': '適合自由工作者和小型企業',
+  'pricing.starterTagline': '專為做出重要決策的專業人士打造',
   'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/月',
   'pricing.starterSubtitle': '每月約20–30次典型分析',
@@ -514,6 +514,25 @@ const zhTW: Record<string, string> = {
   'pricing.faq4A': '當然可以。隨時從您的帳戶設定中取消，無需解釋原因。您可繼續使用至當前計費週期結束。',
   'pricing.faq5Q': '接受哪些付款方式？',
   'pricing.faq5A': '透過Stripe接受Visa、Mastercard、美國運通等。所有付款均安全處理。',
+  'pricing.faq6Q': 'AI點數是如何計算的？',
+  'pricing.faq6A': 'AI點數的消耗依據：',
+  'pricing.faq6B1': '頁數',
+  'pricing.faq6B2': '文件數量',
+  'pricing.faq6B3': 'AI分析的複雜度',
+  'pricing.faq6B4': '後續AI提問',
+  'pricing.faq6Note': '大多數報告消耗10–25點數。在開始新的分析前，您隨時可以查看剩餘點數。',
+
+  // Plan recommender
+  'pricing.recTitle': '不確定該選哪個方案？',
+  'pricing.recQuestion': '您每月分析多少份報告？',
+  'pricing.recResultStarter': '我們為您推薦Starter方案。',
+  'pricing.recResultPro': '我們為您推薦Pro方案。',
+  'pricing.recCtaStarter': '選擇Starter',
+  'pricing.recCtaPro': '選擇Pro',
+
+  // Business "contact sales" price label
+  'pricing.customPriceLabel': '聯絡銷售',
+
   'pricing.ctaTitle': '立即開始做出更明智的決策',
   'pricing.ctaSub': '免費開始。準備好時再升級。',
   'pricing.ctaBtn': '免費開始',

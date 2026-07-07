@@ -2332,7 +2332,43 @@
 .faq-item:last-child { border-bottom: none; }
 .faq-q { font-size: 15px; font-weight: 600; color: var(--text-h); margin: 0 0 8px; }
 .faq-a { font-size: 14px; color: var(--text); line-height: 1.65; margin: 0; }
+.faq-a--note { margin-top: 10px; }
+.faq-bullets { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.faq-bullets li { font-size: 14px; color: var(--text); line-height: 1.5; }
 .faq-footer { text-align: center; margin-top: 28px; }
+
+/* Plan recommender */
+.plan-rec-section { padding: 8px 0 40px; }
+.plan-rec-inner { max-width: 640px; margin: 0 auto; text-align: center; }
+.plan-rec-title { font-size: 20px; font-weight: 700; color: var(--text-h); margin: 0 0 8px; }
+.plan-rec-question { font-size: 14px; color: var(--text); margin: 0 0 20px; }
+.plan-rec-options { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.plan-rec-option {
+  min-width: 68px;
+  padding: 12px 18px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, transform .1s;
+}
+.plan-rec-option:hover { border-color: var(--accent); }
+.plan-rec-option--active {
+  border-color: var(--accent);
+  background: var(--accent-bg);
+}
+.plan-rec-result {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.plan-rec-result-text { font-size: 15px; font-weight: 600; color: var(--text-h); margin: 0; }
+.plan-rec-cta { max-width: 240px; }
 .faq-footer p { color: var(--text); font-size: 14px; margin: 6px 0 0; }
 .faq-footer h3 { font-size: 17px; font-weight: 700; color: var(--text-h); margin: 0; }
 
