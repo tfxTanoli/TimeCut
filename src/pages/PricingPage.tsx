@@ -190,8 +190,19 @@ export default function PricingPage() {
               {planBadge('business')}
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
+              {/* Business follows the same config as every other plan: show the
+                  configured price when one is set, otherwise "Contact Sales".
+                  Clear the Business price in the Admin Dashboard to go back to
+                  a contact-sales-only card. */}
               <div className="pricing-price-row">
-                <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
+                {cfg.plans.business.priceCents == null ? (
+                  <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
+                ) : (
+                  <>
+                    <span className="pricing-price">{formatPrice(cfg.plans.business.priceCents)}</span>
+                    <span className="pricing-period">{t('pricing.proPeriod')}</span>
+                  </>
+                )}
               </div>
               <button
                 className="pricing-cta btn-outline"

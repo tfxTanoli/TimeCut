@@ -448,7 +448,6 @@ const en: Record<string, string> = {
   // FREE
   'pricing.free': 'FREE',
   'pricing.freeTagline': 'Try AI Decision Intelligence',
-  'pricing.freePrice': '$0',
   'pricing.freePeriod': '',
   'pricing.freeSubtitle': '1 free report · up to 20 pages · 3 documents',
   'pricing.freeCta': 'Start for Free',
@@ -466,7 +465,6 @@ const en: Record<string, string> = {
   // STARTER
   'pricing.starter': 'STARTER',
   'pricing.starterTagline': 'Perfect for professionals making important decisions',
-  'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/month',
   'pricing.starterSubtitle': 'Around 20–30 typical analyses per month',
   'pricing.starterCta': 'Get Starter',
@@ -483,7 +481,6 @@ const en: Record<string, string> = {
   // PRO
   'pricing.pro': 'PRO',
   'pricing.proTagline': 'Deeper intelligence and stronger decisions',
-  'pricing.proPrice': '$29',
   'pricing.proPeriod': '/month',
   'pricing.proSubtitle': 'Around 120–180 typical analyses per month',
   'pricing.proCta': 'Get Pro',
@@ -499,7 +496,6 @@ const en: Record<string, string> = {
   // BUSINESS (formerly CUSTOM)
   'pricing.custom': 'BUSINESS',
   'pricing.customTagline': 'Team decision intelligence at scale',
-  'pricing.customPrice': 'Custom',
   'pricing.customPeriod': '',
   'pricing.customSubtitle': 'Custom credit allocation · Team workspace',
   'pricing.customCta': 'Contact Sales',

@@ -389,7 +389,6 @@ const zhTW: Record<string, string> = {
   // 免費
   'pricing.free': '免費',
   'pricing.freeTagline': '探索AI決策智能',
-  'pricing.freePrice': '$0',
   'pricing.freePeriod': '',
   'pricing.freeSubtitle': '1份免費報告 · 最多20頁 · 3個文件',
   'pricing.freeCta': '免費開始',
@@ -407,7 +406,6 @@ const zhTW: Record<string, string> = {
   // 入門版
   'pricing.starter': '入門版',
   'pricing.starterTagline': '專為做出重要決策的專業人士打造',
-  'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/月',
   'pricing.starterSubtitle': '每月約20–30次典型分析',
   'pricing.starterCta': '獲取入門版',
@@ -424,7 +422,6 @@ const zhTW: Record<string, string> = {
   // 專業版
   'pricing.pro': '專業版',
   'pricing.proTagline': '更深入的智能與更有力的決策',
-  'pricing.proPrice': '$29',
   'pricing.proPeriod': '/月',
   'pricing.proSubtitle': '每月約120–180次典型分析',
   'pricing.proCta': '獲取專業版',
@@ -440,7 +437,6 @@ const zhTW: Record<string, string> = {
   // 商業版
   'pricing.custom': '商業版',
   'pricing.customTagline': '規模化的團隊決策智能',
-  'pricing.customPrice': '客製',
   'pricing.customPeriod': '',
   'pricing.customSubtitle': '客製點數分配 · 團隊工作區',
   'pricing.customCta': '聯絡銷售',

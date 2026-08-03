@@ -1,6 +1,21 @@
+import { useState, useEffect } from 'react'
 import Footer from '../components/Footer'
+import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
 
 export default function TermsPage() {
+  // Prices come from the shared plan config (config/plans) so the legal copy
+  // stays in step with the pricing page instead of drifting.
+  const [cfg, setCfg] = useState<PlanConfig>(getCachedPlanConfig())
+  useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
+
+  const UNLIMITED = 9999
+  const priceLabel = (cents: number | null) =>
+    cents == null ? 'custom pricing (contact sales)' : `${formatPrice(cents)}/month`
+  const creditsLabel = (credits: number | null) =>
+    credits == null ? 'a custom AI Credit allocation'
+      : credits >= UNLIMITED ? 'unlimited AI Credits'
+        : `${credits.toLocaleString()} AI Credits/month`
+
   return (
     <>
       <section className="page-hero">
@@ -32,10 +47,10 @@ export default function TermsPage() {
             <h2>4. Plans & Billing</h2>
             <p>TimeCut offers a Free plan and paid subscription plans (Starter, Pro, Business). Paid plans are billed monthly through Stripe. You may cancel your subscription at any time. No refunds are provided for partial billing periods unless required by applicable law.</p>
             <ul>
-              <li><strong>Free</strong>:5 analyses/month, no credit card required</li>
-              <li><strong>Starter</strong>:60 analyses/month at $9/month</li>
-              <li><strong>Pro</strong>:300 analyses/month at $29/month</li>
-              <li><strong>Business</strong>:2,000 analyses/month at $149/month</li>
+              <li><strong>Free</strong>: {cfg.plans.free.freeReports ?? 1} free report(s), no credit card required</li>
+              <li><strong>Starter</strong>: {creditsLabel(cfg.plans.starter.credits)} at {priceLabel(cfg.plans.starter.priceCents)}</li>
+              <li><strong>Pro</strong>: {creditsLabel(cfg.plans.pro.credits)} at {priceLabel(cfg.plans.pro.priceCents)}</li>
+              <li><strong>Business</strong>: {creditsLabel(cfg.plans.business.credits)} at {priceLabel(cfg.plans.business.priceCents)}</li>
             </ul>
 
             <h2>5. Acceptable Use</h2>

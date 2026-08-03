@@ -82,6 +82,28 @@ export async function getPlanConfig(): Promise<PlanConfig> {
   }
 }
 
+// Last-resort charge amounts (cents) used only when `config/plans` has no
+// explicit price for a plan (e.g. Business, which is "Contact Sales" on the
+// pricing page and therefore has priceCents = null). Everything else must come
+// from the Firestore doc so the site and Stripe never disagree.
+const FALLBACK_AMOUNT_CENTS: Record<string, number> = {
+  starter: 900,
+  pro: 2900,
+  business: 14900,
+}
+
+/**
+ * The amount (in cents) to actually charge for a paid plan. Single source of
+ * truth for Stripe: reads `config/plans` (admin-editable) and only falls back
+ * to FALLBACK_AMOUNT_CENTS when the plan has no price configured.
+ */
+export async function getStripeAmount(plan: string): Promise<number> {
+  const cfg = await getPlanConfig()
+  const cents = cfg.plans[plan as PlanType]?.priceCents
+  if (typeof cents === 'number' && cents > 0) return cents
+  return FALLBACK_AMOUNT_CENTS[plan] ?? 0
+}
+
 /**
  * Compute the credit cost of a Decision report.
  * cost = (reportBase + perPage*pages) * (multiDocMultiplier if >1 doc) + ocrSurcharge*ocrDocs

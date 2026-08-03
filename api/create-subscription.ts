@@ -1,13 +1,14 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Stripe from 'stripe'
 import { stripe, STRIPE_PLANS, getOrCreateProductId, getAdminDb } from './_lib/stripe-admin.js'
+import { getStripeAmount } from './_lib/planConfig.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { plan, uid, email, name } = req.body ?? {}
-  const planConfig = STRIPE_PLANS[plan]
-  if (!planConfig) return res.status(400).json({ error: 'Invalid plan' })
+  const planMeta = STRIPE_PLANS[plan]
+  if (!planMeta) return res.status(400).json({ error: 'Invalid plan' })
 
   try {
     const adminDb = getAdminDb()
@@ -37,13 +38,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const productId = await getOrCreateProductId(plan)
 
+    // Charge amount comes from config/plans (Admin Dashboard) — same source the
+    // pricing page renders from, so displayed price === charged price.
+    const amountCents = await getStripeAmount(plan)
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
         price_data: {
           currency: 'usd',
           product: productId,
-          unit_amount: planConfig.amount,
+          unit_amount: amountCents,
           recurring: { interval: 'month' },
         },
       }],
@@ -60,7 +65,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Could not initialise payment. Please try again.' })
     }
 
-    return res.json({ subscriptionId: subscription.id, clientSecret: paymentIntent.client_secret })
+    return res.json({
+      subscriptionId: subscription.id,
+      clientSecret: paymentIntent.client_secret,
+      amountCents,
+    })
   } catch (err) {
     console.error('[create-subscription] Error:', err)
     return res.status(500).json({ error: err instanceof Error ? err.message : 'Subscription creation failed' })

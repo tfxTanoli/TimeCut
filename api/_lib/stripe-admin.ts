@@ -6,24 +6,22 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
   apiVersion: '2023-10-16' as any,
 })
 
-// NOTE: `amount` here is a fallback; the live charge amount is sourced from the
-// config/plans Firestore doc (see getStripeAmount) so prices can be changed from
-// the Admin Dashboard without a redeploy.
-export const STRIPE_PLANS: Record<string, { name: string; description: string; amount: number }> = {
+// Stripe product metadata only. Prices are NOT stored here — the charge amount
+// comes from the config/plans Firestore doc via getStripeAmount() in
+// ./planConfig so prices can be changed from the Admin Dashboard (one place)
+// without a redeploy and without the site and Stripe drifting apart.
+export const STRIPE_PLANS: Record<string, { name: string; description: string }> = {
   starter: {
     name: 'TimeCut Starter',
     description: 'AI Decision Intelligence — 500 AI Credits/month · up to 5 documents per report',
-    amount: 900,
   },
   pro: {
     name: 'TimeCut Pro',
     description: 'Advanced decision intelligence — 3,000 AI Credits/month · up to 10 documents per report',
-    amount: 2900,
   },
   business: {
     name: 'TimeCut Business',
     description: 'Team decision intelligence — custom AI Credit allocation & workspace',
-    amount: 14900,
   },
 }
 

@@ -6,17 +6,24 @@ import {
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
+import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string)
 
-const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: string; features: string[] }> = {
+const UNLIMITED = 9999
+
+/**
+ * Plan copy only. Every number (price, credits, document limits) is read from
+ * the shared plan config (config/plans in Firestore, editable from the Admin
+ * Dashboard) so this modal can never disagree with the pricing page.
+ */
+const PLAN_META: Record<string, { label: string; tagline: string; features: string[] }> = {
   starter: {
     label: 'STARTER',
-    price: '$9/month',
     tagline: 'Full analysis depth for individuals',
     features: [
-      '20 analyses/month',
-      'Up to 5 Documents per analysis',
+      '{credits} AI Credits/month',
+      'Up to {docs} documents per analysis',
       'Full Hidden Risks',
       'Missing Information',
       'Evidence Found',
@@ -26,11 +33,10 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   },
   pro: {
     label: 'PRO',
-    price: '$29/month',
     tagline: 'Deeper intelligence and stronger decisions',
     features: [
-      '100 analyses/month',
-      'Up to 10 Documents per analysis',
+      '{credits} AI Credits/month',
+      'Up to {docs} documents per analysis',
       'Everything in Starter',
       'Smart Skeptic Questions',
       'Decision Defense Generator',
@@ -41,7 +47,6 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   },
   business: {
     label: 'BUSINESS',
-    price: '$149/month',
     tagline: 'Team decision intelligence',
     features: [
       'Team Workspace',
@@ -53,24 +58,45 @@ const PLAN_DETAILS: Record<string, { label: string; price: string; tagline: stri
   },
 }
 
+/** Resolve a plan's display copy against the live config. */
+function planDetails(plan: string, cfg: PlanConfig, amountCents?: number | null) {
+  const meta = PLAN_META[plan]
+  const limits = cfg.plans[plan as keyof PlanConfig['plans']]
+  // Prefer the amount the server is actually charging; fall back to the config.
+  const cents = typeof amountCents === 'number' ? amountCents : limits?.priceCents ?? null
+  const credits = limits?.credits
+  const docs = limits?.maxDocs
+
+  return {
+    label: meta.label,
+    tagline: meta.tagline,
+    price: cents == null ? 'Custom' : `${formatPrice(cents)}/month`,
+    features: meta.features.map(f => f
+      .replace('{credits}', credits == null ? 'Custom' : credits.toLocaleString())
+      .replace('{docs}', docs == null || docs >= UNLIMITED ? 'unlimited' : String(docs))),
+  }
+}
+
 /* ─── Inner checkout form (must be inside <Elements>) ─── */
 interface FormProps {
   plan: 'starter' | 'pro' | 'business'
   uid: string
   subscriptionId: string
+  cfg: PlanConfig
+  amountCents: number | null
   email?: string
   name?: string
   onSuccess: () => void
   onClose: () => void
 }
 
-function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: FormProps) {
+function CheckoutForm({ plan, uid, subscriptionId, cfg, amountCents, email, name, onSuccess }: FormProps) {
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
 
-  const details = PLAN_DETAILS[plan]
+  const details = planDetails(plan, cfg, amountCents)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -166,8 +192,8 @@ function CheckoutForm({ plan, uid, subscriptionId, email, name, onSuccess }: For
 }
 
 /* ─── Success screen ─── */
-function SuccessScreen({ plan, onClose }: { plan: string; onClose: () => void }) {
-  const details = PLAN_DETAILS[plan]
+function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; onClose: () => void }) {
+  const details = planDetails(plan, cfg)
   return (
     <div className="pm-success">
       <div className="pm-success-icon">✓</div>
@@ -197,6 +223,11 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
   const [fetchError,      setFetchError]      = useState<string | null>(null)
   const [fetchLoading,    setFetchLoading]    = useState(true)
   const [paid,            setPaid]            = useState(false)
+  const [cfg,             setCfg]             = useState<PlanConfig>(getCachedPlanConfig())
+  const [amountCents,     setAmountCents]     = useState<number | null>(null)
+
+  // Same admin-editable config the pricing page renders from.
+  useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
 
   useEffect(() => {
     fetch('/api/create-subscription', {
@@ -209,6 +240,7 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
         if (data.clientSecret) {
           setClientSecret(data.clientSecret)
           setSubscriptionId(data.subscriptionId)
+          if (typeof data.amountCents === 'number') setAmountCents(data.amountCents)
         } else {
           setFetchError(data.error ?? 'Could not initialize payment')
         }
@@ -260,7 +292,7 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
           </div>
         )}
 
-        {paid && <SuccessScreen plan={plan} onClose={onClose} />}
+        {paid && <SuccessScreen plan={plan} cfg={cfg} onClose={onClose} />}
 
         {clientSecret && !paid && (
           <Elements
@@ -272,6 +304,8 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
               plan={plan}
               uid={uid}
               subscriptionId={subscriptionId}
+              cfg={cfg}
+              amountCents={amountCents}
               email={email}
               name={name}
               onSuccess={() => setPaid(true)}

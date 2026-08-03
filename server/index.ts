@@ -277,22 +277,44 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2023-10-16' as any })
 
-const STRIPE_PLANS: Record<string, { name: string; description: string; amount: number }> = {
+// Stripe product metadata only. The charge amount comes from the config/plans
+// Firestore doc (Admin Dashboard) via getStripeAmount() so the price shown on
+// the site and the price charged by Stripe always come from one place.
+const STRIPE_PLANS: Record<string, { name: string; description: string }> = {
   starter: {
     name: 'TimeCut Starter',
     description: 'Build better information habits — 60 analyses/month',
-    amount: 900,
   },
   pro: {
     name: 'TimeCut Pro',
     description: 'Make faster decisions at scale — 300 analyses/month',
-    amount: 2900,
   },
   business: {
     name: 'TimeCut Business',
     description: 'Scale your content intelligence — 2,000 analyses/month',
-    amount: 14900,
   },
+}
+
+// Used only when config/plans has no explicit price for a plan (e.g. Business,
+// which is "Contact Sales" and therefore has priceCents = null).
+const FALLBACK_AMOUNT_CENTS: Record<string, number> = {
+  starter: 900,
+  pro: 2900,
+  business: 14900,
+}
+
+/** Read the live charge amount (cents) from config/plans, with a safe fallback. */
+async function getStripeAmount(plan: string): Promise<number> {
+  try {
+    if (adminDb) {
+      const snap = await adminDb.collection('config').doc('plans').get()
+      const cents = snap.exists ? (snap.data()?.plans?.[plan]?.priceCents as number | null | undefined) : undefined
+      if (typeof cents === 'number' && cents > 0) return cents
+    }
+  } catch (e) {
+    console.warn('[stripe] plan price lookup failed, using fallback:', e)
+  }
+  return FALLBACK_AMOUNT_CENTS[plan] ?? 0
 }
 
 // Cache Stripe product IDs so we don't create duplicates on every request
@@ -449,13 +471,16 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
     // Get or create Stripe product (fixes "product_data not supported" error)
     const productId = await getOrCreateProductId(plan)
 
+    // Same source as the pricing page: config/plans in Firestore.
+    const amountCents = await getStripeAmount(plan)
+
     const subscription = await stripe.subscriptions.create({
       customer: customerId,
       items: [{
         price_data: {
           currency: 'usd',
           product: productId,           // ← product ID, not inline product_data
-          unit_amount: planConfig.amount,
+          unit_amount: amountCents,
           recurring: { interval: 'month' },
         },
       }],
@@ -476,6 +501,7 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
     res.json({
       subscriptionId: subscription.id,
       clientSecret: paymentIntent.client_secret,
+      amountCents,
     })
   } catch (err) {
     console.error('[subscription] Error:', err)
@@ -563,7 +589,7 @@ app.post('/api/create-checkout-session', express.json(), async (req, res) => {
             name: planConfig.name,
             description: planConfig.description,
           },
-          unit_amount: planConfig.amount,
+          unit_amount: await getStripeAmount(plan),
           recurring: { interval: 'month' },
         },
         quantity: 1,

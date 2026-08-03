@@ -389,7 +389,6 @@ const zhCN: Record<string, string> = {
   // 免费
   'pricing.free': '免费',
   'pricing.freeTagline': '探索AI决策智能',
-  'pricing.freePrice': '$0',
   'pricing.freePeriod': '',
   'pricing.freeSubtitle': '1份免费报告 · 最多20页 · 3个文档',
   'pricing.freeCta': '免费开始',
@@ -407,7 +406,6 @@ const zhCN: Record<string, string> = {
   // 入门版
   'pricing.starter': '入门版',
   'pricing.starterTagline': '专为做出重要决策的专业人士打造',
-  'pricing.starterPrice': '$9',
   'pricing.starterPeriod': '/月',
   'pricing.starterSubtitle': '每月约20–30次典型分析',
   'pricing.starterCta': '获取入门版',
@@ -424,7 +422,6 @@ const zhCN: Record<string, string> = {
   // 专业版
   'pricing.pro': '专业版',
   'pricing.proTagline': '更深入的智能与更有力的决策',
-  'pricing.proPrice': '$29',
   'pricing.proPeriod': '/月',
   'pricing.proSubtitle': '每月约120–180次典型分析',
   'pricing.proCta': '获取专业版',
@@ -440,7 +437,6 @@ const zhCN: Record<string, string> = {
   // 商业版
   'pricing.custom': '商业版',
   'pricing.customTagline': '规模化的团队决策智能',
-  'pricing.customPrice': '定制',
   'pricing.customPeriod': '',
   'pricing.customSubtitle': '定制积分分配 · 团队工作区',
   'pricing.customCta': '联系销售',
