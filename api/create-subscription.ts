@@ -22,6 +22,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       } catch { /* ignore */ }
     }
 
+    // A stored customer can be unusable: it may belong to a different Stripe
+    // account (after an API-key switch) or have been deleted. Verify it before
+    // reusing, otherwise subscriptions.create fails with "No such customer".
+    if (customerId) {
+      try {
+        const existing = await stripe.customers.retrieve(customerId)
+        if ('deleted' in existing && existing.deleted) customerId = undefined
+      } catch {
+        console.warn('[create-subscription] Unusable stripeCustomerId, creating a new one:', customerId)
+        customerId = undefined
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: email || undefined,
