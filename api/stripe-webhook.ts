@@ -15,6 +15,25 @@ async function getRawBody(req: VercelRequest): Promise<Buffer> {
   })
 }
 
+// ── API-version shims ───────────────────────────────────────────────────────
+// The client is pinned to apiVersion 2023-10-16 (see _lib/stripe-admin), so at
+// runtime Stripe returns the fields below at their original top-level paths.
+// The installed SDK's types describe a newer API version where they moved, so
+// we read the pinned-version path first and fall back to the newer one — that
+// keeps today's behaviour identical and survives a future apiVersion bump.
+
+function getPeriodEnd(subscription: Stripe.Subscription): number | undefined {
+  const legacy = (subscription as unknown as { current_period_end?: number }).current_period_end
+  return legacy ?? subscription.items.data[0]?.current_period_end
+}
+
+function getInvoiceSubscriptionId(invoice: Stripe.Invoice): string | undefined {
+  const legacy = (invoice as unknown as { subscription?: string | Stripe.Subscription | null }).subscription
+  const current = legacy ?? invoice.parent?.subscription_details?.subscription
+  if (!current) return undefined
+  return typeof current === 'string' ? current : current.id
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -49,9 +68,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const product = await stripe.products.retrieve(productId)
         const planKey = STRIPE_PLAN_MAP[product.name.toLowerCase().replace(/\s+/g, '')]
           ?? (product.metadata?.plan as string | undefined)
-        if (planKey) {
-          // Use Stripe's own period_end + 3-day buffer so expiry tracks real billing
-          const periodEnd = subscription.current_period_end
+        // Use Stripe's own period_end + 3-day buffer so expiry tracks real billing
+        const periodEnd = getPeriodEnd(subscription)
+        if (planKey && periodEnd !== undefined) {
           const expiresAt = admin.firestore.Timestamp.fromDate(
             new Date((periodEnd + 3 * 24 * 60 * 60) * 1000),
           )
@@ -73,9 +92,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Extend planExpiresAt on each monthly renewal so the plan stays active
   if (event.type === 'invoice.payment_succeeded') {
     const invoice = event.data.object as Stripe.Invoice
-    const subscriptionId = typeof invoice.subscription === 'string'
-      ? invoice.subscription
-      : (invoice.subscription as Stripe.Subscription)?.id
+    const subscriptionId = getInvoiceSubscriptionId(invoice)
     const customerId = typeof invoice.customer === 'string'
       ? invoice.customer
       : (invoice.customer as Stripe.Customer)?.id
@@ -83,7 +100,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (subscriptionId && customerId && adminDb && invoice.billing_reason === 'subscription_cycle') {
       try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-        const periodEnd = subscription.current_period_end
+        const periodEnd = getPeriodEnd(subscription)
+        if (periodEnd === undefined) {
+          console.error('[webhook] No current_period_end on subscription:', subscriptionId)
+          return res.json({ received: true })
+        }
         const expiresAt = admin.firestore.Timestamp.fromDate(
           new Date((periodEnd + 3 * 24 * 60 * 60) * 1000),
         )
