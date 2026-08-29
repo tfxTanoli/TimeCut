@@ -1,4 +1,4 @@
-import { getAdminDb } from './stripe-admin'
+import { getAdminDb } from './stripe-admin.js'
 
 // ── Backend mirror of src/lib/planConfig.ts ─────────────────────────────────
 // Reads the same Firestore `config/plans` doc via the Admin SDK so server-side
