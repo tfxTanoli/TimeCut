@@ -7,7 +7,6 @@ import {
   collection,
   serverTimestamp,
   increment,
-  runTransaction,
   type Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
@@ -16,25 +15,19 @@ import type { InputTab, TimeCutReport } from '../types'
 
 export type PlanType = 'free' | 'starter' | 'pro' | 'business' | 'custom'
 
-export const PLAN_LIMITS: Record<PlanType, number> = {
-  free: 2,
-  starter: 5,
-  pro: 20,
-  business: 999999,
-  custom: 999999,
-}
+// PLAN_LIMITS / PAGE_LIMITS used to live here with hardcoded figures that had
+// drifted away from the pricing page (2/5/20 reports, 20/50/100 pages). Every
+// limit now comes from `config/plans` via lib/planConfig, so the pricing page,
+// the checkout modal and the product all quote the same numbers.
 
-export const PAGE_LIMITS: Record<PlanType, number> = {
-  free: 20,
-  starter: 50,
-  pro: 100,
-  business: 999999,
-  custom: 999999,
-}
-
+/**
+ * Ledger month key. UTC so the browser and the server always address the same
+ * document — a local-time key put users near the date line on a different
+ * month's ledger than the one the server debits.
+ */
 export function getCurrentMonthKey(): string {
   const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
 export type ActivityType =
@@ -82,27 +75,6 @@ export async function createUserDocument(user: User, name?: string) {
     totalAnalyses: 0,
     totalTimeSaved: 0,
     plan: 'free',
-  })
-}
-
-export async function getMonthlyUsage(uid: string): Promise<number> {
-  const monthKey = getCurrentMonthKey()
-  const snap = await getDoc(doc(db, 'users', uid, 'usage', monthKey))
-  return snap.exists() ? (snap.data().count as number) : 0
-}
-
-export async function checkAndIncrementUsage(uid: string, plan: PlanType): Promise<void> {
-  const limit = PLAN_LIMITS[plan]
-  const monthKey = getCurrentMonthKey()
-  const usageRef = doc(db, 'users', uid, 'usage', monthKey)
-
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(usageRef)
-    const current: number = snap.exists() ? (snap.data().count as number) : 0
-    if (current >= limit) {
-      throw new Error(`LIMIT_EXCEEDED:${limit}`)
-    }
-    tx.set(usageRef, { count: current + 1, updatedAt: serverTimestamp() }, { merge: true })
   })
 }
 
@@ -171,6 +143,10 @@ export interface UserData {
   plan: PlanType
   planStartDate?: Timestamp | null
   planExpiresAt?: Timestamp | null
+  /** Mirrors the Stripe subscription status (active, past_due, canceled…). */
+  subscriptionStatus?: string | null
+  /** Per-account AI Credit allocation set by an admin. Overrides the plan default. */
+  creditsOverride?: number | null
 }
 
 export async function getUserData(uid: string): Promise<UserData | null> {
@@ -208,76 +184,11 @@ export async function getCreditsUsage(
   }
 }
 
-/**
- * Atomically consume credits for the current month. `allowance` is the plan's
- * monthly credit allowance (from config). Throws `INSUFFICIENT_CREDITS:{left}`
- * when the cost would exceed the allowance.
- */
-export async function consumeCredits(
-  uid: string,
-  allowance: number,
-  cost: number,
-  extra: { reports?: number; assistant?: number; documents?: number; clamp?: boolean } = {},
-): Promise<void> {
-  const monthKey = getCurrentMonthKey()
-  const ref = doc(db, 'users', uid, 'credits', monthKey)
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(ref)
-    const used: number = snap.exists() ? (snap.data().used ?? 0) : 0
-    if (used + cost > allowance) {
-      // clamp: the work already happened (e.g. report generated) — deduct what
-      // remains rather than erroring, so the next attempt is correctly blocked.
-      if (!extra.clamp) {
-        throw new Error(`INSUFFICIENT_CREDITS:${Math.max(0, allowance - used)}`)
-      }
-    }
-    const nextUsed = extra.clamp ? Math.min(allowance, used + cost) : used + cost
-    tx.set(
-      ref,
-      {
-        used: nextUsed,
-        allocated: allowance,
-        reportsUsed: increment(extra.reports ?? 0),
-        assistantUsed: increment(extra.assistant ?? 0),
-        documentsUploaded: increment(extra.documents ?? 0),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    )
-  })
-}
-
-/**
- * Free plan: consume one free report. Allowance = base free reports + earned
- * (referral) reports. Throws `FREE_REPORTS_EXHAUSTED` when none remain.
- */
-export async function consumeFreeReport(
-  uid: string,
-  baseFreeReports: number,
-  documents = 0,
-): Promise<void> {
-  const userRef = doc(db, 'users', uid)
-  const monthKey = getCurrentMonthKey()
-  const creditsRef = doc(db, 'users', uid, 'credits', monthKey)
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(userRef)
-    const data = snap.data() ?? {}
-    const usedFree: number = data.freeReportsUsed ?? 0
-    const earned: number = data.freeReportsEarned ?? 0
-    const allowed = baseFreeReports + earned
-    if (usedFree >= allowed) throw new Error('FREE_REPORTS_EXHAUSTED')
-    tx.set(userRef, { freeReportsUsed: usedFree + 1 }, { merge: true })
-    tx.set(
-      creditsRef,
-      {
-        reportsUsed: increment(1),
-        documentsUploaded: increment(documents),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    )
-  })
-}
+// Credit consumption used to happen here, in the browser, against a ledger the
+// user could rewrite. It now lives in api/_lib/entitlements.ts: the server
+// verifies the plan, charges before doing the work, and refunds if the work
+// fails. Firestore rules make users/{uid}/credits/{month} read-only to the
+// client, so this file only reads the ledger for display.
 
 /** Generate and persist a short referral code on the user doc if missing. */
 export async function ensureReferralCode(uid: string): Promise<string> {

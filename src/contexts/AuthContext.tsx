@@ -29,9 +29,8 @@ import {
   type UserData,
   type PlanType,
   type CreditsUsage,
-  PLAN_LIMITS,
 } from '../lib/userService'
-import { getCachedPlanConfig, getPlanConfig, type PlanConfig } from '../lib/planConfig'
+import { getCachedPlanConfig, getPlanConfig, planFeatures, type PlanConfig, type PlanFeatures } from '../lib/planConfig'
 
 interface AuthContextValue {
   user: User | null
@@ -39,9 +38,9 @@ interface AuthContextValue {
   displayName: string
   loading: boolean
   plan: PlanType
-  planLimit: number
   planExpiresAt: Date | null
-  monthlyUsage: number
+  /** Which premium report sections the current plan unlocks. */
+  features: PlanFeatures
   // AI Credits
   planConfig: PlanConfig
   creditsAllocated: number
@@ -64,14 +63,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]                   = useState<User | null>(null)
   const [userData, setUserData]           = useState<UserData | null>(null)
   const [loading, setLoading]             = useState(true)
-  const [monthlyUsage, setMonthlyUsage]   = useState(0)
   const [planExpiresAt, setPlanExpiresAt] = useState<Date | null>(null)
   const [planConfig, setPlanConfig]       = useState<PlanConfig>(getCachedPlanConfig())
   const [creditsUsage, setCreditsUsage]   = useState<CreditsUsage>({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
 
   // Keep refs to active Firestore unsubscribers so we can clean up on sign-out
   const unsubUserRef    = useRef<(() => void) | null>(null)
-  const unsubUsageRef   = useRef<(() => void) | null>(null)
   const unsubCreditsRef = useRef<(() => void) | null>(null)
 
   // Load live, admin-editable plan/credit config once.
@@ -80,8 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function detachListeners() {
     unsubUserRef.current?.()
     unsubUserRef.current = null
-    unsubUsageRef.current?.()
-    unsubUsageRef.current = null
     unsubCreditsRef.current?.()
     unsubCreditsRef.current = null
   }
@@ -102,11 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // to avoid false-positive downgrades due to webhook delays or clock skew
           const GRACE_MS = 48 * 60 * 60 * 1000
           if (expiresAt && (expiresAt.getTime() + GRACE_MS) < Date.now() && data.plan !== 'free') {
-            fetch('/api/expire-plan', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ uid }),
-            }).catch(e => console.warn('[expire-plan] call failed:', e))
+            // The endpoint reads the account from the ID token, so no uid is
+            // sent. Server-side metering re-checks expiry on every request too,
+            // so this is a housekeeping nudge rather than the enforcement point.
+            auth.currentUser?.getIdToken()
+              .then(token => fetch('/api/expire-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              }))
+              .catch(e => console.warn('[expire-plan] call failed:', e))
           }
         } else {
           setUserData(null)
@@ -117,14 +116,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       () => setLoading(false),
     )
 
-    // Real-time monthly usage counter for the current month
+    // Real-time AI Credits ledger for the current month. Read-only to the
+    // client — every debit is written server-side after the plan is verified.
     const monthKey = getCurrentMonthKey()
-    unsubUsageRef.current = onSnapshot(
-      doc(db, 'users', uid, 'usage', monthKey),
-      snap => setMonthlyUsage(snap.exists() ? (snap.data().count as number) : 0),
-    )
-
-    // Real-time AI Credits ledger for the current month
     unsubCreditsRef.current = onSnapshot(
       doc(db, 'users', uid, 'credits', monthKey),
       snap => {
@@ -147,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         detachListeners()
         setUserData(null)
-        setMonthlyUsage(0)
         setCreditsUsage({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
         setPlanExpiresAt(null)
         setLoading(false)
@@ -162,17 +155,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const displayName = user?.displayName || userData?.name || ''
   const plan: PlanType = (userData?.plan as PlanType) ?? 'free'
-  const planLimit = PLAN_LIMITS[plan]
+  const features = planFeatures(planConfig, plan)
 
   // ── AI Credits derived values ──
-  const creditsAllocated = planConfig.plans[plan]?.credits ?? 0
+  // A per-account allocation (Business "Custom Credit Allocation") overrides
+  // the plan default. The server applies the same rule when charging.
+  const creditsOverride = (userData as { creditsOverride?: number } | null)?.creditsOverride
+  const creditsAllocated = plan !== 'free' && typeof creditsOverride === 'number' && creditsOverride >= 0
+    ? creditsOverride
+    : planConfig.plans[plan]?.credits ?? 0
   const creditsRemaining = Math.max(0, creditsAllocated - creditsUsage.used)
   const baseFreeReports = planConfig.plans.free.freeReports ?? 1
   const freeReportsAllowed = baseFreeReports + ((userData as { freeReportsEarned?: number } | null)?.freeReportsEarned ?? 0)
   const freeReportsUsed = (userData as { freeReportsUsed?: number } | null)?.freeReportsUsed ?? 0
   const freeReportsRemaining = Math.max(0, freeReportsAllowed - freeReportsUsed)
 
-  // No-op:onSnapshot keeps monthlyUsage & credits live automatically
+  // No-op: onSnapshot keeps the credit ledger live automatically.
   function refreshUsage() {}
 
   async function login(email: string, password: string) {
@@ -227,7 +225,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (auth.currentUser) await logActivity(auth.currentUser.uid, 'logout')
     await signOut(auth)
     setUserData(null)
-    setMonthlyUsage(0)
     setCreditsUsage({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
     setPlanExpiresAt(null)
   }
@@ -256,7 +253,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, userData, displayName, loading,
-      plan, planLimit, planExpiresAt, monthlyUsage,
+      plan, planExpiresAt, features,
       planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
       refreshUsage,
       login, signup, loginWithGoogle, logout,

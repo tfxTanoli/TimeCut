@@ -9,15 +9,10 @@ const LANGUAGES = [
   'Portuguese', 'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Turkish', 'Italian', 'Korean',
 ]
 
-const PAGE_LIMITS: Record<PlanType, number> = {
-  free: 20,
-  starter: 50,
-  pro: 100,
-  business: 999999,
-  custom: 999999,
-}
-
-const MAX_FILES = 10
+// Hard ceiling on what the upload endpoint accepts at all. The user's actual
+// document allowance comes from their plan (config/plans) and is passed in as
+// `maxDocs`; this constant only bounds the file picker.
+const MAX_FILES_ABSOLUTE = 10
 const ACCEPT = '.pdf,.txt,application/pdf,text/plain'
 
 const DOCUMENT_TYPES: { value: DocumentType; labelKey: string; descKey: string; icon: string }[] = [
@@ -35,6 +30,10 @@ interface Props {
   plan?: PlanType
   planLimit?: number
   monthlyUsage?: number
+  /** Documents allowed per report on the current plan. */
+  maxDocs?: number
+  /** Pages allowed per report on the current plan. */
+  maxPages?: number
   remaining?: number
   isLoggedIn?: boolean
   onOpenAuth?: () => void
@@ -72,9 +71,11 @@ export default function DecisionUpload({
   isLoading,
   error,
   plan = 'free',
-  planLimit = 2,
+  planLimit = 1,
   monthlyUsage = 0,
-  remaining = 2,
+  maxDocs = 3,
+  maxPages = 20,
+  remaining = 1,
   isLoggedIn = false,
   onOpenAuth,
   isAtLimit = false,
@@ -91,19 +92,29 @@ export default function DecisionUpload({
   const [dragOver, setDragOver] = useState(false)
   const [documentType, setDocumentType] = useState<DocumentType>('auto')
 
-  const pageLimit = PAGE_LIMITS[plan]
+  // Never offer more slots than the plan actually allows — the previous build
+  // let every plan queue 10 files and only failed after the upload.
+  const fileLimit = Math.min(MAX_FILES_ABSOLUTE, Math.max(1, maxDocs))
+  const pageLimit = maxPages
   const usagePct = planLimit > 0 ? Math.min(100, Math.round((monthlyUsage / planLimit) * 100)) : 100
+  const [limitNotice, setLimitNotice] = useState<string | null>(null)
 
   const addFiles = useCallback((incoming: FileList | null) => {
     if (!incoming) return
     const next = [...files]
+    let rejected = 0
     for (const f of Array.from(incoming)) {
-      if (next.length >= MAX_FILES) break
+      if (next.length >= fileLimit) { rejected++; continue }
       // Deduplicate by name+size
       if (!next.find(x => x.name === f.name && x.size === f.size)) next.push(f)
     }
+    setLimitNotice(
+      rejected > 0
+        ? t('decision.docLimitNotice').replace('{max}', String(fileLimit))
+        : null,
+    )
     setFiles(next)
-  }, [files])
+  }, [files, fileLimit, t])
 
   function removeFile(idx: number) {
     setFiles(prev => prev.filter((_, i) => i !== idx))
@@ -165,7 +176,7 @@ export default function DecisionUpload({
             <span className="du-step-num">1</span>
             <div>
               <p className="du-step-title">{t('decision.step1Title')}</p>
-              <p className="du-step-sub">{t('decision.step1Sub').replace('{max}', String(MAX_FILES)).replace('{pageLimit}', pageLimit >= 999999 ? '∞' : String(pageLimit))}</p>
+              <p className="du-step-sub">{t('decision.step1Sub').replace('{max}', String(fileLimit)).replace('{pageLimit}', pageLimit >= 9999 ? '∞' : String(pageLimit))}</p>
             </div>
           </div>
 
@@ -201,7 +212,7 @@ export default function DecisionUpload({
                     >✕</button>
                   </div>
                 ))}
-                {files.length < MAX_FILES && (
+                {files.length < fileLimit && (
                   <div className="du-add-more">
                     <span>+ {t('decision.addMore')}</span>
                   </div>
@@ -217,6 +228,13 @@ export default function DecisionUpload({
               onChange={e => addFiles(e.target.files)}
             />
           </div>
+
+          {limitNotice && (
+            <p className="du-limit-notice">
+              {limitNotice}{' '}
+              <a href="/pricing" onClick={e => e.stopPropagation()}>{t('decision.docLimitUpgrade')}</a>
+            </p>
+          )}
         </div>
 
         {/* ── Step 2: Document Type ── */}

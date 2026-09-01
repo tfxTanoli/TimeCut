@@ -7,6 +7,59 @@ import PDFParser from 'pdf2json'
 import Stripe from 'stripe'
 import admin from 'firebase-admin'
 import { Resend } from 'resend'
+// The dev server reuses the production enforcement modules from api/_lib so
+// local behaviour matches Vercel exactly — auth, plan limits, AI Credit
+// charging and refunds all run through the same code paths.
+import { verifyAuth, ApiError } from '../api/_lib/auth.js'
+import {
+  resolveEntitlement,
+  assertWithinDocumentLimits,
+  planFeatures,
+  chargeCredits,
+  refundCredits,
+  consumeFreeReport,
+  refundFreeReport,
+  chargeAssistantQuestion,
+  computeReportCost,
+  type Entitlement,
+} from '../api/_lib/entitlements.js'
+import { planFromSubscription, STRIPE_PLANS as SELF_SERVE_PLANS } from '../api/_lib/stripe-admin.js'
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Authenticate an Express request with the shared verifier, which expects a
+ * Vercel-shaped request. Only `headers` is read, so the cast is safe.
+ */
+async function requireAuth(req: any, res: any): Promise<Entitlement | null> {
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to continue.' })
+    return null
+  }
+  return resolveEntitlement(authed.uid)
+}
+
+/** Send an ApiError with its status and code; rethrow anything else. */
+function sendApiError(res: any, e: unknown): boolean {
+  if (e instanceof ApiError) {
+    res.status(e.status).json({ code: e.code, error: e.message })
+    return true
+  }
+  return false
+}
+
+/** Strip report sections the caller's plan does not include. */
+function gateReport(data: Record<string, any>, features: ReturnType<typeof planFeatures>) {
+  const out = { ...data }
+  if (!features.playbook) delete out.decision_playbook
+  if (!features.skepticQuestions) {
+    delete out.verification_questions
+    delete out.smart_skeptic_questions
+  }
+  if (!features.advisor) delete out.if_i_were_you
+  return out
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 function extractPDFText(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -264,11 +317,9 @@ async function sendPlanConfirmationEmail(to: string, name: string, plan: string)
   }
 }
 
-const STRIPE_PLAN_MAP: Record<string, string> = {
-  'timecutstarter': 'starter',
-  'timecutpro': 'pro',
-  'timecutbusiness': 'business',
-}
+// Plan resolution now goes through planFromSubscription() in api/_lib, which
+// reads the plan from the Stripe product's metadata (falling back to its name),
+// so the name->plan map no longer needs to be duplicated here.
 
 const app = express()
 app.use(cors())
@@ -280,18 +331,17 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '20
 // Stripe product metadata only. The charge amount comes from the config/plans
 // Firestore doc (Admin Dashboard) via getStripeAmount() so the price shown on
 // the site and the price charged by Stripe always come from one place.
+// Mirrors api/_lib/stripe-admin.ts. Business is sold through Contact Sales and
+// provisioned by hand, so it is deliberately absent — nothing here may take a
+// card payment for it.
 const STRIPE_PLANS: Record<string, { name: string; description: string }> = {
   starter: {
     name: 'TimeCut Starter',
-    description: 'Build better information habits — 60 analyses/month',
+    description: 'AI Decision Intelligence — 500 AI Credits/month · up to 5 documents per report',
   },
   pro: {
     name: 'TimeCut Pro',
-    description: 'Make faster decisions at scale — 300 analyses/month',
-  },
-  business: {
-    name: 'TimeCut Business',
-    description: 'Scale your content intelligence — 2,000 analyses/month',
+    description: 'Advanced decision intelligence — 3,000 AI Credits/month · up to 10 documents per report',
   },
 }
 
@@ -300,7 +350,6 @@ const STRIPE_PLANS: Record<string, { name: string; description: string }> = {
 const FALLBACK_AMOUNT_CENTS: Record<string, number> = {
   starter: 900,
   pro: 2900,
-  business: 14900,
 }
 
 /** Read the live charge amount (cents) from config/plans, with a safe fallback. */
@@ -438,14 +487,27 @@ app.post('/api/send-welcome-email', express.json(), async (req, res) => {
 
 // Step 1: create Stripe customer + subscription, return client_secret
 app.post('/api/create-subscription', express.json(), async (req, res) => {
-  const { plan, uid, email, name } = req.body
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to subscribe.' })
+    return
+  }
+  const uid = authed.uid
+
+  const { plan, email, name } = req.body
   const planConfig = STRIPE_PLANS[plan]
-  if (!planConfig) { res.status(400).json({ error: 'Invalid plan' }); return }
+  if (!planConfig || !SELF_SERVE_PLANS[plan]) {
+    res.status(400).json({
+      code: 'PLAN_NOT_SELF_SERVE',
+      error: 'This plan is not available for self-serve checkout. Please contact sales.',
+    })
+    return
+  }
 
   try {
     // Look up existing Stripe customer from Firestore (non-fatal)
     let customerId: string | undefined
-    if (adminDb && uid) {
+    if (adminDb) {
       try {
         const snap = await adminDb.doc(`users/${uid}`).get()
         customerId = snap.data()?.stripeCustomerId as string | undefined
@@ -457,11 +519,11 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
       const customer = await stripe.customers.create({
         email: email || undefined,
         name: name || undefined,
-        metadata: { firebaseUid: uid ?? '' },
+        metadata: { firebaseUid: uid },
       })
       customerId = customer.id
       // Save customer ID (non-fatal)
-      if (adminDb && uid) {
+      if (adminDb) {
         try {
           await adminDb.doc(`users/${uid}`).set({ stripeCustomerId: customerId }, { merge: true })
         } catch { /* ignore */ }
@@ -486,6 +548,8 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
       }],
       payment_behavior: 'default_incomplete',
       expand: ['latest_invoice.payment_intent'],
+      // Lets the webhook activate the right account without the browser.
+      metadata: { firebaseUid: uid, plan },
     })
 
     type ExpandedInvoice = Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | null }
@@ -511,60 +575,161 @@ app.post('/api/create-subscription', express.json(), async (req, res) => {
 
 // Step 2: verify payment and activate plan in Firestore
 app.post('/api/activate-plan', express.json(), async (req, res) => {
-  const { subscriptionId, uid, plan, paymentIntentId, email, name } = req.body
-  if (!uid || !plan) {
-    res.status(400).json({ error: 'Missing required fields' })
+  // The account comes from the verified token and the plan comes from Stripe —
+  // neither is read from the request body. Mirrors api/activate-plan.ts.
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to complete your subscription.' })
     return
   }
+  const uid = authed.uid
+
+  const { subscriptionId, paymentIntentId, email, name } = req.body
+  if (!subscriptionId && !paymentIntentId) {
+    res.status(400).json({ error: 'Missing subscription or payment reference' })
+    return
+  }
+
   try {
-    let shouldActivate = false
+    let subscription: Stripe.Subscription | null = null
+    let paid = false
     let customerId: string | undefined
 
-    // ── Primary: verify the PaymentIntent directly (most reliable, always up-to-date) ──
     if (paymentIntentId) {
       const pi = await stripe.paymentIntents.retrieve(paymentIntentId)
       if (pi.status === 'succeeded') {
-        shouldActivate = true
+        paid = true
         customerId = typeof pi.customer === 'string' ? pi.customer : (pi.customer as Stripe.Customer)?.id
-        console.log(`[activate-plan] PI ${paymentIntentId} confirmed succeeded`)
       } else {
         console.warn(`[activate-plan] PI status not succeeded: ${pi.status}`)
       }
     }
 
-    // ── Fallback: check subscription status (in case paymentIntentId wasn't passed) ──
-    if (!shouldActivate && subscriptionId) {
-      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-      shouldActivate = subscription.status === 'active' || subscription.status === 'trialing'
+    if (subscriptionId) {
+      subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      if (!paid) paid = subscription.status === 'active' || subscription.status === 'trialing'
       customerId = typeof subscription.customer === 'string'
         ? subscription.customer
         : (subscription.customer as Stripe.Customer)?.id
-      console.log(`[activate-plan] Sub fallback status: ${subscription.status}`)
     }
 
-    if (shouldActivate) {
-      if (adminDb) {
-        await adminDb.doc(`users/${uid}`).set(
-          {
-            plan,
-            ...(subscriptionId ? { stripeSubscriptionId: subscriptionId } : {}),
-            ...(customerId ? { stripeCustomerId: customerId } : {}),
-          },
-          { merge: true },
-        )
-        console.log(`[activate-plan] ✓ uid=${uid} → plan=${plan}`)
-      }
-      if (email) {
-        await sendPlanConfirmationEmail(email, name ?? '', plan)
-      }
-      res.json({ success: true, plan })
-    } else {
-      console.warn(`[activate-plan] Could not verify payment for uid=${uid}`)
-      res.json({ success: false })
+    if (!paid) {
+      console.warn(`[activate-plan] Payment not confirmed for uid=${uid}`)
+      res.status(402).json({
+        success: false,
+        code: 'PAYMENT_NOT_CONFIRMED',
+        error: 'We could not confirm your payment yet. If you were charged, your plan will activate automatically within a minute.',
+      })
+      return
     }
+
+    if (!subscription) {
+      res.status(202).json({ success: false, code: 'PENDING_WEBHOOK', error: 'Payment received. Your plan is being activated.' })
+      return
+    }
+
+    const planKey = await planFromSubscription(subscription)
+    if (!planKey) {
+      console.error(`[activate-plan] Could not resolve plan from subscription ${subscription.id}`)
+      res.status(500).json({ success: false, error: 'Could not determine your plan. Support has been notified.' })
+      return
+    }
+
+    const metaUid = subscription.metadata?.firebaseUid
+    if (metaUid && metaUid !== uid) {
+      res.status(403).json({ success: false, error: 'This subscription belongs to a different account.' })
+      return
+    }
+
+    if (adminDb) {
+      const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
+        ?? subscription.items.data[0]?.current_period_end
+      const expiresAt = admin.firestore.Timestamp.fromDate(
+        periodEnd !== undefined
+          ? new Date((periodEnd + 3 * 24 * 60 * 60) * 1000)
+          : new Date(Date.now() + 37 * 24 * 60 * 60 * 1000),
+      )
+      await adminDb.doc(`users/${uid}`).set(
+        {
+          plan: planKey,
+          planStartDate: admin.firestore.FieldValue.serverTimestamp(),
+          planExpiresAt: expiresAt,
+          subscriptionStatus: subscription.status,
+          stripeSubscriptionId: subscription.id,
+          ...(customerId ? { stripeCustomerId: customerId } : {}),
+        },
+        { merge: true },
+      )
+      console.log(`[activate-plan] ✓ uid=${uid} → plan=${planKey}`)
+    }
+
+    if (email) {
+      await sendPlanConfirmationEmail(email, name ?? '', planKey)
+    }
+    res.json({ success: true, plan: planKey })
   } catch (err) {
     console.error('[activate-plan] Error:', err)
-    res.status(500).json({ error: err instanceof Error ? err.message : 'Activation failed' })
+    res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Activation failed' })
+  }
+})
+
+// Self-serve subscription management (cancel, update card, invoices)
+app.post('/api/billing-portal', express.json(), async (req, res) => {
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to manage your subscription.' })
+    return
+  }
+  if (!adminDb) { res.status(500).json({ error: 'Account service unavailable. Please try again.' }); return }
+
+  try {
+    const snap = await adminDb.doc(`users/${authed.uid}`).get()
+    const customerId = snap.data()?.stripeCustomerId as string | undefined
+    if (!customerId) {
+      res.status(400).json({ code: 'NO_SUBSCRIPTION', error: 'No billing account found. If you believe this is an error, please contact support.' })
+      return
+    }
+    const origin = (req.headers.origin as string | undefined) ?? process.env.FRONTEND_URL ?? 'http://localhost:5173'
+    const session = await stripe.billingPortal.sessions.create({
+      customer: customerId,
+      return_url: `${origin}/profile`,
+    })
+    res.json({ url: session.url })
+  } catch (err) {
+    console.error('[billing-portal] Error:', err)
+    const message = err instanceof Error ? err.message : 'Could not open billing management'
+    res.status(500).json({
+      error: message.includes('configuration')
+        ? 'Subscription management is not configured yet. Please contact support to cancel.'
+        : message,
+    })
+  }
+})
+
+// Downgrade the caller's own account once their plan has lapsed
+app.post('/api/expire-plan', express.json(), async (req, res) => {
+  const authed = await verifyAuth(req)
+  if (!authed) { res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Not signed in' }); return }
+  if (!adminDb) { res.status(500).json({ error: 'Database unavailable' }); return }
+
+  try {
+    const snap = await adminDb.doc(`users/${authed.uid}`).get()
+    if (!snap.exists) { res.json({ expired: false }); return }
+    const data = snap.data()!
+    const planExpiresAt = data.planExpiresAt?.toDate?.() as Date | undefined
+    const plan = data.plan as string | undefined
+
+    if (!planExpiresAt || !plan || plan === 'free') { res.json({ expired: false }); return }
+
+    if (planExpiresAt < new Date()) {
+      await adminDb.doc(`users/${authed.uid}`).update({ plan: 'free', planStartDate: null, planExpiresAt: null })
+      res.json({ expired: true })
+      return
+    }
+    res.json({ expired: false })
+  } catch (err) {
+    console.error('[expire-plan] Error:', err)
+    res.status(500).json({ error: err instanceof Error ? err.message : 'Failed' })
   }
 })
 
@@ -623,51 +788,167 @@ app.post('/api/stripe-webhook',
       return
     }
 
-    if (event.type === 'checkout.session.completed') {
-      const session = event.data.object as Stripe.Checkout.Session
-      const uid = session.client_reference_id
-      const subscriptionId = typeof session.subscription === 'string'
-        ? session.subscription
-        : session.subscription?.id
+    if (!adminDb) {
+      console.error('[webhook] Admin DB unavailable; asking Stripe to retry')
+      res.status(500).json({ error: 'Database unavailable' })
+      return
+    }
+    const db = adminDb
 
-      if (uid && adminDb && subscriptionId) {
-        try {
-          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
-          const productId = subscription.items.data[0]?.price.product as string
-          const product = await stripe.products.retrieve(productId)
-          const planKey = STRIPE_PLAN_MAP[product.name.toLowerCase().replace(/\s+/g, '')]
-            ?? (product.metadata?.plan as string | undefined)
-          if (planKey) {
-            await adminDb.doc(`users/${uid}`).update({
-              plan: planKey,
-              stripeCustomerId: session.customer,
-              stripeSubscriptionId: subscriptionId,
-            })
-            console.log(`[webhook] Updated user ${uid} to plan: ${planKey}`)
-          }
-        } catch (e) {
-          console.error('[webhook] Firestore update failed:', e)
-        }
+    // Locate the account a subscription belongs to. Prefers the firebaseUid
+    // stamped on the subscription at creation; falls back to customer id for
+    // subscriptions created before that existed.
+    const findUserRef = async (
+      subscription: Stripe.Subscription | null,
+      customerId: string | undefined,
+    ): Promise<admin.firestore.DocumentReference | null> => {
+      const uid = subscription?.metadata?.firebaseUid
+      if (uid) {
+        const ref = db.doc(`users/${uid}`)
+        if ((await ref.get()).exists) return ref
       }
+      if (customerId) {
+        const byCustomer = await db.collection('users')
+          .where('stripeCustomerId', '==', customerId).limit(1).get()
+        if (!byCustomer.empty) return byCustomer.docs[0].ref
+      }
+      if (subscription?.id) {
+        const bySub = await db.collection('users')
+          .where('stripeSubscriptionId', '==', subscription.id).limit(1).get()
+        if (!bySub.empty) return bySub.docs[0].ref
+      }
+      return null
     }
 
-    if (event.type === 'customer.subscription.deleted') {
-      const subscription = event.data.object as Stripe.Subscription
-      const customerId = typeof subscription.customer === 'string'
-        ? subscription.customer
-        : subscription.customer?.id
-      if (customerId && adminDb) {
-        try {
-          const users = await adminDb.collection('users')
-            .where('stripeCustomerId', '==', customerId).limit(1).get()
-          if (!users.empty) {
-            await users.docs[0].ref.update({ plan: 'free' })
-            console.log(`[webhook] Downgraded customer ${customerId} to free`)
+    // Grant or renew the plan the subscription actually pays for.
+    const activate = async (subscription: Stripe.Subscription, customerId: string | undefined) => {
+      const userRef = await findUserRef(subscription, customerId)
+      if (!userRef) { console.error('[webhook] No user for subscription:', subscription.id); return }
+
+      const planKey = await planFromSubscription(subscription)
+      if (!planKey) { console.error('[webhook] Could not resolve plan for:', subscription.id); return }
+
+      const periodEnd = (subscription as unknown as { current_period_end?: number }).current_period_end
+        ?? subscription.items.data[0]?.current_period_end
+      if (periodEnd === undefined) { console.error('[webhook] No period end for:', subscription.id); return }
+
+      await userRef.set({
+        plan: planKey,
+        planStartDate: admin.firestore.FieldValue.serverTimestamp(),
+        planExpiresAt: admin.firestore.Timestamp.fromDate(new Date((periodEnd + 3 * 24 * 60 * 60) * 1000)),
+        subscriptionStatus: subscription.status,
+        stripeSubscriptionId: subscription.id,
+        ...(customerId ? { stripeCustomerId: customerId } : {}),
+      }, { merge: true })
+      console.log(`[webhook] ✓ ${userRef.id} → ${planKey}`)
+    }
+
+    const downgrade = async (
+      subscription: Stripe.Subscription | null,
+      customerId: string | undefined,
+      reason: string,
+    ) => {
+      const userRef = await findUserRef(subscription, customerId)
+      if (!userRef) { console.error('[webhook] No user to downgrade for:', customerId); return }
+      await userRef.set({
+        plan: 'free',
+        planStartDate: null,
+        planExpiresAt: null,
+        subscriptionStatus: subscription?.status ?? 'canceled',
+      }, { merge: true })
+      console.log(`[webhook] ${userRef.id} downgraded to free (${reason})`)
+    }
+
+    const invoiceSubscriptionId = (invoice: Stripe.Invoice): string | undefined => {
+      const legacy = (invoice as unknown as { subscription?: string | Stripe.Subscription | null }).subscription
+      const current = legacy ?? invoice.parent?.subscription_details?.subscription
+      if (!current) return undefined
+      return typeof current === 'string' ? current : current.id
+    }
+
+    try {
+      switch (event.type) {
+        // Stripe Checkout redirects only. The in-app Payment Element flow never
+        // fires this — invoice.payment_succeeded below covers those.
+        case 'checkout.session.completed': {
+          const session = event.data.object as Stripe.Checkout.Session
+          const subscriptionId = typeof session.subscription === 'string'
+            ? session.subscription
+            : session.subscription?.id
+          if (!subscriptionId) break
+          const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+          if (session.client_reference_id && !subscription.metadata?.firebaseUid) {
+            subscription.metadata = { ...subscription.metadata, firebaseUid: session.client_reference_id }
           }
-        } catch (e) {
-          console.error('[webhook] Subscription cancel update failed:', e)
+          const customerId = typeof session.customer === 'string'
+            ? session.customer
+            : (session.customer as Stripe.Customer)?.id
+          await activate(subscription, customerId)
+          break
         }
+
+        // Covers BOTH the first payment (subscription_create) and every renewal
+        // (subscription_cycle). This is the server-side safety net that makes
+        // activation independent of the browser.
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object as Stripe.Invoice
+          const subscriptionId = invoiceSubscriptionId(invoice)
+          if (!subscriptionId) break
+          const reason = invoice.billing_reason
+          if (reason !== 'subscription_create' && reason !== 'subscription_cycle' && reason !== 'subscription_update') break
+          const customerId = typeof invoice.customer === 'string'
+            ? invoice.customer
+            : (invoice.customer as Stripe.Customer)?.id
+          await activate(await stripe.subscriptions.retrieve(subscriptionId), customerId)
+          break
+        }
+
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object as Stripe.Invoice
+          const subscriptionId = invoiceSubscriptionId(invoice)
+          const customerId = typeof invoice.customer === 'string'
+            ? invoice.customer
+            : (invoice.customer as Stripe.Customer)?.id
+          const subscription = subscriptionId ? await stripe.subscriptions.retrieve(subscriptionId) : null
+          const userRef = await findUserRef(subscription, customerId)
+          if (userRef) await userRef.set({ subscriptionStatus: subscription?.status ?? 'past_due' }, { merge: true })
+          break
+        }
+
+        // Plan changes, plus the unpaid/incomplete_expired end-states Stripe
+        // moves a subscription into once retries are exhausted.
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object as Stripe.Subscription
+          const customerId = typeof subscription.customer === 'string'
+            ? subscription.customer
+            : subscription.customer?.id
+          if (subscription.status === 'active' || subscription.status === 'trialing') {
+            await activate(subscription, customerId)
+          } else if (['unpaid', 'incomplete_expired', 'canceled'].includes(subscription.status)) {
+            await downgrade(subscription, customerId, `status=${subscription.status}`)
+          } else {
+            const userRef = await findUserRef(subscription, customerId)
+            if (userRef) await userRef.set({ subscriptionStatus: subscription.status }, { merge: true })
+          }
+          break
+        }
+
+        case 'customer.subscription.deleted': {
+          const subscription = event.data.object as Stripe.Subscription
+          const customerId = typeof subscription.customer === 'string'
+            ? subscription.customer
+            : subscription.customer?.id
+          await downgrade(subscription, customerId, 'subscription deleted')
+          break
+        }
+
+        default:
+          break
       }
+    } catch (e) {
+      console.error(`[webhook] Handler failed for ${event.type}:`, e)
+      res.status(500).json({ error: 'Webhook handler failed' })
+      return
     }
 
     res.json({ received: true })
@@ -965,12 +1246,28 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
     recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
   })).filter((w: any) => w.claim)
 
+  // The Playbook is a paid-plan feature, so it must not silently disappear when
+  // the model omits a field. Anything missing is derived from the rest of the
+  // report. Mirrors api/analyze-decision.ts.
   const dp = raw.decision_playbook ?? {}
+  const playbookReasons = Array.isArray(dp.key_reasons) && dp.key_reasons.length > 0
+    ? dp.key_reasons
+    : recommendedActions.slice(0, 3).map((a: { reason: string }) => a.reason).filter(Boolean)
+  const playbookRisks = Array.isArray(dp.remaining_risks) && dp.remaining_risks.length > 0
+    ? dp.remaining_risks
+    : hiddenRisks.slice(0, 3).map((r: { description: string }) => r.description).filter(Boolean)
+  const playbookChecklist = Array.isArray(dp.action_checklist) && dp.action_checklist.length > 0
+    ? dp.action_checklist
+    : recommendedActions.map((a: { action: string }) => a.action).filter(Boolean)
   const decisionPlaybook = {
-    final_recommendation: dp.final_recommendation ?? dp.recommendation ?? '',
-    key_reasons: Array.isArray(dp.key_reasons) ? dp.key_reasons : [],
-    remaining_risks: Array.isArray(dp.remaining_risks) ? dp.remaining_risks : [],
-    action_checklist: Array.isArray(dp.action_checklist) ? dp.action_checklist : [],
+    final_recommendation:
+      (dp.final_recommendation ?? dp.recommendation ?? '').trim()
+      || (raw.recommendation
+        ? (hiddenRisks.length > 0 || missingInfo.length > 0 ? 'Negotiate' : 'Proceed')
+        : ''),
+    key_reasons: playbookReasons,
+    remaining_risks: playbookRisks,
+    action_checklist: playbookChecklist,
   }
 
   const score = raw.confidence_score ?? 75
@@ -1035,16 +1332,27 @@ app.post('/api/analyze-decision', (req, res, next) => {
     next()
   })
 }, async (req, res) => {
+  // Charged work: identify the caller and read their plan before anything else.
+  const ent = await requireAuth(req, res)
+  if (!ent) return
+  const features = planFeatures(ent)
+  let charged: { credits: number; docs: number } | null = null
+
   try {
     const files = (req.files as Express.Multer.File[]) ?? []
     const { decisionGoal, language = 'English', documentType = 'auto' } = req.body
-    const pageLimitRaw = req.headers['x-page-limit']
-    const pageLimit = parseInt(Array.isArray(pageLimitRaw) ? pageLimitRaw[0] : (pageLimitRaw ?? '999999'), 10) || 999999
 
     console.log(`[analyze-decision] files=${files.length} goal="${decisionGoal}" lang=${language}`)
 
     if (!files.length) { res.status(400).json({ error: 'No files uploaded' }); return }
     if (!decisionGoal?.trim()) { res.status(400).json({ error: 'Decision goal is required' }); return }
+
+    try {
+      assertWithinDocumentLimits(ent, { docs: files.length, pages: 0 })
+    } catch (e) {
+      if (sendApiError(res, e)) return
+      throw e
+    }
 
     let totalPages = 0
     const documents: { name: string; content: string }[] = []
@@ -1088,9 +1396,24 @@ app.post('/api/analyze-decision', (req, res, next) => {
       console.warn(`[analyze-decision] ${parseErrors.length} file(s) skipped:`, parseErrors)
     }
 
-    if (totalPages > pageLimit) {
-      res.status(400).json({ error: `Total pages (${totalPages}) exceeds your plan limit (${pageLimit} pages).` })
-      return
+    // Plan page limit, from the plan — not from a request header.
+    try {
+      assertWithinDocumentLimits(ent, { docs: documents.length, pages: totalPages })
+    } catch (e) {
+      if (sendApiError(res, e)) return
+      throw e
+    }
+
+    // Charge before the model call: pages and documents are already known, so
+    // the exact cost is taken up front and refunded if generation fails.
+    const cost = computeReportCost(ent.cfg, { pages: totalPages, docs: documents.length })
+    try {
+      if (ent.isFree) await consumeFreeReport(ent, documents.length)
+      else await chargeCredits(ent, cost, { reports: 1, documents: documents.length })
+      charged = { credits: cost, docs: documents.length }
+    } catch (e) {
+      if (sendApiError(res, e)) return
+      throw e
     }
 
     const docsBlock = documents
@@ -1111,8 +1434,17 @@ app.post('/api/analyze-decision', (req, res, next) => {
     const raw = completion.choices[0]?.message?.content ?? '{}'
     const parsed = JSON.parse(raw)
     const data = normalizeDecisionReport(parsed)
-    res.json({ data: { ...data, pages_analyzed: totalPages } })
+    res.json({
+      data: { ...gateReport(data, features), pages_analyzed: totalPages, documents_analyzed: documents.length },
+      entitlements: { plan: ent.plan, features, creditsCharged: ent.isFree ? 0 : cost },
+    })
   } catch (err) {
+    // Refund whatever we charged for an analysis that never arrived.
+    if (charged) {
+      if (ent.isFree) await refundFreeReport(ent, charged.docs)
+      else await refundCredits(ent, charged.credits, { reports: 1, documents: charged.docs })
+    }
+    if (sendApiError(res, err)) return
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
     console.error('[analyze-decision] Error:', message, err)
     res.status(500).json({ error: message || 'Analysis failed' })
@@ -1130,6 +1462,18 @@ app.post('/api/challenge-ai', express.json(), async (req, res) => {
   if (!question || !reportContext) {
     res.status(400).json({ error: 'question and reportContext are required' })
     return
+  }
+
+  const ent = await requireAuth(req, res)
+  if (!ent) return
+
+  // Free plans have a fixed monthly question quota; paid plans pay per question
+  // from AI Credits. Charged before answering, refunded if the answer fails.
+  try {
+    await chargeAssistantQuestion(ent)
+  } catch (e) {
+    if (sendApiError(res, e)) return
+    throw e
   }
 
   try {
@@ -1162,6 +1506,7 @@ Never fabricate information not found in the report.`,
     const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
     res.json({ answer })
   } catch (err) {
+    await refundCredits(ent, ent.isFree ? 0 : ent.cfg.creditCosts.assistantQuestion, { assistant: 1 })
     console.error('[challenge-ai] Error:', err)
     const message = err instanceof Error ? err.message : 'Challenge AI failed'
     res.status(500).json({ error: message })
@@ -1171,6 +1516,20 @@ Never fabricate information not found in the report.`,
 // Text or URL analysis
 app.post('/api/analyze', express.json(), async (req, res) => {
   const { type, content, url, language = 'English' } = req.body
+
+  const ent = await requireAuth(req, res)
+  if (!ent) return
+  // Content analysis has no page count, so it costs the base report price.
+  const cost = computeReportCost(ent.cfg, { pages: 0, docs: 1 })
+
+  try {
+    if (ent.isFree) await consumeFreeReport(ent, 1)
+    else await chargeCredits(ent, cost, { reports: 1, documents: 1 })
+  } catch (e) {
+    if (sendApiError(res, e)) return
+    throw e
+  }
+
   try {
     let textContent: string
     if (type === 'url') {
@@ -1185,12 +1544,19 @@ app.post('/api/analyze', express.json(), async (req, res) => {
     const data = await generateReport(textContent, language)
     res.json({ data })
   } catch (err) {
+    if (ent.isFree) await refundFreeReport(ent, 1)
+    else await refundCredits(ent, cost, { reports: 1, documents: 1 })
     res.status(500).json({ error: err instanceof Error ? err.message : 'Analysis failed' })
   }
 })
 
 // PDF analysis
 app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
+  const ent = await requireAuth(req, res)
+  if (!ent) return
+  const cost = computeReportCost(ent.cfg, { pages: 0, docs: 1 })
+  let charged = false
+
   try {
     if (!req.file) { res.status(400).json({ error: 'No PDF file uploaded' }); return }
     const text = await extractPDFText(req.file.buffer)
@@ -1198,10 +1564,25 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
     if (meaningful.length < 50) {
       throw new Error('This PDF has no extractable text (likely scanned/image-based). Please upload a PDF with selectable text.')
     }
+
+    // Charge only once we know the file is actually analysable.
+    try {
+      if (ent.isFree) await consumeFreeReport(ent, 1)
+      else await chargeCredits(ent, cost, { reports: 1, documents: 1 })
+      charged = true
+    } catch (e) {
+      if (sendApiError(res, e)) return
+      throw e
+    }
+
     const language = req.body.language || 'English'
     const data = await generateReport(text, language)
     res.json({ data })
   } catch (err) {
+    if (charged) {
+      if (ent.isFree) await refundFreeReport(ent, 1)
+      else await refundCredits(ent, cost, { reports: 1, documents: 1 })
+    }
     console.error('[PDF ERROR]', err)
     res.status(500).json({ error: err instanceof Error ? err.message : 'PDF parsing failed' })
   }

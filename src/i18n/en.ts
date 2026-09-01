@@ -80,6 +80,7 @@ const en: Record<string, string> = {
   'home.philoQuestion': 'Where is your life going?',
   'home.errorNetwork': 'Network error. Please check your connection and try again.',
   'home.errorGeneral': 'Something went wrong. Please try again.',
+  'home.errorDocLimit': 'Your plan allows up to {max} documents per report. You selected {count}. Remove a few, or upgrade for more.',
 
   // ── Home: Hero title ──
   'home.findOutTitle': 'Analyze Articles, PDFs, Books & Notes in Seconds.',
@@ -161,7 +162,7 @@ const en: Record<string, string> = {
 
   // ── Home: Monthly limit modal ──
   'home.limitModalTitle': 'Monthly Limit Reached',
-  'home.limitModalSub': 'You have used all {limit} analyses on your {plan} plan this month.',
+  'home.limitModalSub': 'You have used your full allowance on the {plan} plan this month.',
   'home.limitModalSub2': 'Upgrade your plan to continue analyzing content without limits.',
   'home.limitModalSignup': 'Sign up free — get 3 free analyses',
   'home.limitModalUpgrade': 'Upgrade Plan →',
@@ -171,6 +172,9 @@ const en: Record<string, string> = {
   'result.title': 'TIME INTELLIGENCE REPORT',
   'result.backToHome': 'Back to home',
   'result.downloadReport': 'Download Report',
+  'result.exportReport': 'Print / Save as PDF',
+  'result.exportUpgradePrompt': 'Exporting your report is included on paid plans. Upgrade to save it as a PDF.',
+  'result.viewPlans': 'View Plans',
   'result.share': 'Share',
   'result.copied': 'Copied!',
   'result.verdict': 'VERDICT',
@@ -459,7 +463,7 @@ const en: Record<string, string> = {
   'pricing.freeF6': '3 Decision Assistant questions',
   'pricing.freeMiss1': 'Decision Playbook',
   'pricing.freeMiss2': 'Smart Skeptic Questions',
-  'pricing.freeMiss3': 'PDF Export',
+  'pricing.freeMiss3': 'Print / Save as PDF',
   'pricing.freeNote': 'Earn 1 more free report by referring a friend.',
 
   // STARTER
@@ -475,8 +479,8 @@ const en: Record<string, string> = {
   'pricing.starterF5': 'Decision Playbook',
   'pricing.starterF6': 'Smart Skeptic Questions',
   'pricing.starterF7': 'Decision Assistant',
-  'pricing.starterF8': 'PDF Export',
-  'pricing.starterF9': 'Unused credits expire at month-end',
+  'pricing.starterF8': 'Print / Save as PDF',
+  'pricing.starterF9': 'Credits reset on the 1st of each month',
 
   // PRO
   'pricing.pro': 'PRO',
@@ -489,23 +493,19 @@ const en: Record<string, string> = {
   'pricing.proF3': 'Up to 10 documents per report',
   'pricing.proF4': 'Unlimited Decision Assistant (within credits)',
   'pricing.proF5': 'Decision Defense',
-  'pricing.proF6': 'Priority AI Processing',
-  'pricing.proF7': 'Faster Analysis',
-  'pricing.proF8': 'Complete Report Export',
+  'pricing.proF6': '"If I Were You" personal advisor',
 
   // BUSINESS (formerly CUSTOM)
   'pricing.custom': 'BUSINESS',
   'pricing.customTagline': 'Team decision intelligence at scale',
   'pricing.customPeriod': '',
-  'pricing.customSubtitle': 'Custom credit allocation · Team workspace',
+  'pricing.customSubtitle': 'Custom credit allocation · Set up with our team',
   'pricing.customCta': 'Contact Sales',
-  'pricing.customF1': 'Team Workspace',
-  'pricing.customF2': 'Admin Dashboard',
-  'pricing.customF3': 'Custom AI Framework',
-  'pricing.customF4': 'API Access',
-  'pricing.customF5': 'Custom Credit Allocation',
-  'pricing.customF6': 'Usage Dashboard',
-  'pricing.customF7': 'Priority Support',
+  'pricing.customF1': 'Custom AI Credit allocation',
+  'pricing.customF2': 'Unlimited documents & pages per report',
+  'pricing.customF3': 'Everything in Pro',
+  'pricing.customF4': 'Usage Dashboard',
+  'pricing.customF5': 'Priority Support',
 
   'pricing.faqTitle': 'Pricing FAQs',
   'pricing.faq1Q': 'Is the Free plan really free?',
@@ -513,9 +513,9 @@ const en: Record<string, string> = {
   'pricing.faq2Q': 'What are AI Credits?',
   'pricing.faq2A': 'AI Credits power your analyses. Each report consumes credits based on document size and complexity — larger or multi-document analyses use more. This keeps pricing fair and flexible. A typical analysis uses around 15–25 credits.',
   'pricing.faq3Q': 'What happens to unused credits?',
-  'pricing.faq3A': 'Credits refresh with each billing cycle. Unused credits expire at month-end and do not roll over.',
+  'pricing.faq3A': 'Your full credit allowance is restored on the 1st of every calendar month. Unused credits expire then and do not roll over.',
   'pricing.faq4Q': 'Can I cancel anytime?',
-  'pricing.faq4A': 'Absolutely. Cancel anytime from your account settings with no questions asked. You keep access until the end of your billing period.',
+  'pricing.faq4A': 'Absolutely. Go to your profile and choose "Manage or Cancel Subscription" — no questions asked. You keep full access until the end of the billing period you have already paid for.',
   'pricing.faq5Q': 'What payment methods do you accept?',
   'pricing.faq5A': 'Visa, Mastercard, Amex, and more via Stripe. All payments are secure.',
   'pricing.faq6Q': 'How do AI Credits work?',
@@ -664,6 +664,8 @@ const en: Record<string, string> = {
   'decision.subheadline': 'Upload contracts, supplier quotations, CVs, proposals, and reports. TimeCut identifies hidden risks, missing information, weak evidence, and important questions before you make a decision.',
   'decision.step1Title': 'Upload Documents',
   'decision.step1Sub': 'Upload 1–{max} documents (PDF or TXT). Your plan allows up to {pageLimit} pages per analysis.',
+  'decision.docLimitNotice': 'Your plan allows up to {max} documents per report, so we only kept the first ones.',
+  'decision.docLimitUpgrade': 'Compare plans →',
   'decision.step2Title': 'What decision are you trying to make?',
   'decision.step2Sub': 'Be specific — the AI uses this context to identify risks and rank documents relevant to your goal.',
   'decision.goalExamples': 'e.g. Select the best supplier, Compare job candidates, Evaluate a business proposal, Identify contract risks...',

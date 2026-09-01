@@ -80,6 +80,7 @@ const zhTW: Record<string, string> = {
   'home.philoQuestion': '您的生命在流向何處？',
   'home.errorNetwork': '網路錯誤。請檢查您的連線後重試。',
   'home.errorGeneral': '出了點問題，請重試。',
+  'home.errorDocLimit': '您的方案每份報告最多允許 {max} 個文件，您選擇了 {count} 個。請減少文件數量，或升級方案。',
 
   // ── Home: Hero title ──
   'home.findOutTitle': '秒速分析文章、PDF、書籍和筆記。',
@@ -161,7 +162,7 @@ const zhTW: Record<string, string> = {
 
   // ── Home: Monthly limit modal ──
   'home.limitModalTitle': '已達每月上限',
-  'home.limitModalSub': '您本月已用完 {plan} 方案的全部 {limit} 次分析。',
+  'home.limitModalSub': '您本月已用完 {plan} 方案的全部額度。',
   'home.limitModalSub2': '升級您的方案，即可不受限制地繼續分析內容。',
   'home.limitModalSignup': '免費註冊 — 獲得 3 次免費分析',
   'home.limitModalUpgrade': '升級方案 →',
@@ -171,6 +172,9 @@ const zhTW: Record<string, string> = {
   'result.title': '時間智能報告',
   'result.backToHome': '返回首頁',
   'result.downloadReport': '下載報告',
+  'result.exportReport': '列印／另存為PDF',
+  'result.exportUpgradePrompt': '匯出報告為付費方案功能。升級後即可儲存為PDF。',
+  'result.viewPlans': '查看方案',
   'result.share': '分享',
   'result.copied': '已複製！',
   'result.verdict': '判決',
@@ -400,7 +404,7 @@ const zhTW: Record<string, string> = {
   'pricing.freeF6': '3個決策助手追問',
   'pricing.freeMiss1': '決策手冊',
   'pricing.freeMiss2': '智慧質疑問題',
-  'pricing.freeMiss3': 'PDF匯出',
+  'pricing.freeMiss3': '列印／另存為PDF',
   'pricing.freeNote': '成功推薦好友可再獲得1份免費報告。',
 
   // 入門版
@@ -416,8 +420,8 @@ const zhTW: Record<string, string> = {
   'pricing.starterF5': '決策手冊',
   'pricing.starterF6': '智慧質疑問題',
   'pricing.starterF7': '決策助手',
-  'pricing.starterF8': 'PDF匯出',
-  'pricing.starterF9': '未使用的點數於月底失效',
+  'pricing.starterF8': '列印／另存為PDF',
+  'pricing.starterF9': '點數於每月1日重置',
 
   // 專業版
   'pricing.pro': '專業版',
@@ -430,23 +434,19 @@ const zhTW: Record<string, string> = {
   'pricing.proF3': '每份報告最多10個文件',
   'pricing.proF4': '無限決策助手（在點數額度內）',
   'pricing.proF5': '決策辯護',
-  'pricing.proF6': '優先AI處理',
-  'pricing.proF7': '更快的分析速度',
-  'pricing.proF8': '完整報告匯出',
+  'pricing.proF6': '「如果我是你」專屬顧問建議',
 
   // 商業版
   'pricing.custom': '商業版',
   'pricing.customTagline': '規模化的團隊決策智能',
   'pricing.customPeriod': '',
-  'pricing.customSubtitle': '客製點數分配 · 團隊工作區',
+  'pricing.customSubtitle': '客製點數分配 · 由我們團隊為您開通',
   'pricing.customCta': '聯絡銷售',
-  'pricing.customF1': '團隊工作區',
-  'pricing.customF2': '管理後台',
-  'pricing.customF3': '自訂AI框架',
-  'pricing.customF4': 'API存取',
-  'pricing.customF5': '客製點數分配',
-  'pricing.customF6': '用量儀表板',
-  'pricing.customF7': '優先支援',
+  'pricing.customF1': '客製AI點數分配',
+  'pricing.customF2': '每份報告不限文件數與頁數',
+  'pricing.customF3': '包含專業版所有功能',
+  'pricing.customF4': '用量儀表板',
+  'pricing.customF5': '優先支援',
 
   'pricing.faqTitle': '定價常見問題',
   'pricing.faq1Q': '免費方案真的免費嗎？',
@@ -454,9 +454,9 @@ const zhTW: Record<string, string> = {
   'pricing.faq2Q': '什麼是AI點數？',
   'pricing.faq2A': 'AI點數為您的分析提供動力。每份報告依文件大小和複雜度消耗點數——更大或多文件的分析會消耗更多。這讓定價更公平、更靈活。一次典型分析約消耗15–25點數。',
   'pricing.faq3Q': '未使用的點數會怎樣？',
-  'pricing.faq3A': '點數在每個計費週期刷新。未使用的點數於月底失效，不會結轉。',
+  'pricing.faq3A': '您的全部點數額度會在每個自然月的1日恢復。未使用的點數屆時失效，不會結轉。',
   'pricing.faq4Q': '我可以隨時取消嗎？',
-  'pricing.faq4A': '當然可以。隨時從您的帳戶設定中取消，無需解釋原因。您可繼續使用至當前計費週期結束。',
+  'pricing.faq4A': '當然可以。前往個人中心，選擇「管理或取消訂閱」，無需解釋原因。您已付費的計費週期結束前，仍可完整使用。',
   'pricing.faq5Q': '接受哪些付款方式？',
   'pricing.faq5A': '透過Stripe接受Visa、Mastercard、美國運通等。所有付款均安全處理。',
   'pricing.faq6Q': 'AI點數是如何計算的？',
@@ -596,6 +596,8 @@ const zhTW: Record<string, string> = {
   'decision.subheadline': '上傳合約、供應商報價、履歷、提案和報告。TimeCut在您做出決策前識別隱藏風險、缺失資訊、薄弱證據和重要問題。',
   'decision.step1Title': '上傳文件',
   'decision.step1Sub': '上傳1至{max}份文件（PDF或TXT）。您的方案每次分析最多允許{pageLimit}頁。',
+  'decision.docLimitNotice': '您的方案每份報告最多允許 {max} 個文件，因此我們只保留了前幾個。',
+  'decision.docLimitUpgrade': '比較方案 →',
   'decision.step2Title': '您想做什麼決策？',
   'decision.step2Sub': '請具體說明 — AI將利用此背景識別風險並對與您目標相關的文件進行排名。',
   'decision.goalExamples': '例如：選擇最佳供應商、比較應徵者、評估商業提案、識別合約風險...',

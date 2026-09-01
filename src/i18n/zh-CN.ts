@@ -80,6 +80,7 @@ const zhCN: Record<string, string> = {
   'home.philoQuestion': '您的生命在流向何处？',
   'home.errorNetwork': '网络错误。请检查您的连接后重试。',
   'home.errorGeneral': '出了点问题，请重试。',
+  'home.errorDocLimit': '您的方案每份报告最多允许 {max} 个文档，您选择了 {count} 个。请减少文档数量，或升级方案。',
 
   // ── Home: Hero title ──
   'home.findOutTitle': '秒速分析文章、PDF、书籍和笔记。',
@@ -161,7 +162,7 @@ const zhCN: Record<string, string> = {
 
   // ── Home: Monthly limit modal ──
   'home.limitModalTitle': '已达每月上限',
-  'home.limitModalSub': '您本月已用完 {plan} 方案的全部 {limit} 次分析。',
+  'home.limitModalSub': '您本月已用完 {plan} 方案的全部额度。',
   'home.limitModalSub2': '升级您的方案，即可不受限制地继续分析内容。',
   'home.limitModalSignup': '免费注册 — 获得 3 次免费分析',
   'home.limitModalUpgrade': '升级方案 →',
@@ -171,6 +172,9 @@ const zhCN: Record<string, string> = {
   'result.title': '时间智能报告',
   'result.backToHome': '返回首页',
   'result.downloadReport': '下载报告',
+  'result.exportReport': '打印／另存为PDF',
+  'result.exportUpgradePrompt': '导出报告为付费方案功能。升级后即可保存为PDF。',
+  'result.viewPlans': '查看方案',
   'result.share': '分享',
   'result.copied': '已复制！',
   'result.verdict': '判决',
@@ -400,7 +404,7 @@ const zhCN: Record<string, string> = {
   'pricing.freeF6': '3个决策助手追问',
   'pricing.freeMiss1': '决策手册',
   'pricing.freeMiss2': '智能质疑问题',
-  'pricing.freeMiss3': 'PDF导出',
+  'pricing.freeMiss3': '打印／另存为PDF',
   'pricing.freeNote': '成功推荐好友可再获得1份免费报告。',
 
   // 入门版
@@ -416,8 +420,8 @@ const zhCN: Record<string, string> = {
   'pricing.starterF5': '决策手册',
   'pricing.starterF6': '智能质疑问题',
   'pricing.starterF7': '决策助手',
-  'pricing.starterF8': 'PDF导出',
-  'pricing.starterF9': '未使用的积分于月底失效',
+  'pricing.starterF8': '打印／另存为PDF',
+  'pricing.starterF9': '积分于每月1日重置',
 
   // 专业版
   'pricing.pro': '专业版',
@@ -430,23 +434,19 @@ const zhCN: Record<string, string> = {
   'pricing.proF3': '每份报告最多10个文档',
   'pricing.proF4': '无限决策助手（在积分额度内）',
   'pricing.proF5': '决策辩护',
-  'pricing.proF6': '优先AI处理',
-  'pricing.proF7': '更快的分析速度',
-  'pricing.proF8': '完整报告导出',
+  'pricing.proF6': '「如果我是你」专属顾问建议',
 
   // 商业版
   'pricing.custom': '商业版',
   'pricing.customTagline': '规模化的团队决策智能',
   'pricing.customPeriod': '',
-  'pricing.customSubtitle': '定制积分分配 · 团队工作区',
+  'pricing.customSubtitle': '定制积分分配 · 由我们团队为您开通',
   'pricing.customCta': '联系销售',
-  'pricing.customF1': '团队工作区',
-  'pricing.customF2': '管理后台',
-  'pricing.customF3': '自定义AI框架',
-  'pricing.customF4': 'API访问',
-  'pricing.customF5': '定制积分分配',
-  'pricing.customF6': '用量仪表盘',
-  'pricing.customF7': '优先支持',
+  'pricing.customF1': '定制AI积分分配',
+  'pricing.customF2': '每份报告不限文档数与页数',
+  'pricing.customF3': '包含专业版所有功能',
+  'pricing.customF4': '用量仪表盘',
+  'pricing.customF5': '优先支持',
 
   'pricing.faqTitle': '定价常见问题',
   'pricing.faq1Q': '免费计划真的免费吗？',
@@ -454,9 +454,9 @@ const zhCN: Record<string, string> = {
   'pricing.faq2Q': '什么是AI积分？',
   'pricing.faq2A': 'AI积分为您的分析提供动力。每份报告根据文档大小和复杂度消耗积分——更大或多文档的分析会消耗更多。这让定价更公平、更灵活。一次典型分析约消耗15–25积分。',
   'pricing.faq3Q': '未使用的积分会怎样？',
-  'pricing.faq3A': '积分在每个计费周期刷新。未使用的积分于月底失效，不会结转。',
+  'pricing.faq3A': '您的全部积分额度会在每个自然月的1日恢复。未使用的积分届时失效，不会结转。',
   'pricing.faq4Q': '我可以随时取消吗？',
-  'pricing.faq4A': '当然可以。随时从您的账户设置中取消，无需解释原因。您可继续使用至当前计费周期结束。',
+  'pricing.faq4A': '当然可以。前往个人中心，选择「管理或取消订阅」，无需解释原因。您已付费的计费周期结束前，仍可完整使用。',
   'pricing.faq5Q': '接受哪些支付方式？',
   'pricing.faq5A': '通过Stripe接受Visa、Mastercard、美国运通等。所有支付均安全处理。',
   'pricing.faq6Q': 'AI积分是如何计算的？',
@@ -596,6 +596,8 @@ const zhCN: Record<string, string> = {
   'decision.subheadline': '上传合同、供应商报价、简历、提案和报告。TimeCut在您做出决策前识别隐藏风险、缺失信息、薄弱证据和重要问题。',
   'decision.step1Title': '上传文件',
   'decision.step1Sub': '上传1至{max}份文件（PDF或TXT）。您的套餐每次分析最多允许{pageLimit}页。',
+  'decision.docLimitNotice': '您的方案每份报告最多允许 {max} 个文档，因此我们只保留了前几个。',
+  'decision.docLimitUpgrade': '比较方案 →',
   'decision.step2Title': '您想做什么决策？',
   'decision.step2Sub': '请具体说明 — AI将利用此背景识别风险并对与您目标相关的文件进行排名。',
   'decision.goalExamples': '例如：选择最佳供应商、比较应聘者、评估商业提案、识别合同风险...',

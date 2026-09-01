@@ -10,9 +10,57 @@ service cloud.firestore {
         && request.auth.token.email in get(/databases/$(database)/documents/config/admins).data.emails;
     }
 
-    // Users can only read and write their own document
+    // ── Billing-critical fields ───────────────────────────────────────────────
+    // These decide what a customer has paid for and what they have consumed.
+    // They are written ONLY by the server (Admin SDK bypasses these rules) from
+    // verified Stripe events and metered API routes. A client that could write
+    // them could grant itself any plan and reset its own usage, which would
+    // make every limit and feature gate unenforceable.
+    function protectedUserFields() {
+      return [
+        'plan',
+        'planStartDate',
+        'planExpiresAt',
+        'subscriptionStatus',
+        'stripeCustomerId',
+        'stripeSubscriptionId',
+        'creditsOverride',
+        'freeReportsUsed',
+        'freeReportsEarned'
+      ];
+    }
+
+    // True when the incoming write leaves every protected field exactly as it is.
+    function protectedFieldsUnchanged() {
+      return !request.resource.data.diff(resource.data)
+        .affectedKeys()
+        .hasAny(protectedUserFields().toSet());
+    }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      function isOwner() {
+        return request.auth != null && request.auth.uid == userId;
+      }
+
+      allow read: if isOwner() || isAdmin();
+
+      // A brand-new account may only be created on the free plan, and may not
+      // arrive pre-loaded with billing state.
+      allow create: if isOwner()
+        && (!('plan' in request.resource.data) || request.resource.data.plan == 'free')
+        && !request.resource.data.keys().hasAny(
+             ['planStartDate', 'planExpiresAt', 'subscriptionStatus',
+              'stripeCustomerId', 'stripeSubscriptionId', 'creditsOverride',
+              'freeReportsUsed', 'freeReportsEarned'].toSet()
+           );
+
+      // Owners may edit profile fields (name, email, lastLoginAt, referralCode,
+      // lifetime stats) but never their plan or usage counters.
+      // Admins may edit anything, which is how a Business account's
+      // `creditsOverride` custom allocation is provisioned.
+      allow update: if (isOwner() && protectedFieldsUnchanged()) || isAdmin();
+
+      allow delete: if false;
 
       // Users can only read and write their own activity log
       match /activities/{activityId} {
@@ -24,14 +72,18 @@ service cloud.firestore {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
 
-      // Users can read and write their own monthly usage counters
+      // Legacy monthly counter. Read-only to the client; nothing writes it now.
       match /usage/{monthKey} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if request.auth != null && request.auth.uid == userId;
+        allow write: if false;
       }
 
-      // Users can read and write their own monthly AI Credits ledger
+      // AI Credits ledger — READ ONLY to the client. The UI subscribes to this
+      // to show live balances; every debit and refund is written server-side by
+      // api/_lib/entitlements.ts after the plan has been verified.
       match /credits/{monthKey} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+        allow read: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+        allow write: if false;
       }
     }
 
@@ -51,7 +103,7 @@ service cloud.firestore {
         );
     }
 
-    // Other config (plan limits, credit costs):
+    // Other config (plan limits, credit costs, feature flags):
     // readable by everyone (needed for pricing/limits), writable only by admins.
     match /config/{docId} {
       allow read: if true;

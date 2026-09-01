@@ -12,7 +12,10 @@ export default function PricingPage() {
   const { user, userData, plan: currentPlan } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const [searchParams] = useSearchParams()
-  const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | 'business' | null>(null)
+  // Only self-serve plans can open checkout. Business is Contact Sales — the
+  // API refuses to create a subscription for it, and the card links to the
+  // contact form rather than a card form.
+  const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | null>(null)
   const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
   const [cfg, setCfg] = useState<PlanConfig>(getCachedPlanConfig())
   const [reportsPerMonth, setReportsPerMonth] = useState<number | null>(null)
@@ -29,9 +32,14 @@ export default function PricingPage() {
     if (searchParams.get('canceled') === 'true') setBanner('canceled')
   }, [searchParams])
 
-  function handlePaidPlan(plan: 'starter' | 'pro' | 'business') {
+  function handlePaidPlan(plan: 'starter' | 'pro') {
     if (!user) { openAuthModal(); return }
     setPaymentPlan(plan)
+  }
+
+  /** Business is provisioned by sales, so its CTA goes to the contact form. */
+  function handleContactSales() {
+    navigate('/contact?plan=business')
   }
 
   function planBadge(name: string) {
@@ -71,7 +79,6 @@ export default function PricingPage() {
       {paymentPlan && user && (
         <PaymentModal
           plan={paymentPlan}
-          uid={user.uid}
           email={user.email ?? undefined}
           name={userData?.name ?? user.displayName ?? undefined}
           onClose={() => setPaymentPlan(null)}
@@ -176,7 +183,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.proSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['proF1','proF2','proF3','proF4','proF5','proF6','proF7','proF8'] as const).map(k => (
+                {(['proF1','proF2','proF3','proF4','proF5','proF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', proCredits)}
                   </li>
@@ -185,35 +192,27 @@ export default function PricingPage() {
               <p className="pricing-disclaimer">{t('pricing.creditDisclaimer')}</p>
             </div>
 
-            {/* BUSINESS */}
-            <div className="pricing-card" onClick={() => handlePaidPlan('business')}>
+            {/* BUSINESS — Contact Sales only, never self-serve checkout */}
+            <div className="pricing-card" onClick={handleContactSales}>
               {planBadge('business')}
               <p className="pricing-plan-name">{t('pricing.custom')}</p>
               <p className="pricing-plan-tagline">{t('pricing.customTagline')}</p>
-              {/* Business follows the same config as every other plan: show the
-                  configured price when one is set, otherwise "Contact Sales".
-                  Clear the Business price in the Admin Dashboard to go back to
-                  a contact-sales-only card. */}
+              {/* Business is quoted per account, so this card never shows a
+                  price and never opens a payment form. Pricing is agreed with
+                  sales and the account is provisioned by an admin. */}
               <div className="pricing-price-row">
-                {cfg.plans.business.priceCents == null ? (
-                  <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
-                ) : (
-                  <>
-                    <span className="pricing-price">{formatPrice(cfg.plans.business.priceCents)}</span>
-                    <span className="pricing-period">{t('pricing.proPeriod')}</span>
-                  </>
-                )}
+                <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
               </div>
               <button
                 className="pricing-cta btn-outline"
-                onClick={e => { e.stopPropagation(); handlePaidPlan('business') }}
+                onClick={e => { e.stopPropagation(); handleContactSales() }}
               >
                 {t('pricing.customCta')}
               </button>
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['customF1','customF2','customF3','customF4','customF5','customF6','customF7'] as const).map(k => (
+                {(['customF1','customF2','customF3','customF4','customF5'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
                   </li>

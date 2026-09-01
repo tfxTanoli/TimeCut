@@ -8,6 +8,22 @@ import type { PlanType } from './userService'
 // the app working before the doc exists and serve as the seed for the admin
 // editor. NEVER hardcode limits elsewhere — read them from here.
 
+/**
+ * Report sections sold as plan differentiators. Mirrors api/_lib/planConfig.ts.
+ * The server strips withheld sections from the response; these flags tell the
+ * UI where to show an upgrade prompt instead.
+ */
+export interface PlanFeatures {
+  /** Stage 5 "Decision Playbook" section. */
+  playbook: boolean
+  /** "Smart Skeptic" / verification questions section. */
+  skepticQuestions: boolean
+  /** Report export (print / save as PDF). */
+  export: boolean
+  /** "If I Were You" personal advisor section. */
+  advisor: boolean
+}
+
 export interface PlanLimits {
   /** Monthly price in cents. null = custom / contact sales. */
   priceCents: number | null
@@ -21,6 +37,8 @@ export interface PlanLimits {
   freeReports?: number
   /** Decision Assistant follow-up questions allowed (per report / month). */
   assistantQuestions: number
+  /** Which premium report sections this plan unlocks. */
+  features?: Partial<PlanFeatures>
 }
 
 export interface CreditCosts {
@@ -44,13 +62,21 @@ export interface PlanConfig {
 
 const UNLIMITED = 9999
 
+const NO_EXTRAS: PlanFeatures   = { playbook: false, skepticQuestions: false, export: false, advisor: false }
+const PAID_EXTRAS: PlanFeatures = { playbook: true,  skepticQuestions: true,  export: true,  advisor: false }
+const ALL_EXTRAS: PlanFeatures  = { playbook: true,  skepticQuestions: true,  export: true,  advisor: true }
+
 export const DEFAULT_PLAN_CONFIG: PlanConfig = {
   plans: {
-    free:     { priceCents: 0,     credits: 0,    maxDocs: 3,        maxPages: 20,       freeReports: 1, assistantQuestions: 3 },
-    starter:  { priceCents: 900,   credits: 500,  maxDocs: 5,        maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    pro:      { priceCents: 2900,  credits: 3000, maxDocs: 10,       maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    business: { priceCents: null,  credits: null, maxDocs: UNLIMITED, maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    custom:   { priceCents: null,  credits: null, maxDocs: UNLIMITED, maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
+    free:     { priceCents: 0,     credits: 0,     maxDocs: 3,         maxPages: 20,        freeReports: 1, assistantQuestions: 3,         features: NO_EXTRAS },
+    starter:  { priceCents: 900,   credits: 500,   maxDocs: 5,         maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: PAID_EXTRAS },
+    pro:      { priceCents: 2900,  credits: 3000,  maxDocs: 10,        maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
+    // Business/Custom are sold through Contact Sales, never self-serve. They
+    // carry a real credit allowance (null used to resolve to zero, which locked
+    // the highest-paying accounts out of the product); per-account allocations
+    // are set by an admin via `creditsOverride` on the user document.
+    business: { priceCents: null,  credits: 20000, maxDocs: UNLIMITED, maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
+    custom:   { priceCents: null,  credits: 20000, maxDocs: UNLIMITED, maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
   },
   creditCosts: {
     reportBase: 10,
@@ -73,7 +99,15 @@ function mergeConfig(raw: Partial<PlanConfig> | undefined | null): PlanConfig {
   const plans = { ...DEFAULT_PLAN_CONFIG.plans }
   if (raw.plans) {
     for (const key of Object.keys(plans) as PlanType[]) {
-      if (raw.plans[key]) plans[key] = { ...plans[key], ...raw.plans[key] }
+      const override = raw.plans[key]
+      if (!override) continue
+      // `features` merges one level deeper so a partial override in Firestore
+      // can flip a single flag without dropping the others.
+      plans[key] = {
+        ...plans[key],
+        ...override,
+        features: { ...plans[key].features, ...(override.features ?? {}) },
+      }
     }
   }
   return {
@@ -155,4 +189,25 @@ export function formatPrice(cents: number | null): string {
   if (cents === 0) return '$0'
   const dollars = cents / 100
   return Number.isInteger(dollars) ? `$${dollars}` : `$${dollars.toFixed(2)}`
+}
+
+/**
+ * Resolve which premium sections a plan unlocks. Falls back to sensible
+ * defaults so a config written before feature flags existed still behaves.
+ * The server enforces the same flags — this is for rendering only.
+ */
+export function planFeatures(cfg: PlanConfig, plan: PlanType): PlanFeatures {
+  const f = cfg.plans[plan]?.features ?? {}
+  const isFree = plan === 'free'
+  return {
+    playbook: f.playbook ?? !isFree,
+    skepticQuestions: f.skepticQuestions ?? !isFree,
+    export: f.export ?? !isFree,
+    advisor: f.advisor ?? ['pro', 'business', 'custom'].includes(plan),
+  }
+}
+
+/** True when a plan limit means "no practical ceiling". */
+export function isUnlimited(n: number | null | undefined): boolean {
+  return n == null || n >= UNLIMITED
 }

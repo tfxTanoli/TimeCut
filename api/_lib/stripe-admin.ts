@@ -10,6 +10,8 @@ export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
 // comes from the config/plans Firestore doc via getStripeAmount() in
 // ./planConfig so prices can be changed from the Admin Dashboard (one place)
 // without a redeploy and without the site and Stripe drifting apart.
+// Self-serve plans only. Business is sold through Contact Sales and is
+// provisioned manually, so it must NOT be purchasable through this API.
 export const STRIPE_PLANS: Record<string, { name: string; description: string }> = {
   starter: {
     name: 'TimeCut Starter',
@@ -18,10 +20,6 @@ export const STRIPE_PLANS: Record<string, { name: string; description: string }>
   pro: {
     name: 'TimeCut Pro',
     description: 'Advanced decision intelligence — 3,000 AI Credits/month · up to 10 documents per report',
-  },
-  business: {
-    name: 'TimeCut Business',
-    description: 'Team decision intelligence — custom AI Credit allocation & workspace',
   },
 }
 
@@ -75,7 +73,34 @@ export async function getOrCreateProductId(plan: string): Promise<string> {
   const product = await stripe.products.create({
     name: planConfig.name,
     description: planConfig.description,
+    // Stamped so the plan can be recovered from Stripe alone (webhooks,
+    // activation) without depending on the product name staying unchanged.
+    metadata: { plan },
   })
   productIdCache[plan] = product.id
   return productIdCache[plan]
+}
+
+/**
+ * Determine which TimeCut plan a Stripe subscription is for, using Stripe as
+ * the source of truth. Never trust a plan name sent by the browser — the price
+ * the customer actually paid is what decides their plan.
+ */
+export async function planFromSubscription(
+  subscription: Stripe.Subscription,
+): Promise<string | null> {
+  const productRef = subscription.items.data[0]?.price?.product
+  if (!productRef) return null
+
+  const product = typeof productRef === 'string'
+    ? await stripe.products.retrieve(productRef)
+    : (productRef as Stripe.Product)
+
+  if ('deleted' in product && product.deleted) return null
+
+  const byMetadata = (product as Stripe.Product).metadata?.plan
+  if (byMetadata && STRIPE_PLANS[byMetadata]) return byMetadata
+
+  const byName = STRIPE_PLAN_MAP[(product as Stripe.Product).name?.toLowerCase().replace(/\s+/g, '') ?? '']
+  return byName ?? null
 }

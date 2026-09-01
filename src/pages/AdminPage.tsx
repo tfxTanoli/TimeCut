@@ -6,9 +6,11 @@ import { isAdminEmail, ensureAdminDoc } from '../lib/admin'
 import {
   getPlanConfig,
   savePlanConfig,
+  planFeatures,
   DEFAULT_PLAN_CONFIG,
   type PlanConfig,
   type PlanLimits,
+  type PlanFeatures,
 } from '../lib/planConfig'
 import type { PlanType } from '../lib/userService'
 import Footer from '../components/Footer'
@@ -26,7 +28,12 @@ interface FeedbackRow {
 }
 
 const PLAN_ORDER: PlanType[] = ['free', 'starter', 'pro', 'business']
-const PLAN_FIELDS: { key: keyof PlanLimits; label: string }[] = [
+
+// Only the numeric limits are edited with number inputs. `features` is a set of
+// booleans and gets its own checkbox grid below.
+type NumericPlanField = Exclude<keyof PlanLimits, 'features'>
+
+const PLAN_FIELDS: { key: NumericPlanField; label: string }[] = [
   { key: 'priceCents', label: 'Price (cents)' },
   { key: 'credits', label: 'Credits/mo' },
   { key: 'maxDocs', label: 'Max docs' },
@@ -34,6 +41,15 @@ const PLAN_FIELDS: { key: keyof PlanLimits; label: string }[] = [
   { key: 'freeReports', label: 'Free reports' },
   { key: 'assistantQuestions', label: 'Assistant Qs' },
 ]
+// Report sections sold as plan differentiators. Editing these changes what the
+// server includes in the response, not just what the UI hides.
+const FEATURE_FIELDS: { key: keyof PlanFeatures; label: string }[] = [
+  { key: 'playbook', label: 'Decision Playbook' },
+  { key: 'skepticQuestions', label: 'Smart Skeptic Questions' },
+  { key: 'export', label: 'Print / Save as PDF' },
+  { key: 'advisor', label: '"If I Were You" advisor' },
+]
+
 const COST_FIELDS: { key: keyof PlanConfig['creditCosts']; label: string }[] = [
   { key: 'reportBase', label: 'Report base' },
   { key: 'perPage', label: 'Per page' },
@@ -90,11 +106,24 @@ export default function AdminPage() {
     }
   }, [feedback])
 
-  function setPlanField(plan: PlanType, key: keyof PlanLimits, raw: string) {
+  function setPlanField(plan: PlanType, key: NumericPlanField, raw: string) {
     const value = raw === '' ? null : Number(raw)
     setCfg(prev => ({
       ...prev,
       plans: { ...prev.plans, [plan]: { ...prev.plans[plan], [key]: value } },
+    }))
+  }
+
+  function setFeatureFlag(plan: PlanType, key: keyof PlanFeatures, value: boolean) {
+    setCfg(prev => ({
+      ...prev,
+      plans: {
+        ...prev.plans,
+        [plan]: {
+          ...prev.plans[plan],
+          features: { ...prev.plans[plan].features, [key]: value },
+        },
+      },
     }))
   }
 
@@ -166,6 +195,39 @@ export default function AdminPage() {
                             className="admin-input"
                             value={cfg.plans[p][key] ?? ''}
                             onChange={e => setPlanField(p, key, e.target.value)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h2 className="admin-subtitle">Plan Features</h2>
+            <p className="admin-hint">
+              Controls which report sections each plan receives. The server omits the underlying
+              data for anything switched off, so these must match the pricing page.
+            </p>
+            <div className="admin-plan-grid">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Feature</th>
+                    {PLAN_ORDER.map(p => <th key={p}>{p.toUpperCase()}</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {FEATURE_FIELDS.map(({ key, label }) => (
+                    <tr key={key}>
+                      <td>{label}</td>
+                      {PLAN_ORDER.map(p => (
+                        <td key={p}>
+                          <input
+                            type="checkbox"
+                            checked={planFeatures(cfg, p)[key]}
+                            onChange={e => setFeatureFlag(p, key, e.target.checked)}
+                            aria-label={`${label} on ${p}`}
                           />
                         </td>
                       ))}

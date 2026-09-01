@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 import { computeReportCost } from '../lib/planConfig'
+import { createBillingPortalSession } from '../api'
 
 const TYPICAL_REPORT = { pages: 20, docs: 1 } // 20-page single doc, matches marketing copy
 
@@ -33,6 +34,32 @@ export default function ProfilePage() {
   const [pwSaving, setPwSaving]   = useState(false)
   const [pwStatus, setPwStatus]   = useState<'idle' | 'success' | 'error'>('idle')
   const [pwError, setPwError]     = useState('')
+
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError]     = useState('')
+
+  /**
+   * Open the Stripe Billing Portal, where the customer can cancel, swap their
+   * card or download invoices. Cancelling there keeps access until the end of
+   * the paid period — Stripe's `customer.subscription.deleted` webhook is what
+   * moves the account back to Free when that period ends.
+   */
+  async function handleManageSubscription() {
+    setPortalError('')
+    setPortalLoading(true)
+    try {
+      const res = await createBillingPortalSession()
+      if (res.url) {
+        window.location.href = res.url
+        return
+      }
+      setPortalError(res.error ?? 'Could not open subscription management. Please try again.')
+    } catch {
+      setPortalError('Network error. Please try again.')
+    } finally {
+      setPortalLoading(false)
+    }
+  }
 
   useEffect(() => {
     // Wait for auth to finish restoring before redirecting, otherwise a page
@@ -200,6 +227,18 @@ export default function ProfilePage() {
                     {plan.toUpperCase()}
                   </span>
                 </div>
+                {plan !== 'free' && userData?.subscriptionStatus
+                  && userData.subscriptionStatus !== 'active'
+                  && userData.subscriptionStatus !== 'trialing' && (
+                  <div className="profile-subscription-row">
+                    <span className="profile-subscription-label">Status</span>
+                    <span className="profile-subscription-status">
+                      {userData.subscriptionStatus === 'past_due'
+                        ? 'Payment failed — please update your card'
+                        : userData.subscriptionStatus}
+                    </span>
+                  </div>
+                )}
                 {plan !== 'free' && planExpiresAt ? (
                   <div className="profile-subscription-row">
                     <span className="profile-subscription-label">Active Until</span>
@@ -216,9 +255,24 @@ export default function ProfilePage() {
                   </div>
                 )}
                 {plan !== 'free' && (
-                  <Link to="/pricing" className="btn-outline profile-btn" style={{ marginTop: 16 }}>
-                    Change Plan
-                  </Link>
+                  <div className="profile-subscription-manage">
+                    <Link to="/pricing" className="btn-outline profile-btn">
+                      Change Plan
+                    </Link>
+                    <button
+                      type="button"
+                      className="btn-outline profile-btn"
+                      onClick={handleManageSubscription}
+                      disabled={portalLoading}
+                    >
+                      {portalLoading ? 'Opening…' : 'Manage or Cancel Subscription'}
+                    </button>
+                    <p className="profile-subscription-hint">
+                      Cancel anytime. You keep full access until the end of your current billing
+                      period.
+                    </p>
+                    {portalError && <p className="profile-subscription-error">{portalError}</p>}
+                  </div>
                 )}
               </div>
             </div>

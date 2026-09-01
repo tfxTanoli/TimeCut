@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
+import { verifyAuth, ApiError } from './_lib/auth.js'
+import { resolveEntitlement, chargeAssistantQuestion, refundCredits } from './_lib/entitlements.js'
 
 const CHALLENGE_SYSTEM = `You are an AI Decision Reviewer assistant for TimeCut.
 A user has received an AI-generated decision analysis report and wants to challenge or question a specific aspect of it.
@@ -27,6 +29,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'question and reportContext are required' })
   }
 
+  // Signed-in callers only — the Decision Assistant quota is per account, and
+  // an unauthenticated endpoint could be called indefinitely at our cost.
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    return res.status(401).json({
+      code: 'UNAUTHENTICATED',
+      error: 'Please sign in to use the Decision Assistant.',
+    })
+  }
+
+  const ent = await resolveEntitlement(authed.uid)
+
+  // Charge (or count against the free quota) before answering. Free plans have
+  // a fixed monthly question allowance; paid plans pay from AI Credits.
+  try {
+    await chargeAssistantQuestion(ent)
+  } catch (e) {
+    if (e instanceof ApiError) return res.status(e.status).json({ code: e.code, error: e.message })
+    throw e
+  }
+
   try {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
@@ -45,6 +68,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
     return res.json({ answer })
   } catch (e) {
+    // The answer never arrived — don't keep the credit we took for it.
+    await refundCredits(ent, ent.isFree ? 0 : ent.cfg.creditCosts.assistantQuestion, { assistant: 1 })
     console.error('[CHALLENGE-AI ERROR]', e)
     const message = e instanceof Error ? e.message : 'Challenge AI failed'
     return res.status(500).json({ error: message })

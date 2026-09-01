@@ -1,11 +1,23 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getAdminDb } from './_lib/stripe-admin.js'
+import { verifyAuth } from './_lib/auth.js'
+
+// Downgrades the *caller's own* account when their plan has lapsed. The uid
+// comes from the verified ID token, so this can no longer be used to force a
+// downgrade on someone else's account.
+//
+// This is a convenience path only — api/_lib/entitlements.ts also re-checks
+// expiry on every metered request, so a lapsed plan cannot be used even if
+// this endpoint is never called.
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { uid } = req.body ?? {}
-  if (!uid) return res.status(400).json({ error: 'Missing uid' })
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    return res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Not signed in' })
+  }
+  const uid = authed.uid
 
   const adminDb = getAdminDb()
   if (!adminDb) return res.status(500).json({ error: 'Database unavailable' })

@@ -1897,10 +1897,40 @@
   background: var(--bg);
 }
 
-/* ── Print ── */
+/* ── Print / Save as PDF ──
+   Drives the report export. The decision report renders inside `.dr-page` /
+   `.dr-content`, which the old rules did not cover — so chrome, banners and
+   CTAs printed along with the report. Both report layouts are handled here. */
 @media print {
-  .navbar, .result-nav, .back-btn, .result-nav-actions, .bottom-banner { display: none; }
+  .navbar,
+  .result-nav,
+  .back-btn,
+  .result-nav-actions,
+  .bottom-banner,
+  .footer,
+  .auth-prompt-banner,
+  .dr-challenge-panel,
+  .dr-locked-section,
+  .report-feedback,
+  .pricing-banner,
+  .du-limit-notice { display: none !important; }
+
   .result-content { padding-top: 16px; }
+
+  .dr-page { background: #fff; padding: 0; }
+  .dr-content { padding-top: 0; max-width: 100%; }
+
+  /* Keep each report section whole rather than split across a page break. */
+  .dr-section-card,
+  .dr-if-i-were-you,
+  .dr-playbook-section,
+  .edp-card { break-inside: avoid; page-break-inside: avoid; }
+
+  /* Two-column blocks read better stacked on paper. */
+  .dr-two-col { display: block; }
+  .dr-two-col > * + * { margin-top: 16px; }
+
+  a[href]::after { content: none !important; }
 }
 
 /* ── Responsive additions ── */
@@ -7245,4 +7275,112 @@
   .edp-grid { grid-template-columns: 1fr; }
   .edp-continue { flex-direction: column; align-items: stretch; text-align: center; }
   .edp-continue-btn { width: 100%; }
+}
+
+
+/* ════════════════════════════════════════
+   PLAN GATING & LIMITS
+   ════════════════════════════════════════ */
+
+/* Placeholder shown where a plan does not include a report section. */
+.dr-locked-section {
+  border-style: dashed;
+  opacity: .92;
+}
+.dr-locked-text {
+  margin: 0 0 14px;
+  color: var(--text-muted, #64748B);
+  max-width: 62ch;
+  line-height: 1.6;
+}
+
+/* Export button when the plan does not include export. */
+.icon-btn--locked {
+  opacity: .6;
+  cursor: pointer;
+}
+
+/* Upgrade link shown under a Decision Assistant answer that was refused. */
+.dr-challenge-upgrade-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent, #2563EB);
+  text-decoration: none;
+}
+.dr-challenge-upgrade-link:hover { text-decoration: underline; }
+
+/* Notice shown when more files are dropped than the plan allows. */
+.du-limit-notice {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-muted, #64748B);
+}
+.du-limit-notice a {
+  color: var(--accent, #2563EB);
+  font-weight: 600;
+  text-decoration: none;
+}
+.du-limit-notice a:hover { text-decoration: underline; }
+
+/* Subscription management block on the profile page. */
+.profile-subscription-manage {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-subscription-hint {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-muted, #64748B);
+}
+.profile-subscription-error {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: #DC2626;
+}
+.profile-subscription-status {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #FEF3C7;
+  color: #92400E;
+}
+
+
+/* ── Pricing grid: phone layout ──
+   `.pricing-grid--4col` is set to one column in the max-width:640px block near
+   the top of this file, but the max-width:900px block further down sets it to
+   two columns. Both match on a phone and they have equal specificity, so the
+   later rule won and the cards overflowed the viewport by ~12px. This block is
+   last, so it restores the intended single column; minmax(0, 1fr) also stops a
+   long unbroken string from blowing the track out. */
+@media (max-width: 640px) {
+  .pricing-grid--4col { grid-template-columns: minmax(0, 1fr); }
+  .pricing-card { min-width: 0; }
+}
+
+
+/* ── Profile hero stats: phone layout ──
+   The stat row is `display:flex` with `flex-shrink:0`, so its four stats plus
+   three dividers could not fit a 390px viewport and pushed the profile page
+   ~24px wide. Let the row wrap on small screens and drop the dividers, which
+   would otherwise be left stranded at the end of a wrapped row. */
+@media (max-width: 640px) {
+  .profile-hero-stats {
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 12px 16px;
+    row-gap: 14px;
+    column-gap: 18px;
+  }
+  .profile-stat { flex: 0 1 auto; min-width: 0; }
+  .profile-stat-divider { display: none; }
 }

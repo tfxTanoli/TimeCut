@@ -7,6 +7,22 @@ import { getAdminDb } from './stripe-admin.js'
 
 export type PlanType = 'free' | 'starter' | 'pro' | 'business' | 'custom'
 
+/**
+ * Report sections that are sold as plan differentiators. A false flag means the
+ * section is withheld from that plan — this is the single source of truth for
+ * feature gating on both the client and the server.
+ */
+export interface PlanFeatures {
+  /** Stage 5 "Decision Playbook" section. */
+  playbook: boolean
+  /** "Smart Skeptic" / verification questions section. */
+  skepticQuestions: boolean
+  /** Report export (print / save as PDF). */
+  export: boolean
+  /** "If I Were You" personal advisor section. */
+  advisor: boolean
+}
+
 export interface PlanLimits {
   priceCents: number | null
   credits: number | null
@@ -14,6 +30,7 @@ export interface PlanLimits {
   maxPages: number
   freeReports?: number
   assistantQuestions: number
+  features?: Partial<PlanFeatures>
 }
 
 export interface CreditCosts {
@@ -32,13 +49,21 @@ export interface PlanConfig {
 
 const UNLIMITED = 9999
 
+const NO_EXTRAS: PlanFeatures  = { playbook: false, skepticQuestions: false, export: false, advisor: false }
+const PAID_EXTRAS: PlanFeatures = { playbook: true,  skepticQuestions: true,  export: true,  advisor: false }
+const ALL_EXTRAS: PlanFeatures  = { playbook: true,  skepticQuestions: true,  export: true,  advisor: true }
+
 export const DEFAULT_PLAN_CONFIG: PlanConfig = {
   plans: {
-    free:     { priceCents: 0,     credits: 0,    maxDocs: 3,         maxPages: 20,        freeReports: 1, assistantQuestions: 3 },
-    starter:  { priceCents: 900,   credits: 500,  maxDocs: 5,         maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    pro:      { priceCents: 2900,  credits: 3000, maxDocs: 10,        maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    business: { priceCents: null,  credits: null, maxDocs: UNLIMITED, maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
-    custom:   { priceCents: null,  credits: null, maxDocs: UNLIMITED, maxPages: UNLIMITED, assistantQuestions: UNLIMITED },
+    free:     { priceCents: 0,     credits: 0,     maxDocs: 3,         maxPages: 20,        freeReports: 1, assistantQuestions: 3,         features: NO_EXTRAS },
+    starter:  { priceCents: 900,   credits: 500,   maxDocs: 5,         maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: PAID_EXTRAS },
+    pro:      { priceCents: 2900,  credits: 3000,  maxDocs: 10,        maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
+    // Business/Custom are provisioned by sales, never self-serve. They need a
+    // real credit allowance here (null used to resolve to zero, which locked
+    // the highest-paying accounts out of the product). Per-account allocations
+    // override this via `creditsOverride` on the user document.
+    business: { priceCents: null,  credits: 20000, maxDocs: UNLIMITED, maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
+    custom:   { priceCents: null,  credits: 20000, maxDocs: UNLIMITED, maxPages: UNLIMITED,                 assistantQuestions: UNLIMITED, features: ALL_EXTRAS },
   },
   creditCosts: {
     reportBase: 10,
@@ -57,7 +82,15 @@ function mergeConfig(raw: Partial<PlanConfig> | undefined | null): PlanConfig {
   const plans = { ...DEFAULT_PLAN_CONFIG.plans }
   if (raw.plans) {
     for (const key of Object.keys(plans) as PlanType[]) {
-      if (raw.plans[key]) plans[key] = { ...plans[key], ...raw.plans[key] }
+      const override = raw.plans[key]
+      if (!override) continue
+      // `features` is merged one level deeper so a partial override in
+      // Firestore can flip a single flag without dropping the others.
+      plans[key] = {
+        ...plans[key],
+        ...override,
+        features: { ...plans[key].features, ...(override.features ?? {}) },
+      }
     }
   }
   return {
@@ -86,10 +119,12 @@ export async function getPlanConfig(): Promise<PlanConfig> {
 // explicit price for a plan (e.g. Business, which is "Contact Sales" on the
 // pricing page and therefore has priceCents = null). Everything else must come
 // from the Firestore doc so the site and Stripe never disagree.
+// Business/Custom are deliberately absent: they are not self-serve and
+// create-subscription refuses them, so there must be no fallback price that
+// could silently charge someone for a "Contact Sales" plan.
 const FALLBACK_AMOUNT_CENTS: Record<string, number> = {
   starter: 900,
   pro: 2900,
-  business: 14900,
 }
 
 /**

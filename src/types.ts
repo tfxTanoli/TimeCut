@@ -45,6 +45,8 @@ export interface TimeCutReport {
 export interface AnalyzeResponse {
   data?: TimeCutReport
   error?: string
+  /** Machine-readable failure reason, e.g. INSUFFICIENT_CREDITS. */
+  code?: string
 }
 
 /* ─────────────────────────────────────────────────────
@@ -154,9 +156,26 @@ export interface DecisionPlaybook {
 export interface ChallengeAIResponse {
   answer?: string
   error?: string
+  code?: string
+}
+
+/** Which report sections the caller's plan includes. Returned by the server so
+ *  the UI shows an upgrade prompt where a section was withheld, rather than
+ *  silently hiding content the plan actually paid for. */
+export interface PlanFeatureFlags {
+  playbook: boolean
+  skepticQuestions: boolean
+  export: boolean
+  advisor: boolean
 }
 
 export interface DecisionAnalyzeResponse {
   data?: DecisionReport
   error?: string
+  code?: string
+  entitlements?: {
+    plan: string
+    features: PlanFeatureFlags
+    creditsCharged: number
+  }
 }

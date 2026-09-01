@@ -3,9 +3,8 @@ import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInf
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
-import { logActivity, consumeCredits } from '../lib/userService'
+import { logActivity } from '../lib/userService'
 import { challengeAI } from '../api'
-import type { PlanType } from '../lib/userService'
 import ReportFeedback from './ReportFeedback'
 
 /* ── Client-side field normalization ───────────────────────────────────────
@@ -84,7 +83,6 @@ interface Props {
   language?: string
   uploadedFiles?: File[]
   decisionGoal?: string
-  plan?: PlanType
 }
 
 /* ── Inline icons ── */
@@ -647,11 +645,33 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
   )
 }
 
-/* ── If I Were You (Pro) ── */
-function IfIWereYou({ text, isPro }: { text?: string; isPro: boolean }) {
-  // Hide entirely if the user isn't Pro and there's no text to show
-  if (!isPro && !text) return null
+/* ── Locked section placeholder ──
+   Shown where the plan does not include a section. The server strips the
+   section's data from the response entirely, so this is a genuine upsell for
+   content the account did not receive — not a UI-only hide. */
+function LockedSection({
+  icon, title, blurb, cta = 'Upgrade to unlock →',
+}: { icon: string; title: string; blurb: string; cta?: string }) {
+  return (
+    <div className="dr-section-card dr-locked-section">
+      <div className="dr-section-header">
+        <span className="dr-section-icon">{icon}</span>
+        <h3 className="dr-section-title">{title}</h3>
+        <span className="dr-pro-badge"><IconLock /> Paid plan</span>
+      </div>
+      <div className="dr-section-body">
+        <p className="dr-locked-text">{blurb}</p>
+        <a href="/pricing" className="dr-ifiwy-upgrade-btn">{cta}</a>
+      </div>
+    </div>
+  )
+}
 
+/* ── If I Were You (Pro) ── */
+// The server omits `text` for plans without the advisor, so a missing value is
+// expected here rather than a sign the section should disappear — non-Pro
+// plans still see the locked prompt below.
+function IfIWereYou({ text, isPro }: { text?: string; isPro: boolean }) {
   return (
     <div className="dr-if-i-were-you">
       <div className="dr-section-header">
@@ -721,6 +741,8 @@ function BeforeSigningChecklist({ items }: { items: string[] }) {
 interface ChatMessage {
   role: 'user' | 'ai'
   text: string
+  /** Set when the answer was refused for quota reasons — shows an upgrade link. */
+  upgrade?: boolean
 }
 
 const SUGGESTED_QUESTIONS_BY_TYPE: Record<string, string[]> = {
@@ -767,7 +789,6 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
   onClearSuggestion?: () => void
   t: (k: string) => string
 }) {
-  const { user, plan, planConfig, creditsAllocated, creditsUsage } = useAuth()
   const [open, setOpen] = useState(false)
   const [question, setQuestion] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -791,26 +812,9 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
     setQuestion('')
     setLoading(true)
 
-    // ── Decision Assistant credit enforcement ──
-    if (user) {
-      const cfgPlan = planConfig.plans[plan]
-      const isFree = plan === 'free'
-      if (isFree && creditsUsage.assistantUsed >= (cfgPlan?.assistantQuestions ?? 3)) {
-        setMessages(prev => [...prev, { role: 'ai', text: 'You have reached your free Decision Assistant question limit. Upgrade to ask more questions.' }])
-        setLoading(false)
-        return
-      }
-      try {
-        // Free plan: track usage without charging credits. Paid: charge per question.
-        const cost = isFree ? 0 : planConfig.creditCosts.assistantQuestion
-        await consumeCredits(user.uid, isFree ? 0 : creditsAllocated, cost, { assistant: 1 })
-      } catch {
-        setMessages(prev => [...prev, { role: 'ai', text: 'You are out of AI Credits. Upgrade or wait until your next cycle to continue.' }])
-        setLoading(false)
-        return
-      }
-    }
-
+    // The question quota and per-question credit charge are enforced by
+    // /api/challenge-ai against the verified account — the browser cannot be
+    // the place that decides whether a question is allowed.
     const reportContext = JSON.stringify({
       recommendation: report.recommendation,
       confidence_score: report.confidence_score,
@@ -826,8 +830,21 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
     }, null, 2)
 
     const result = await challengeAI(q, reportContext, decisionGoal ?? '')
-    const answer = result.answer ?? result.error ?? 'Unable to generate a response.'
-    setMessages(prev => [...prev, { role: 'ai', text: answer }])
+
+    // Quota and credit failures come back with a code so the panel can point
+    // the user at the fix rather than showing a raw error.
+    const answer =
+      result.answer
+      ?? (result.code === 'UNAUTHENTICATED'
+        ? 'Please sign in to use the Decision Assistant.'
+        : result.error)
+      ?? 'Unable to generate a response.'
+
+    setMessages(prev => [...prev, {
+      role: 'ai',
+      text: answer,
+      upgrade: result.code === 'ASSISTANT_LIMIT' || result.code === 'INSUFFICIENT_CREDITS',
+    }])
     setLoading(false)
   }
 
@@ -876,6 +893,9 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
                 <div key={i} className={`dr-challenge-msg dr-challenge-msg--${m.role}`}>
                   <span className="dr-challenge-msg-badge">{m.role === 'user' ? 'You' : 'AI'}</span>
                   <p className="dr-challenge-msg-text">{m.text}</p>
+                  {m.upgrade && (
+                    <a href="/pricing" className="dr-challenge-upgrade-link">View plans →</a>
+                  )}
                 </div>
               ))}
               {loading && (
@@ -1490,19 +1510,28 @@ function DecisionReadinessSection({ report, t }: { report: DecisionReport; t: (k
 }
 
 /* ── Main component ── */
-export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal, plan }: Props) {
+// Plan entitlements come from AuthContext (config-driven) rather than a prop,
+// so the report and the rest of the app can never disagree about what the
+// account includes.
+export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal }: Props) {
   const report = normalizeReport(rawReport)
-  const { user } = useAuth()
+  const { user, features } = useAuth()
   const { openSignup } = useAuthModal()
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
-  const [authPrompt, setAuthPrompt] = useState<'download' | 'share' | null>(null)
+  const [authPrompt, setAuthPrompt] = useState<'download' | 'share' | 'upgrade' | null>(null)
   const [challengeQuestion, setChallengeQuestion] = useState<string | undefined>()
 
-  const isPro = plan === 'pro' || plan === 'business' || plan === 'custom'
+  // Which premium sections this account actually receives. Driven by
+  // config/plans, and matched by the server, which omits the underlying data
+  // for anything not included.
+  const canExport = features.export
+  const canSeeAdvisor = features.advisor
 
   function handleDownload() {
     if (!user) { setAuthPrompt('download'); return }
+    // Export is a paid feature; the Free plan lists it as excluded.
+    if (!canExport) { setAuthPrompt('upgrade'); return }
     logActivity(user.uid, 'report_downloaded', {})
     window.print()
   }
@@ -1556,9 +1585,15 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
           <button className="back-btn" onClick={onBack}>{t('result.backToHome')}</button>
           <h2 className="result-nav-title">{t('report.title')}</h2>
           <div className="result-nav-actions">
-            <button className="icon-btn icon-btn--download" onClick={handleDownload}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              {t('result.downloadReport')}
+            <button
+              className={`icon-btn icon-btn--download${!canExport ? ' icon-btn--locked' : ''}`}
+              onClick={handleDownload}
+              title={canExport ? undefined : 'Available on paid plans'}
+            >
+              {canExport
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                : <IconLock />}
+              {t('result.exportReport')}
             </button>
             <button className="icon-btn" onClick={handleShare}>
               {copied
@@ -1574,12 +1609,18 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         <div className="auth-prompt-banner">
           <span className="auth-prompt-icon">🔒</span>
           <p className="auth-prompt-msg">
-            {authPrompt === 'download' ? t('result.downloadPrompt') : t('result.sharePrompt')}
+            {authPrompt === 'upgrade'
+              ? t('result.exportUpgradePrompt')
+              : authPrompt === 'download' ? t('result.downloadPrompt') : t('result.sharePrompt')}
           </p>
           <div className="auth-prompt-actions">
-            <button className="btn-primary btn-sm" onClick={() => { setAuthPrompt(null); openSignup() }}>
-              {t('result.signUpFree')}
-            </button>
+            {authPrompt === 'upgrade' ? (
+              <a className="btn-primary btn-sm" href="/pricing">{t('result.viewPlans')}</a>
+            ) : (
+              <button className="btn-primary btn-sm" onClick={() => { setAuthPrompt(null); openSignup() }}>
+                {t('result.signUpFree')}
+              </button>
+            )}
             <button className="auth-prompt-dismiss" onClick={() => setAuthPrompt(null)}>{t('result.dismiss')}</button>
           </div>
         </div>
@@ -1623,13 +1664,21 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         <EvidenceFound evidence={report.evidence_found} uploadedFiles={uploadedFiles} t={t} />
 
         {/* If I Were You (Pro) */}
-        <IfIWereYou text={report.if_i_were_you} isPro={isPro} />
+        <IfIWereYou text={report.if_i_were_you} isPro={canSeeAdvisor} />
 
-        {/* ── STAGE 2: VERIFICATION ── */}
-        {hasVerificationQuestions && (
-          <VerificationQuestionsSection
-            questions={report.verification_questions!}
-            docType={docType}
+        {/* ── STAGE 2: VERIFICATION (Smart Skeptic Questions) ── */}
+        {features.skepticQuestions ? (
+          hasVerificationQuestions && (
+            <VerificationQuestionsSection
+              questions={report.verification_questions!}
+              docType={docType}
+            />
+          )
+        ) : (
+          <LockedSection
+            icon="🕵️"
+            title="Smart Skeptic Questions"
+            blurb="The sharpest questions to ask before you commit — what a strong answer sounds like, and the red flags that should stop you."
           />
         )}
 
@@ -1662,10 +1711,18 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         )}
 
         {/* ── STAGE 5: DECISION PLAYBOOK ── */}
-        {hasPlaybook && (
-          <DecisionPlaybookSection
-            playbook={report.decision_playbook!}
-            docType={docType}
+        {features.playbook ? (
+          hasPlaybook && (
+            <DecisionPlaybookSection
+              playbook={report.decision_playbook!}
+              docType={docType}
+            />
+          )
+        ) : (
+          <LockedSection
+            icon="📘"
+            title="Decision Playbook"
+            blurb="Your final recommendation with the reasons behind it, the risks that remain, and a step-by-step checklist to act on."
           />
         )}
 

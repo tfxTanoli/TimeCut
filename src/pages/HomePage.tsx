@@ -12,39 +12,18 @@ import {
   logActivity,
   incrementAnalysisStats,
   saveAnalysis,
-  consumeCredits,
-  consumeFreeReport,
 } from '../lib/userService'
-import { computeReportCost } from '../lib/planConfig'
+import { isUnlimited } from '../lib/planConfig'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
 
-const ANON_LIMIT = 1
-const ANON_KEY = 'tc_anon_usage'
-
-function getAnonUsage(): { month: string; count: number } {
-  try {
-    const raw = localStorage.getItem(ANON_KEY)
-    if (raw) return JSON.parse(raw)
-  } catch { /* ignore */ }
-  const now = new Date()
-  return { month: `${now.getFullYear()}-${now.getMonth()}`, count: 0 }
-}
-function incrementAnonUsage() {
-  const now = new Date()
-  const month = `${now.getFullYear()}-${now.getMonth()}`
-  const current = getAnonUsage()
-  const count = current.month === month ? current.count + 1 : 1
-  localStorage.setItem(ANON_KEY, JSON.stringify({ month, count }))
-}
-function getAnonRemaining(): number {
-  const now = new Date()
-  const month = `${now.getFullYear()}-${now.getMonth()}`
-  const current = getAnonUsage()
-  if (current.month !== month) return ANON_LIMIT
-  return Math.max(0, ANON_LIMIT - current.count)
-}
+// Signed-out visitors are shown the free allowance so the value is visible
+// before signing up, but the analysis itself requires an account: the API
+// meters every report against a verified user. The old localStorage counter
+// was reset by clearing site data, which made free reports effectively
+// unlimited at our cost.
+const GUEST_PREVIEW_LIMIT = 1
 
 interface UpgradeModalProps {
   plan: string
@@ -95,7 +74,7 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth, t }: U
 
 export default function HomePage() {
   const {
-    user, plan, refreshUsage,
+    user, plan,
     planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
   } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
@@ -111,39 +90,50 @@ export default function HomePage() {
   const [currentDecisionGoal, setCurrentDecisionGoal] = useState('')
 
   const isFreePlan = plan === 'free'
-  const anonRemaining = getAnonRemaining()
   // Logged-in: paid plans gate on AI Credits, free plan gates on free reports.
-  const userRemaining = user ? (isFreePlan ? freeReportsRemaining : creditsRemaining) : null
-  const remaining = userRemaining ?? anonRemaining
-  const isAtLimit = remaining <= 0
-  const pageLimit = planConfig.plans[plan]?.maxPages ?? 9999
+  // The server enforces the same rule — this only avoids a round-trip that we
+  // already know would be refused.
+  const remaining = user
+    ? (isFreePlan ? freeReportsRemaining : creditsRemaining)
+    : GUEST_PREVIEW_LIMIT
+  const isAtLimit = !!user && remaining <= 0
+
+  const planLimits = planConfig.plans[plan]
+  const maxDocs = planLimits?.maxDocs ?? 3
+  const maxPages = planLimits?.maxPages ?? 20
+
   // Values for the usage bar (credits for paid, free reports for free)
   const displayLimit = user
     ? (isFreePlan ? Math.max(1, freeReportsRemaining + creditsUsage.reportsUsed) : creditsAllocated)
-    : ANON_LIMIT
+    : GUEST_PREVIEW_LIMIT
   const displayUsed = user
     ? (isFreePlan ? creditsUsage.reportsUsed : creditsUsage.used)
-    : (ANON_LIMIT - anonRemaining)
+    : 0
+
+  /**
+   * Turn an API failure into the right UI response. Quota failures open the
+   * upgrade modal; everything else shows the server's message, which is now
+   * specific (which limit, how many credits are left).
+   */
+  function handleApiFailure(code: string | undefined, message: string | undefined) {
+    if (code === 'INSUFFICIENT_CREDITS' || code === 'FREE_REPORTS_EXHAUSTED') {
+      setShowUpgradeModal(true)
+      return
+    }
+    if (code === 'UNAUTHENTICATED') {
+      openAuthModal()
+      return
+    }
+    setError(message ?? t('home.errorGeneral'))
+  }
 
   async function handleSubmit(tab: InputTab, value: string | File, language: string) {
     setError(null)
 
-    // ── Block immediately if at limit ──
-    if (isAtLimit) {
-      setShowUpgradeModal(true)
-      return
-    }
-
-    // ── Pre-check available credits / free reports (consumption happens post-analysis) ──
-    if (user) {
-      if (isAtLimit) { setShowUpgradeModal(true); return }
-    } else {
-      if (anonRemaining <= 0) {
-        setShowUpgradeModal(true)
-        return
-      }
-      incrementAnonUsage()
-    }
+    // Analysis requires an account — the API meters every report against a
+    // verified user, so there is nothing to run for a signed-out visitor.
+    if (!user) { openAuthModal(); return }
+    if (isAtLimit) { setShowUpgradeModal(true); return }
 
     setIsLoading(true)
     setAnalysisLanguage(language)
@@ -160,37 +150,23 @@ export default function HomePage() {
 
       if (result.data) {
         setReport(result.data)
-        if (user) {
-          // Content analysis has no page count → charge the base report cost.
-          try {
-            if (isFreePlan) {
-              await consumeFreeReport(user.uid, planConfig.plans.free.freeReports ?? 1, 1)
-            } else {
-              const cost = computeReportCost(planConfig, { pages: 0, docs: 1 })
-              await consumeCredits(user.uid, creditsAllocated, cost, { reports: 1, documents: 1, clamp: true })
-            }
-          } catch (e) {
-            console.warn('[credits] consume failed:', e)
-          }
-          await Promise.all([
-            saveAnalysis(user.uid, result.data, tab, language),
-            logActivity(user.uid, 'analysis_completed', {
-              verdict: result.data.verdict,
-              valueScore: result.data.value_score,
-              timeSavedMinutes: result.data.time_saved_minutes,
-              attentionQuality: result.data.attention_quality,
-              language,
-            }),
-            incrementAnalysisStats(user.uid, result.data.time_saved_minutes),
-            refreshUsage(),
-          ])
-        }
+        // Credits were already charged server-side before the analysis ran; the
+        // ledger listener updates the usage bar on its own.
+        await Promise.all([
+          saveAnalysis(user.uid, result.data, tab, language),
+          logActivity(user.uid, 'analysis_completed', {
+            verdict: result.data.verdict,
+            valueScore: result.data.value_score,
+            timeSavedMinutes: result.data.time_saved_minutes,
+            attentionQuality: result.data.attention_quality,
+            language,
+          }),
+          incrementAnalysisStats(user.uid, result.data.time_saved_minutes),
+        ])
       } else {
-        if (user) refreshUsage()
-        setError(result.error ?? t('home.errorGeneral'))
+        handleApiFailure(result.code, result.error)
       }
     } catch {
-      if (user) refreshUsage()
       setError(t('home.errorNetwork'))
     }
     setIsLoading(false)
@@ -199,12 +175,18 @@ export default function HomePage() {
   async function handleDecisionSubmit(files: File[], goal: string, language: string, documentType: DocumentType = 'auto') {
     setError(null)
 
-    // ── Pre-check (consumption happens post-analysis using actual pages/docs) ──
-    if (user) {
-      if (isAtLimit) { setShowUpgradeModal(true); return }
-    } else {
-      if (anonRemaining <= 0) { setShowUpgradeModal(true); return }
-      incrementAnonUsage()
+    if (!user) { openAuthModal(); return }
+    if (isAtLimit) { setShowUpgradeModal(true); return }
+
+    // Fail fast on the plan's document limit so the user isn't made to wait for
+    // an upload the server will refuse. The server enforces it regardless.
+    if (!isUnlimited(maxDocs) && files.length > maxDocs) {
+      setError(
+        t('home.errorDocLimit')
+          .replace('{max}', String(maxDocs))
+          .replace('{count}', String(files.length)),
+      )
+      return
     }
 
     setIsLoading(true)
@@ -216,35 +198,18 @@ export default function HomePage() {
     if (user) await logActivity(user.uid, 'analysis_submitted', { inputType: 'pdf', language, documentType })
 
     try {
-      const result = await analyzeDecision(files, goal, language, pageLimit, documentType)
+      const result = await analyzeDecision(files, goal, language, documentType)
       if (result.data) {
         setDecisionReport(result.data)
-        if (user) {
-          // Charge AI Credits based on actual pages & documents analyzed.
-          const pages = result.data.pages_analyzed ?? 0
-          const docs = result.data.documents_analyzed ?? files.length
-          try {
-            if (isFreePlan) {
-              await consumeFreeReport(user.uid, planConfig.plans.free.freeReports ?? 1, docs)
-            } else {
-              const cost = computeReportCost(planConfig, { pages, docs })
-              await consumeCredits(user.uid, creditsAllocated, cost, { reports: 1, documents: docs, clamp: true })
-            }
-          } catch (e) {
-            console.warn('[credits] consume failed:', e)
-          }
-          await Promise.all([
-            refreshUsage(),
-            logActivity(user.uid, 'analysis_completed', { language, documentType }),
-          ])
-        }
+        // Credits were charged server-side, from the pages and documents the
+        // server actually parsed, before the model was called. The ledger
+        // listener refreshes the usage bar on its own.
+        await logActivity(user.uid, 'analysis_completed', { language, documentType })
       } else {
-        if (user) refreshUsage()
         setShowDecisionLoader(false)
-        setError(result.error ?? t('home.errorGeneral'))
+        handleApiFailure(result.code, result.error)
       }
     } catch {
-      if (user) refreshUsage()
       setShowDecisionLoader(false)
       setError(t('home.errorNetwork'))
     }
@@ -270,7 +235,6 @@ export default function HomePage() {
           language={analysisLanguage}
           uploadedFiles={uploadedFiles}
           decisionGoal={currentDecisionGoal}
-          plan={plan}
         />
       </Suspense>
     )
@@ -297,6 +261,8 @@ export default function HomePage() {
       plan={plan}
       planLimit={displayLimit}
       monthlyUsage={displayUsed}
+      maxDocs={maxDocs}
+      maxPages={maxPages}
       isLoggedIn={!!user}
       onOpenAuth={openAuthModal}
       remaining={remaining}

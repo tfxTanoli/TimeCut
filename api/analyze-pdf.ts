@@ -3,6 +3,16 @@ import formidable from 'formidable'
 import fs from 'fs'
 import PDFParser from 'pdf2json'
 import { generateReport } from './_lib/shared.js'
+import { verifyAuth, ApiError } from './_lib/auth.js'
+import {
+  resolveEntitlement,
+  chargeCredits,
+  refundCredits,
+  consumeFreeReport,
+  refundFreeReport,
+  computeReportCost,
+  type Entitlement,
+} from './_lib/entitlements.js'
 
 function extractPDFText(buffer: Buffer): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -19,8 +29,21 @@ function extractPDFText(buffer: Buffer): Promise<string> {
 
 export const config = { api: { bodyParser: false } }
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
+
+  const authed = await verifyAuth(req)
+  if (!authed) {
+    return res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to run an analysis.' })
+  }
+
+  let ent: Entitlement
+  try {
+    ent = await resolveEntitlement(authed.uid)
+  } catch (e) {
+    console.error('[PDF] entitlement lookup failed:', e)
+    return res.status(500).json({ error: 'Could not verify your plan. Please try again.' })
+  }
 
   const form = formidable({ maxFileSize: 10 * 1024 * 1024 })
 
@@ -34,6 +57,10 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
     const language =
       (Array.isArray(fields.language) ? fields.language[0] : fields.language) ?? 'English'
 
+    // Content analysis has no page count, so it costs the base report price.
+    const cost = computeReportCost(ent.cfg, { pages: 0, docs: 1 })
+    let charged = false
+
     try {
       const buffer = fs.readFileSync(file.filepath)
       const text = await extractPDFText(buffer)
@@ -41,9 +68,24 @@ export default function handler(req: VercelRequest, res: VercelResponse) {
       if (meaningful.length < 50) {
         throw new Error('This PDF has no extractable text (likely scanned/image-based). Please upload a PDF with selectable text.')
       }
+
+      // Charge only once we know the file is actually analysable.
+      try {
+        if (ent.isFree) await consumeFreeReport(ent, 1)
+        else await chargeCredits(ent, cost, { reports: 1, documents: 1 })
+        charged = true
+      } catch (e) {
+        if (e instanceof ApiError) return res.status(e.status).json({ code: e.code, error: e.message })
+        throw e
+      }
+
       const data = await generateReport(text, language)
       return res.json({ data })
     } catch (e) {
+      if (charged) {
+        if (ent.isFree) await refundFreeReport(ent, 1)
+        else await refundCredits(ent, cost, { reports: 1, documents: 1 })
+      }
       console.error('[PDF ERROR]', e)
       return res.status(500).json({ error: e instanceof Error ? e.message : 'PDF analysis failed' })
     }

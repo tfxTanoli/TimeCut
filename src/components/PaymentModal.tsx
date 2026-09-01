@@ -7,6 +7,7 @@ import {
   useElements,
 } from '@stripe/react-stripe-js'
 import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
+import { authHeaders } from '../lib/firebase'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string)
 
@@ -17,6 +18,9 @@ const UNLIMITED = 9999
  * the shared plan config (config/plans in Firestore, editable from the Admin
  * Dashboard) so this modal can never disagree with the pricing page.
  */
+// Self-serve plans only, and every line here must match the pricing page. The
+// previous version listed Priority Processing and a PDF export that the product
+// did not implement, and a Business tier that this modal could charge for.
 const PLAN_META: Record<string, { label: string; tagline: string; features: string[] }> = {
   starter: {
     label: 'STARTER',
@@ -24,11 +28,12 @@ const PLAN_META: Record<string, { label: string; tagline: string; features: stri
     features: [
       '{credits} AI Credits/month',
       'Up to {docs} documents per analysis',
-      'Full Hidden Risks',
-      'Missing Information',
-      'Evidence Found',
-      'Detailed Risk Breakdown',
-      'Document Ranking & Recommendation',
+      'Full AI Decision Report',
+      'Hidden Risks & Missing Information',
+      'Evidence Found & Document Ranking',
+      'Decision Playbook',
+      'Smart Skeptic Questions',
+      'Print / Save as PDF',
     ],
   },
   pro: {
@@ -38,22 +43,9 @@ const PLAN_META: Record<string, { label: string; tagline: string; features: stri
       '{credits} AI Credits/month',
       'Up to {docs} documents per analysis',
       'Everything in Starter',
-      'Smart Skeptic Questions',
-      'Decision Defense Generator',
-      'Advanced Evidence Mapping',
-      'Priority Processing',
-      'Export Reports (PDF)',
-    ],
-  },
-  business: {
-    label: 'BUSINESS',
-    tagline: 'Team decision intelligence',
-    features: [
-      'Team Workspace',
-      'Shared Reports',
-      'Audit History',
-      'Custom Limits',
-      'Priority Support',
+      'Unlimited Decision Assistant (within credits)',
+      '"If I Were You" personal advisor',
+      'Decision Defense',
     ],
   },
 }
@@ -79,22 +71,22 @@ function planDetails(plan: string, cfg: PlanConfig, amountCents?: number | null)
 
 /* ─── Inner checkout form (must be inside <Elements>) ─── */
 interface FormProps {
-  plan: 'starter' | 'pro' | 'business'
-  uid: string
+  plan: 'starter' | 'pro'
   subscriptionId: string
   cfg: PlanConfig
   amountCents: number | null
-  email?: string
-  name?: string
   onSuccess: () => void
-  onClose: () => void
+  /** Paid, but activation has not been confirmed yet — the webhook will finish it. */
+  onPending: (pending: boolean) => void
 }
 
-function CheckoutForm({ plan, uid, subscriptionId, cfg, amountCents, email, name, onSuccess }: FormProps) {
+function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPending }: FormProps) {
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
   const [error,   setError]   = useState<string | null>(null)
+
+  const setPending = onPending
 
   const details = planDetails(plan, cfg, amountCents)
 
@@ -117,33 +109,34 @@ function CheckoutForm({ plan, uid, subscriptionId, cfg, amountCents, email, name
       return
     }
 
-    // paymentIntent.status is already 'succeeded' at this point:pass its ID to the
-    // server so activation doesn't depend on Stripe's async subscription status update
+    // The payment succeeded. Ask the server to activate now for an instant
+    // upgrade — it reads the account from the ID token and the plan from the
+    // Stripe subscription, so neither is taken from this request.
+    //
+    // If this call fails, Stripe's `invoice.payment_succeeded` webhook still
+    // activates the subscription server-side. We say that plainly instead of
+    // showing a success screen for an upgrade that may not have happened.
     try {
       const res = await fetch('/api/activate-plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
         body: JSON.stringify({
           subscriptionId,
-          uid,
-          plan,
           paymentIntentId: paymentIntent?.id ?? null,
-          email,
-          name,
         }),
       })
       const data = await res.json()
       if (data.success) {
         onSuccess()
       } else {
-        // Extremely unlikely now:show success anyway since Stripe confirmed the payment
-        console.warn('[activate-plan] server returned not-ready:', data)
-        onSuccess()
+        console.warn('[activate-plan] not yet active:', data)
+        setPending(true)
       }
-    } catch {
-      // Network error:webhook will catch it, treat as success
-      onSuccess()
+    } catch (e) {
+      console.warn('[activate-plan] request failed:', e)
+      setPending(true)
     }
+    setLoading(false)
   }
 
   return (
@@ -208,21 +201,39 @@ function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; 
   )
 }
 
+/* ─── Payment received, activation still settling ─── */
+function PendingScreen({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="pm-success">
+      <div className="pm-success-icon">⏳</div>
+      <h2 className="pm-success-title">Payment received</h2>
+      <p className="pm-success-sub">
+        Your payment went through. We're activating your plan now — this usually takes a few
+        seconds. Refresh your account page if it hasn't appeared in a minute, and contact support
+        if it still hasn't.
+      </p>
+      <button className="btn-primary btn-cta pm-pay-btn" onClick={onClose}>
+        Close
+      </button>
+    </div>
+  )
+}
+
 /* ─── Outer modal (fetches client_secret, renders Elements) ─── */
 interface PaymentModalProps {
-  plan: 'starter' | 'pro' | 'business'
-  uid: string
+  plan: 'starter' | 'pro'
   email?: string
   name?: string
   onClose: () => void
 }
 
-export default function PaymentModal({ plan, uid, email, name, onClose }: PaymentModalProps) {
+export default function PaymentModal({ plan, email, name, onClose }: PaymentModalProps) {
   const [clientSecret,    setClientSecret]    = useState<string | null>(null)
   const [subscriptionId,  setSubscriptionId]  = useState<string>('')
   const [fetchError,      setFetchError]      = useState<string | null>(null)
   const [fetchLoading,    setFetchLoading]    = useState(true)
   const [paid,            setPaid]            = useState(false)
+  const [pending,         setPending]         = useState(false)
   const [cfg,             setCfg]             = useState<PlanConfig>(getCachedPlanConfig())
   const [amountCents,     setAmountCents]     = useState<number | null>(null)
 
@@ -230,11 +241,13 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
   useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
 
   useEffect(() => {
-    fetch('/api/create-subscription', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan, uid, email, name }),
-    })
+    // uid is not sent: the endpoint derives the account from the ID token.
+    authHeaders()
+      .then(headers => fetch('/api/create-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...headers },
+        body: JSON.stringify({ plan, email, name }),
+      }))
       .then(r => r.json())
       .then(data => {
         if (data.clientSecret) {
@@ -293,8 +306,9 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
         )}
 
         {paid && <SuccessScreen plan={plan} cfg={cfg} onClose={onClose} />}
+        {pending && !paid && <PendingScreen onClose={onClose} />}
 
-        {clientSecret && !paid && (
+        {clientSecret && !paid && !pending && (
           <Elements
             key={clientSecret}
             stripe={stripePromise}
@@ -302,14 +316,11 @@ export default function PaymentModal({ plan, uid, email, name, onClose }: Paymen
           >
             <CheckoutForm
               plan={plan}
-              uid={uid}
               subscriptionId={subscriptionId}
               cfg={cfg}
               amountCents={amountCents}
-              email={email}
-              name={name}
               onSuccess={() => setPaid(true)}
-              onClose={onClose}
+              onPending={setPending}
             />
           </Elements>
         )}
