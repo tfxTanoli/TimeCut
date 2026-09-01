@@ -110,6 +110,24 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
       </section>
 
       {/* ══════════════════════════════════════════
+          UPLOAD SECTION (moved here — directly after hero)
+      ══════════════════════════════════════════ */}
+      {uploadSection && (
+        <section id="upload-section" className="lp-section lp-section--upload-wrapper">
+          <div className="container">
+            <p className="lp-eyebrow fade-up">{t('home.uploadEyebrow')}</p>
+            <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>
+              {t('home.uploadTitle')}
+            </h2>
+            <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms', fontSize: '14px' }}>
+              {t('home.uploadSub')}
+            </p>
+            {uploadSection}
+          </div>
+        </section>
+      )}
+
+      {/* ══════════════════════════════════════════
           EXAMPLE OUTPUT — 3 tabs + expand/collapse
       ══════════════════════════════════════════ */}
       <section id="example-output" className="lp-section lp-section--alt">
@@ -359,24 +377,6 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
           </div>
         </div>
       </section>
-
-      {/* ══════════════════════════════════════════
-          UPLOAD SECTION (moved here — after hero, example, use cases)
-      ══════════════════════════════════════════ */}
-      {uploadSection && (
-        <section id="upload-section" className="lp-section lp-section--upload-wrapper">
-          <div className="container">
-            <p className="lp-eyebrow fade-up">{t('home.uploadEyebrow')}</p>
-            <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>
-              {t('home.uploadTitle')}
-            </h2>
-            <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms', fontSize: '14px' }}>
-              {t('home.uploadSub')}
-            </p>
-            {uploadSection}
-          </div>
-        </section>
-      )}
 
       {/* ══════════════════════════════════════════
           WHY TIMECUT  (vs ChatGPT table)
