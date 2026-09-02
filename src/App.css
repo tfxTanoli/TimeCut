@@ -6044,7 +6044,7 @@
 }
 /* Tier 3 — descriptive paragraph */
 .lp-subheadline {
-  font-size: 18px; color: #9CA3AF; line-height: 1.65;
+  font-size: 15px; color: #9CA3AF; line-height: 1.6;
   margin: 0 0 36px; max-width: 620px; text-align: center;
 }
 .lp-hero-actions { display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -6258,6 +6258,7 @@
 @media (max-width: 760px) {
   .lp-hero { padding: 24px 0 24px; }
   .lp-hero-badges { margin-bottom: 18px; }
+  .lp-subheadline { font-size: 13px; line-height: 1.55; margin-bottom: 28px; }
   .lp-section { padding: 40px 0; }
   .lp-usecases-grid { grid-template-columns: repeat(2, 1fr); }
   .lp-hiw-grid { grid-template-columns: 1fr; gap: 10px; }
