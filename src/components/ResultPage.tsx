@@ -147,6 +147,21 @@ export default function ResultPage({ report, onBack }: Props) {
         </div>
       )}
 
+      {/* The analysis only saw part of this content — say so rather than let
+          the reader assume the whole piece was scored. */}
+      {report.content_truncated && (
+        <div className="dr-truncation-notice" role="status">
+          <span className="dr-truncation-icon" aria-hidden="true">⚠</span>
+          <div>
+            <p className="dr-truncation-title">This content was too long to analyse in full</p>
+            <p className="dr-truncation-body">
+              Only the earlier part was reviewed. Later sections were not included in this
+              analysis — split the content and run it again if those matter.
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="container result-content">
 
         {/* ── 1. Verdict Card ── */}

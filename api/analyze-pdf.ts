@@ -4,6 +4,8 @@ import fs from 'fs'
 import PDFParser from 'pdf2json'
 import { generateReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
+import { REPORT_MODEL } from './_lib/aiConfig.js'
+import { recordAiUsage } from './_lib/aiUsage.js'
 import {
   resolveEntitlement,
   chargeCredits,
@@ -79,8 +81,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         throw e
       }
 
-      const data = await generateReport(text, language)
-      return res.json({ data })
+      const { data, usage, truncated } = await generateReport(text, language)
+      await recordAiUsage({
+        uid: ent.uid,
+        plan: ent.plan,
+        operation: 'content',
+        model: REPORT_MODEL,
+        usage,
+        creditsCharged: ent.isFree ? 0 : cost,
+        documents: 1,
+        truncated,
+      })
+      return res.json({ data: { ...data, content_truncated: truncated } })
     } catch (e) {
       if (charged) {
         if (ent.isFree) await refundFreeReport(ent, 1)

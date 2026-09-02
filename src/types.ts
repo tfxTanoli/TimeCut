@@ -40,6 +40,8 @@ export interface TimeCutReport {
   repetition_score: number
   insight_uniqueness: number
   breakdown?: TimeCutBreakdown
+  /** True when the content was longer than the analysis limit and was cut. */
+  content_truncated?: boolean
 }
 
 export interface AnalyzeResponse {
@@ -102,6 +104,9 @@ export interface DecisionReport {
   evidence_found: EvidenceItem[]
   documents_analyzed: number
   pages_analyzed?: number
+  /** Documents too long to analyse in full. Surfaced to the reader — a report
+   *  that only saw part of a contract must say so. */
+  truncated_documents?: string[]
   what_would_change?: string
   decision_strength?: number
   decision_strength_reason?: string

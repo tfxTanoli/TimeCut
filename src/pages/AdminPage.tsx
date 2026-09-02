@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { collection, getDocs, orderBy, query, limit, type Timestamp } from 'firebase/firestore'
+import {
+  collection, doc, getDoc, getDocs, getCountFromServer,
+  orderBy, query, where, limit, type Timestamp,
+} from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { useAuth } from '../contexts/AuthContext'
 import { isAdminEmail, ensureAdminDoc } from '../lib/admin'
@@ -50,6 +53,57 @@ const FEATURE_FIELDS: { key: keyof PlanFeatures; label: string }[] = [
   { key: 'advisor', label: '"If I Were You" advisor' },
 ]
 
+/* ── AI usage & cost ────────────────────────────────────────────────────────
+   Fed by api/_lib/aiUsage.ts, which records what every OpenAI call actually
+   consumed. These are measured figures, not estimates — the point of the
+   section is that plan margins can be checked against reality after launch
+   rather than reasoned about from prompt sizes.
+*/
+interface UsageTotals {
+  calls?: number
+  tokensIn?: number
+  tokensOut?: number
+  costUsd?: number
+}
+interface MonthlyUsage extends UsageTotals {
+  byOperation?: Record<string, UsageTotals>
+}
+interface UserUsageRow extends UsageTotals {
+  id: string
+  uid: string
+  plan: string
+  creditsCharged?: number
+}
+
+const OPERATION_LABELS: Record<string, string> = {
+  content: 'Content analysis',
+  decision: 'Decision report',
+  assistant: 'Assistant question',
+}
+
+/** UTC month key, matching getCurrentMonthKey() in api/_lib/entitlements.ts. */
+function currentMonthKey(): string {
+  const now = new Date()
+  return `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`
+}
+
+/** Costs here are fractions of a cent, so the usual 2dp currency format hides
+ *  everything interesting. Small values get more precision, not less. */
+function usd(n: number | undefined): string {
+  const v = n ?? 0
+  if (v === 0) return '$0'
+  if (v < 0.01) return `$${v.toFixed(4)}`
+  if (v < 1) return `$${v.toFixed(3)}`
+  return `$${v.toFixed(2)}`
+}
+
+function compact(n: number | undefined): string {
+  const v = n ?? 0
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}k`
+  return String(v)
+}
+
 const COST_FIELDS: { key: keyof PlanConfig['creditCosts']; label: string }[] = [
   { key: 'reportBase', label: 'Report base' },
   { key: 'perPage', label: 'Per page' },
@@ -64,7 +118,12 @@ export default function AdminPage() {
   const [cfg, setCfg] = useState<PlanConfig>(DEFAULT_PLAN_CONFIG)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [feedback, setFeedback] = useState<FeedbackRow[]>([])
-  const [tab, setTab] = useState<'config' | 'feedback'>('config')
+  const [tab, setTab] = useState<'config' | 'feedback' | 'usage'>('config')
+  const [monthly, setMonthly] = useState<MonthlyUsage | null>(null)
+  const [usageRows, setUsageRows] = useState<UserUsageRow[]>([])
+  const [subscribers, setSubscribers] = useState<Record<string, number>>({})
+  const [usageError, setUsageError] = useState<string | null>(null)
+  const monthKey = currentMonthKey()
 
   useEffect(() => {
     if (authLoading) return
@@ -88,9 +147,46 @@ export default function AdminPage() {
       } catch (e) {
         console.warn('[admin] feedback load failed:', e)
       }
+
+      // AI usage for the current month. The headline totals are one document;
+      // the per-account rows are queried once and reused for both the margin
+      // breakdown and the top-spenders table.
+      try {
+        const monthlySnap = await getDoc(doc(db, 'aiUsageMonthly', monthKey))
+        if (active) setMonthly(monthlySnap.exists() ? (monthlySnap.data() as MonthlyUsage) : null)
+
+        const rows = await getDocs(query(
+          collection(db, 'aiUsageByUser'),
+          where('month', '==', monthKey),
+          orderBy('costUsd', 'desc'),
+          limit(500),
+        ))
+        if (active) {
+          setUsageRows(rows.docs.map(d => ({ id: d.id, ...(d.data() as Omit<UserUsageRow, 'id'>) })))
+        }
+
+        // Subscriber counts come from the users collection rather than usage,
+        // so a paying customer who ran nothing still counts toward revenue.
+        const paid: PlanType[] = ['starter', 'pro', 'business']
+        const counts = await Promise.all(paid.map(p =>
+          getCountFromServer(query(collection(db, 'users'), where('plan', '==', p))),
+        ))
+        if (active) {
+          setSubscribers(Object.fromEntries(paid.map((p, i) => [p, counts[i].data().count])))
+        }
+      } catch (e) {
+        console.warn('[admin] usage load failed:', e)
+        if (active) {
+          setUsageError(
+            e instanceof Error && /index/i.test(e.message)
+              ? 'Usage query needs its Firestore index — deploy firestore.indexes.json, then reload.'
+              : 'Could not load AI usage.',
+          )
+        }
+      }
     })()
     return () => { active = false }
-  }, [allowed, user])
+  }, [allowed, user, monthKey])
 
   const feedbackStats = useMemo(() => {
     const total = feedback.length
@@ -105,6 +201,28 @@ export default function AdminPage() {
       wouldUseAgainPct: Math.round((wouldUseAgainPositive / total) * 100),
     }
   }, [feedback])
+
+  // Revenue vs AI cost per plan. Revenue is subscriber count x list price;
+  // cost is what those accounts actually consumed this month. Free is included
+  // because free-plan usage is a real cost with no revenue behind it.
+  const margins = useMemo(() => {
+    const costByPlan: Record<string, number> = {}
+    for (const r of usageRows) {
+      costByPlan[r.plan] = (costByPlan[r.plan] ?? 0) + (r.costUsd ?? 0)
+    }
+    return (['free', 'starter', 'pro', 'business'] as PlanType[]).map(plan => {
+      const count = subscribers[plan] ?? 0
+      const revenue = (count * (cfg.plans[plan].priceCents ?? 0)) / 100
+      const cost = costByPlan[plan] ?? 0
+      return {
+        plan,
+        count,
+        revenue,
+        cost,
+        marginPct: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 100) : null,
+      }
+    })
+  }, [usageRows, subscribers, cfg])
 
   function setPlanField(plan: PlanType, key: NumericPlanField, raw: string) {
     const value = raw === '' ? null : Number(raw)
@@ -166,6 +284,9 @@ export default function AdminPage() {
           </button>
           <button className={`admin-tab ${tab === 'feedback' ? 'admin-tab--active' : ''}`} onClick={() => setTab('feedback')}>
             Feedback ({feedback.length})
+          </button>
+          <button className={`admin-tab ${tab === 'usage' ? 'admin-tab--active' : ''}`} onClick={() => setTab('usage')}>
+            AI Usage &amp; Cost
           </button>
         </div>
 
@@ -321,6 +442,130 @@ export default function AdminPage() {
                         <td>{f.wouldHaveMissed ?? '—'}</td>
                         <td>{f.wouldUseAgain ?? '—'}</td>
                         <td className="admin-insight">{f.mostValuableInsight || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'usage' && (
+          <div className="admin-section">
+            <p className="admin-hint">
+              Measured OpenAI usage for <strong>{monthKey}</strong> (UTC). Every call records its
+              real token counts, so these are actual costs rather than estimates. Cost is derived
+              from the price table in <code>api/_lib/aiConfig.ts</code> — update it whenever OpenAI
+              changes prices, or these figures drift.
+            </p>
+            {usageError && <p className="admin-error">{usageError}</p>}
+
+            <div className="admin-stats-row">
+              <div className="admin-stat-card">
+                <span className="admin-stat-val">{usd(monthly?.costUsd)}</span>
+                <span className="admin-stat-label">OpenAI cost this month</span>
+              </div>
+              <div className="admin-stat-card">
+                <span className="admin-stat-val">{compact(monthly?.calls)}</span>
+                <span className="admin-stat-label">AI calls</span>
+              </div>
+              <div className="admin-stat-card admin-stat-card--muted">
+                <span className="admin-stat-val">{compact(monthly?.tokensIn)}</span>
+                <span className="admin-stat-label">Tokens in</span>
+              </div>
+              <div className="admin-stat-card admin-stat-card--muted">
+                <span className="admin-stat-val">{compact(monthly?.tokensOut)}</span>
+                <span className="admin-stat-label">Tokens out</span>
+              </div>
+            </div>
+
+            <h2 className="admin-subtitle">By operation</h2>
+            {!monthly?.byOperation ? (
+              <p className="admin-hint">No AI calls recorded yet this month.</p>
+            ) : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Operation</th>
+                      <th>Calls</th>
+                      <th>Tokens in</th>
+                      <th>Tokens out</th>
+                      <th>Avg cost / call</th>
+                      <th>Total cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.entries(monthly.byOperation).map(([op, t]) => (
+                      <tr key={op}>
+                        <td>{OPERATION_LABELS[op] ?? op}</td>
+                        <td>{compact(t.calls)}</td>
+                        <td>{compact(t.tokensIn)}</td>
+                        <td>{compact(t.tokensOut)}</td>
+                        <td>{usd(t.calls ? (t.costUsd ?? 0) / t.calls : 0)}</td>
+                        <td>{usd(t.costUsd)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            <h2 className="admin-subtitle">Plan margin this month</h2>
+            <p className="admin-hint">
+              Revenue is subscriber count x list price. Cost is what those accounts actually
+              consumed. Free-plan cost has no revenue behind it, so it is shown for awareness
+              rather than as a margin.
+            </p>
+            <div className="admin-table-wrap">
+              <table className="admin-table">
+                <thead>
+                  <tr>
+                    <th>Plan</th>
+                    <th>Accounts</th>
+                    <th>Revenue</th>
+                    <th>AI cost</th>
+                    <th>Gross margin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {margins.map(m => (
+                    <tr key={m.plan}>
+                      <td>{m.plan.toUpperCase()}</td>
+                      <td>{m.count}</td>
+                      <td>{m.revenue > 0 ? `$${m.revenue.toFixed(2)}` : '—'}</td>
+                      <td>{usd(m.cost)}</td>
+                      <td>{m.marginPct == null ? '—' : `${m.marginPct}%`}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <h2 className="admin-subtitle">Highest-cost accounts</h2>
+            {usageRows.length === 0 ? (
+              <p className="admin-hint">No account usage recorded yet this month.</p>
+            ) : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Account</th>
+                      <th>Plan</th>
+                      <th>Calls</th>
+                      <th>Credits used</th>
+                      <th>AI cost</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageRows.slice(0, 10).map(r => (
+                      <tr key={r.id}>
+                        <td className="admin-insight">{r.uid}</td>
+                        <td>{r.plan}</td>
+                        <td>{compact(r.calls)}</td>
+                        <td>{r.creditsCharged ?? 0}</td>
+                        <td>{usd(r.costUsd)}</td>
                       </tr>
                     ))}
                   </tbody>

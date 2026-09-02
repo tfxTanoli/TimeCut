@@ -19,4 +19,21 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // Context modules deliberately export both the Provider component and the
+    // hook that reads it — the standard React convention, and the one used
+    // consistently here. Naming those three hooks keeps Fast Refresh happy
+    // without scattering suppression comments, and any *other* accidental
+    // non-component export in these files is still reported.
+    files: ['src/contexts/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': [
+        'error',
+        {
+          allowConstantExport: true,
+          allowExportNames: ['useAuth', 'useAuthModal', 'useLanguage'],
+        },
+      ],
+    },
+  },
 ])

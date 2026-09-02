@@ -1,4 +1,13 @@
 {
-  "indexes": [],
+  "indexes": [
+    {
+      "collectionGroup": "aiUsageByUser",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "month", "order": "ASCENDING" },
+        { "fieldPath": "costUsd", "order": "DESCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }

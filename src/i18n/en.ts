@@ -447,6 +447,7 @@ const en: Record<string, string> = {
   'pricing.mostPopular': 'Most Popular',
 
   // Shared
+  'pricing.analysesPerMonth': '~{n} analyses per month',
   'pricing.creditDisclaimer': 'Usage is calculated using AI Credits based on document size and analysis complexity.',
 
   // FREE

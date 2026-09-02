@@ -5,6 +5,7 @@ import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 import { computeReportCost } from '../lib/planConfig'
 import { createBillingPortalSession } from '../api'
+import { firebaseErrorCode } from '../lib/errors'
 
 const TYPICAL_REPORT = { pages: 20, docs: 1 } // 20-page single doc, matches marketing copy
 
@@ -67,10 +68,17 @@ export default function ProfilePage() {
     if (!loading && !user) navigate('/', { replace: true })
   }, [user, loading, navigate])
 
-  useEffect(() => {
-    if (displayName) setName(displayName)
-    else if (user?.email) setName('')
-  }, [displayName, user])
+  // Keep the editable name field in step with the stored display name. Done
+  // during render rather than in an effect so the input never shows the
+  // previous account's name for a frame after the profile loads.
+  // Wrapped in an object so the very first render always syncs: `name` starts
+  // empty, and a plain initial value equal to displayName would skip the sync
+  // and leave the field blank whenever the profile is already loaded on mount.
+  const [syncedName, setSyncedName] = useState<{ value: typeof displayName } | null>(null)
+  if (!syncedName || syncedName.value !== displayName) {
+    setSyncedName({ value: displayName })
+    setName(displayName || '')
+  }
 
   const resolvedName = displayName
 
@@ -110,13 +118,14 @@ export default function ProfilePage() {
       setCurrentPw(''); setNewPw(''); setConfirmPw('')
       setPwStatus('success')
       setTimeout(() => setPwStatus('idle'), 3000)
-    } catch (err: any) {
+    } catch (err) {
+      const code = firebaseErrorCode(err)
       const msg =
-        err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+        code === 'auth/wrong-password' || code === 'auth/invalid-credential'
           ? t('profile.pwWrong')
-          : err.code === 'auth/weak-password'
+          : code === 'auth/weak-password'
           ? t('profile.pwTooShort')
-          : err.code === 'auth/too-many-requests'
+          : code === 'auth/too-many-requests'
           ? t('profile.pwTooMany')
           : t('profile.pwError')
       setPwError(msg)

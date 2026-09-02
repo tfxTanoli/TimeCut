@@ -388,6 +388,7 @@ const zhCN: Record<string, string> = {
   'pricing.mostPopular': '最受欢迎',
 
   // 通用
+  'pricing.analysesPerMonth': '每月约 {n} 次分析',
   'pricing.creditDisclaimer': '用量根据文档大小和分析复杂度，以 AI 积分计算。',
 
   // 免费

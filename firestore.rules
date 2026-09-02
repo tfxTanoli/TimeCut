@@ -125,6 +125,25 @@ service cloud.firestore {
       allow read, update, delete: if false;
     }
 
+    // ── AI usage & cost ledger ───────────────────────────────────────────────
+    // Written ONLY by the server (the Admin SDK bypasses these rules) after a
+    // successful OpenAI call. Readable by admins so the dashboard can report
+    // real spend. Never client-writable: these numbers are what margin
+    // decisions get made on, so a client that could forge them would make the
+    // whole dashboard worthless.
+    match /aiUsage/{recordId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /aiUsageMonthly/{monthKey} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /aiUsageByUser/{docId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+
     // Deny everything else
     match /{document=**} {
       allow read, write: if false;

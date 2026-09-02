@@ -24,6 +24,18 @@ import {
   type Entitlement,
 } from '../api/_lib/entitlements.js'
 import { planFromSubscription, STRIPE_PLANS as SELF_SERVE_PLANS } from '../api/_lib/stripe-admin.js'
+// Models, input ceilings and pricing live in one module shared with api/, so
+// the dev server and Vercel can never disagree about which model runs what or
+// how much text it is allowed to send.
+import {
+  REPORT_MODEL,
+  ASSISTANT_MODEL,
+  MAX_CONTENT_CHARS,
+  MAX_ASSISTANT_CONTEXT_CHARS,
+  buildDocsBlock,
+  readUsage,
+} from '../api/_lib/aiConfig.js'
+import { recordAiUsage } from '../api/_lib/aiUsage.js'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
@@ -326,6 +338,10 @@ app.use(cors())
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } })
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+// Pinned deliberately: this code is written against the 2023-10-16 response
+// shapes. Stripe types `apiVersion` as the newest version only, so pinning an
+// older one requires a cast — Stripe's own typings prescribe exactly this.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', { apiVersion: '2023-10-16' as any })
 
 // Stripe product metadata only. The charge amount comes from the config/plans
@@ -392,9 +408,10 @@ async function getOrCreateProductId(plan: string): Promise<string> {
 }
 
 async function generateReport(content: string, language: string) {
-  const truncated = content.slice(0, 15000)
+  const wasTruncated = content.length > MAX_CONTENT_CHARS
+  const truncated = wasTruncated ? content.slice(0, MAX_CONTENT_CHARS) : content
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: REPORT_MODEL,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -402,7 +419,7 @@ async function generateReport(content: string, language: string) {
     ],
   })
   const raw = completion.choices[0]?.message?.content ?? '{}'
-  return JSON.parse(raw)
+  return { data: JSON.parse(raw), usage: readUsage(completion), truncated: wasTruncated }
 }
 
 // ── Send verification email via Resend ──
@@ -1189,15 +1206,22 @@ function getFrameworkPrompt(documentType: string): string {
   }
 }
 
+/**
+ * One node of the JSON the model returned. Its shape is not guaranteed — every
+ * field below is read defensively — so `any` is the honest type here rather
+ * than a narrower one that would only be a lie. Declared once so the rule is
+ * suppressed in a single documented place instead of on every callback.
+ */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> {
-  const hiddenRisks = (raw.hidden_risks ?? []).map((r: any) => ({
+type Raw = any
+function normalizeDecisionReport(raw: Record<string, Raw>): Record<string, Raw> {
+  const hiddenRisks = (raw.hidden_risks ?? []).map((r: Raw) => ({
     description: r.description ?? r.risk ?? r.text ?? '',
     severity: r.severity ?? 'Medium',
     reasoning: Array.isArray(r.reasoning) ? r.reasoning : (Array.isArray(r.reasons) ? r.reasons : []),
   }))
 
-  const missingInfo = (raw.missing_information ?? []).map((m: any) => {
+  const missingInfo = (raw.missing_information ?? []).map((m: Raw) => {
     if (typeof m === 'string' && m.trim()) {
       return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
     }
@@ -1209,7 +1233,7 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
     }
   })
 
-  const evidenceFound = (raw.evidence_found ?? []).map((e: any) => ({
+  const evidenceFound = (raw.evidence_found ?? []).map((e: Raw) => ({
     section: e.section ?? e.area ?? e.topic ?? '',
     page: e.page ?? e.page_number ?? null,
     clause: e.clause ?? e.clause_reference ?? null,
@@ -1218,33 +1242,33 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
     document: e.document ?? e.document_name ?? e.source ?? null,
   }))
 
-  const verificationQuestions = (raw.verification_questions ?? []).map((q: any) => ({
+  const verificationQuestions = (raw.verification_questions ?? []).map((q: Raw) => ({
     question: q.question ?? q.q ?? '',
     strong_answer_should_include: Array.isArray(q.strong_answer_should_include)
       ? q.strong_answer_should_include
       : (Array.isArray(q.strong_answer) ? q.strong_answer : []),
     red_flags: Array.isArray(q.red_flags) ? q.red_flags : [],
     why_it_matters: q.why_it_matters ?? q.why ?? q.importance ?? '',
-  })).filter((q: any) => q.question)
+  })).filter((q: Raw) => q.question)
 
-  const recommendedActions = (raw.recommended_actions ?? []).map((a: any) => ({
+  const recommendedActions = (raw.recommended_actions ?? []).map((a: Raw) => ({
     action: a.action ?? a.step ?? a.recommendation ?? '',
     reason: a.reason ?? a.why ?? a.rationale ?? '',
     priority: (['High', 'Medium', 'Low'].includes(a.priority)) ? a.priority : 'Medium',
-  })).filter((a: any) => a.action)
+  })).filter((a: Raw) => a.action)
 
-  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: any) => ({
+  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: Raw) => ({
     clause: n.clause ?? n.term ?? n.item ?? '',
     issue: n.issue ?? n.problem ?? n.concern ?? '',
     suggested_improvement: n.suggested_improvement ?? n.improvement ?? n.suggestion ?? n.recommended_change ?? '',
     leverage: n.leverage ?? n.leverage_point ?? n.rationale ?? undefined,
-  })).filter((n: any) => n.clause)
+  })).filter((n: Raw) => n.clause)
 
-  const weakEvidence = (raw.weak_evidence ?? []).map((w: any) => ({
+  const weakEvidence = (raw.weak_evidence ?? []).map((w: Raw) => ({
     claim: w.claim ?? w.statement ?? '',
     issue: w.issue ?? w.problem ?? w.why_weak ?? '',
     recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
-  })).filter((w: any) => w.claim)
+  })).filter((w: Raw) => w.claim)
 
   // The Playbook is a paid-plan feature, so it must not silently disappear when
   // the model omits a field. Anything missing is derived from the rest of the
@@ -1285,19 +1309,19 @@ function normalizeDecisionReport(raw: Record<string, any>): Record<string, any> 
   const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
     ? raw.before_signing_checklist
     : [
-        ...missingInfo.slice(0, 3).map((m: any) => `Obtain and verify: ${m.title}`),
+        ...missingInfo.slice(0, 3).map((m: Raw) => `Obtain and verify: ${m.title}`),
         'Confirm all pricing and payment terms in writing',
         'Review and sign only after all missing information is resolved',
       ].filter(Boolean)
 
   const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
     ? raw.compared_categories
-    : evidenceFound.map((e: any) => e.section).filter(Boolean).slice(0, 6)
+    : evidenceFound.map((e: Raw) => e.section).filter(Boolean).slice(0, 6)
 
   const confidenceBreakdown = raw.confidence_breakdown ?? {
     document_completeness: Math.min(100, score + 5),
     evidence_consistency: Math.min(100, score),
-    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: any) => r.severity === 'High').length * 20)),
+    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: Raw) => r.severity === 'High').length * 20)),
     missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
   }
 
@@ -1416,13 +1440,13 @@ app.post('/api/analyze-decision', (req, res, next) => {
       throw e
     }
 
-    const docsBlock = documents
-      .map((d, i) => `--- Document ${i + 1}: ${d.name} ---\n${d.content.slice(0, 8000)}`)
-      .join('\n\n')
+    // Shares a fixed character budget across the documents and reports which
+    // ones were cut, so the UI can say so rather than silently dropping them.
+    const { block: docsBlock, truncated: truncatedDocuments } = buildDocsBlock(documents)
 
     const systemPrompt = getFrameworkPrompt(documentType)
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: REPORT_MODEL,
       response_format: { type: 'json_object' },
       max_tokens: 8192,
       messages: [
@@ -1434,8 +1458,21 @@ app.post('/api/analyze-decision', (req, res, next) => {
     const raw = completion.choices[0]?.message?.content ?? '{}'
     const parsed = JSON.parse(raw)
     const data = normalizeDecisionReport(parsed)
+
+    await recordAiUsage({
+      uid: ent.uid, plan: ent.plan, operation: 'decision', model: REPORT_MODEL,
+      usage: readUsage(completion), creditsCharged: ent.isFree ? 0 : cost,
+      documents: documents.length, pages: totalPages,
+      truncated: truncatedDocuments.length > 0,
+    })
+
     res.json({
-      data: { ...gateReport(data, features), pages_analyzed: totalPages, documents_analyzed: documents.length },
+      data: {
+        ...gateReport(data, features),
+        pages_analyzed: totalPages,
+        documents_analyzed: documents.length,
+        truncated_documents: truncatedDocuments,
+      },
       entitlements: { plan: ent.plan, features, creditsCharged: ent.isFree ? 0 : cost },
     })
   } catch (err) {
@@ -1476,9 +1513,13 @@ app.post('/api/challenge-ai', express.json(), async (req, res) => {
     throw e
   }
 
+  // Bounded server-side as well as in the browser: the client must not be the
+  // only thing deciding how much we pay OpenAI per question.
+  const boundedContext = reportContext.slice(0, MAX_ASSISTANT_CONTEXT_CHARS)
+
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: ASSISTANT_MODEL,
       max_tokens: 600,
       messages: [
         {
@@ -1498,12 +1539,18 @@ Never fabricate information not found in the report.`,
         },
         {
           role: 'user',
-          content: `Decision Goal: ${decisionGoal ?? 'Not specified'}\n\nReport Data:\n${reportContext}\n\nUser Question: ${question}`,
+          content: `Decision Goal: ${decisionGoal ?? 'Not specified'}\n\nReport Data:\n${boundedContext}\n\nUser Question: ${question}`,
         },
       ],
     })
 
     const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
+    await recordAiUsage({
+      uid: ent.uid, plan: ent.plan, operation: 'assistant', model: ASSISTANT_MODEL,
+      usage: readUsage(completion),
+      creditsCharged: ent.isFree ? 0 : ent.cfg.creditCosts.assistantQuestion,
+      truncated: reportContext.length > MAX_ASSISTANT_CONTEXT_CHARS,
+    })
     res.json({ answer })
   } catch (err) {
     await refundCredits(ent, ent.isFree ? 0 : ent.cfg.creditCosts.assistantQuestion, { assistant: 1 })
@@ -1541,8 +1588,12 @@ app.post('/api/analyze', express.json(), async (req, res) => {
       if (!content?.trim()) { res.status(400).json({ error: 'content is required' }); return }
       textContent = content
     }
-    const data = await generateReport(textContent, language)
-    res.json({ data })
+    const { data, usage, truncated } = await generateReport(textContent, language)
+    await recordAiUsage({
+      uid: ent.uid, plan: ent.plan, operation: 'content', model: REPORT_MODEL, usage,
+      creditsCharged: ent.isFree ? 0 : cost, documents: 1, truncated,
+    })
+    res.json({ data: { ...data, content_truncated: truncated } })
   } catch (err) {
     if (ent.isFree) await refundFreeReport(ent, 1)
     else await refundCredits(ent, cost, { reports: 1, documents: 1 })
@@ -1576,8 +1627,12 @@ app.post('/api/analyze-pdf', upload.single('file'), async (req, res) => {
     }
 
     const language = req.body.language || 'English'
-    const data = await generateReport(text, language)
-    res.json({ data })
+    const { data, usage, truncated } = await generateReport(text, language)
+    await recordAiUsage({
+      uid: ent.uid, plan: ent.plan, operation: 'content', model: REPORT_MODEL, usage,
+      creditsCharged: ent.isFree ? 0 : cost, documents: 1, truncated,
+    })
+    res.json({ data: { ...data, content_truncated: truncated } })
   } catch (err) {
     if (charged) {
       if (ent.isFree) await refundFreeReport(ent, 1)

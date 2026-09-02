@@ -388,6 +388,7 @@ const zhTW: Record<string, string> = {
   'pricing.mostPopular': '最受歡迎',
 
   // 通用
+  'pricing.analysesPerMonth': '每月約 {n} 次分析',
   'pricing.creditDisclaimer': '用量依文件大小和分析複雜度，以 AI 點數計算。',
 
   // 免費

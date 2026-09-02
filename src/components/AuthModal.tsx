@@ -5,6 +5,7 @@ import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { isAdminEmail } from '../lib/admin'
 import { auth } from '../lib/firebase'
+import { firebaseErrorCode } from '../lib/errors'
 
 export default function AuthModal() {
   const { mode, close } = useAuthModal()
@@ -29,7 +30,15 @@ export default function AuthModal() {
   const [resendSent, setResendSent]   = useState(false)
   const [signupEmail, setSignupEmail] = useState('')
 
-  useEffect(() => {
+  // Reset the form whenever the modal opens or switches between login/signup.
+  // Adjusting state during render is React's documented alternative to a reset
+  // effect: it happens before the browser paints, so the user never sees a
+  // frame of the previous mode's half-filled form. The synced value starts at
+  // null — the closed state — so a mount with a mode already set still runs the
+  // reset exactly as the previous effect did.
+  const [syncedMode, setSyncedMode] = useState<typeof mode>(null)
+  if (mode !== syncedMode) {
+    setSyncedMode(mode)
     if (mode) {
       setTab(mode)
       setError(null)
@@ -39,7 +48,7 @@ export default function AuthModal() {
       setTermsAccepted(false)
       setName(''); setEmail(''); setPassword('')
     }
-  }, [mode])
+  }
 
   useEffect(() => {
     document.body.style.overflow = mode ? 'hidden' : ''
@@ -84,8 +93,8 @@ export default function AuthModal() {
         setSignupEmail(email)
         setVerifyScreen(true)
       }
-    } catch (err: any) {
-      setError(authErrorMessage(err.code, tab, t))
+    } catch (err) {
+      setError(authErrorMessage(firebaseErrorCode(err), tab, t))
     } finally {
       setLoading(false)
     }
@@ -118,8 +127,8 @@ export default function AuthModal() {
         handleClose()
         if (admin) navigate('/admin', { replace: true })
       }, 900)
-    } catch (err: any) {
-      setError(authErrorMessage(err.code, tab, t))
+    } catch (err) {
+      setError(authErrorMessage(firebaseErrorCode(err), tab, t))
     } finally {
       setGoogleLoading(false)
     }

@@ -1386,6 +1386,26 @@
 .auth-prompt-icon { font-size: 18px; flex-shrink: 0; }
 .auth-prompt-msg  { flex: 1; font-size: 14px; color: #78350f; margin: 0; min-width: 160px; }
 .auth-prompt-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+/* ── Truncation notice ──
+   Shown when a document was longer than the analysis limit. Deliberately NOT
+   hidden in print: if a report only covers part of a contract, the printed
+   copy has to say so too. */
+.dr-truncation-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 1080px;
+  margin: 0 auto 20px;
+  padding: 14px 18px;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-left: 4px solid #f59e0b;
+  border-radius: 10px;
+}
+.dr-truncation-icon  { font-size: 16px; line-height: 1.4; flex-shrink: 0; color: #b45309; }
+.dr-truncation-title { margin: 0 0 3px; font-size: 14px; font-weight: 600; color: #78350f; }
+.dr-truncation-body  { margin: 0; font-size: 13px; line-height: 1.55; color: #92400e; }
 .auth-prompt-dismiss {
   background: none; border: none; cursor: pointer;
   font-size: 13px; color: #92400e; text-decoration: underline; padding: 0;
@@ -2594,6 +2614,19 @@
 .pricing-price { font-size: 36px; font-weight: 800; color: var(--text-h); line-height: 1; }
 .pricing-price--custom { font-size: 28px; }
 .pricing-period { font-size: 13px; color: #94a3b8; margin-left: 2px; }
+/* The analysis count leads and the credit figure supports it: a visitor
+   understands "~25 analyses per month" instantly, "500 AI Credits" not at all. */
+.pricing-analyses {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: -8px 0 2px;
+}
+.pricing-analyses-sub {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 0 0 14px;
+}
 .pricing-plan-subtitle {
   font-size: 12px;
   color: var(--text);
@@ -5414,6 +5447,9 @@
 .banner-sub { color: rgba(255,255,255,0.75); }
 .auth-prompt-banner { background: #1F2937; border-color: #374151; }
 .auth-prompt-msg { color: #D1D5DB; }
+.dr-truncation-notice { background: #2A2115; border-color: #7C5A15; border-left-color: #F59E0B; }
+.dr-truncation-title { color: #FCD34D; }
+.dr-truncation-body  { color: #D6B981; }
 .gauge-label { color: #6B7280; }
 
 /* ── ScoreGauge ── */

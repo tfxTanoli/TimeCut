@@ -1,6 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { generateReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
+import { REPORT_MODEL } from './_lib/aiConfig.js'
+import { recordAiUsage } from './_lib/aiUsage.js'
 import {
   resolveEntitlement,
   chargeCredits,
@@ -36,8 +38,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const data = await generateReport(content, language as string)
-    return res.json({ data })
+    const { data, usage, truncated } = await generateReport(content, language as string)
+    await recordAiUsage({
+      uid: ent.uid,
+      plan: ent.plan,
+      operation: 'content',
+      model: REPORT_MODEL,
+      usage,
+      creditsCharged: ent.isFree ? 0 : cost,
+      documents: 1,
+      truncated,
+    })
+    return res.json({ data: { ...data, content_truncated: truncated } })
   } catch (err) {
     if (ent.isFree) await refundFreeReport(ent, 1)
     else await refundCredits(ent, cost, { reports: 1, documents: 1 })

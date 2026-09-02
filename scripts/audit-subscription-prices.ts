@@ -50,7 +50,8 @@ async function loadConfiguredPrices(): Promise<Record<Plan, number | null> | nul
     const snap = await admin.firestore().collection('config').doc('plans').get()
     if (!snap.exists) return null
 
-    const plans = (snap.data() as any)?.plans ?? {}
+    type ConfiguredPlan = { priceCents?: number | null }
+    const plans = (snap.data() as { plans?: Record<string, ConfiguredPlan> } | undefined)?.plans ?? {}
     return {
       starter: plans.starter?.priceCents ?? null,
       pro: plans.pro?.priceCents ?? null,
@@ -68,6 +69,10 @@ async function main() {
     process.exit(1)
   }
 
+  // Pinned deliberately: this code is written against the 2023-10-16 response
+  // shapes. Stripe types `apiVersion` as the newest version only, so pinning an
+  // older one requires a cast — Stripe's own typings prescribe exactly this.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' as any })
   const mode = process.env.STRIPE_SECRET_KEY.startsWith('sk_live') ? 'LIVE' : 'TEST'
 

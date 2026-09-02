@@ -128,7 +128,7 @@ export default function DecisionUpload({
 
   // Guests must sign in first; remember their intent so analysis runs
   // automatically right after they authenticate (no second click needed).
-  const [pendingSubmit, setPendingSubmit] = useState(false)
+  const pendingSubmitRef = useRef(false)
 
   function runAnalysis() {
     if (files.length === 0 || decisionGoal.trim().length < 5) return
@@ -137,18 +137,20 @@ export default function DecisionUpload({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!isLoggedIn) { setPendingSubmit(true); onOpenAuth?.(); return }
+    if (!isLoggedIn) { pendingSubmitRef.current = true; onOpenAuth?.(); return }
     runAnalysis()
   }
 
   // When a guest signs in after pressing the button, auto-start their analysis.
+  // The pending flag is a ref rather than state: nothing renders from it, and
+  // sign-in already re-runs this effect, so state would only add a render pass.
   useEffect(() => {
-    if (isLoggedIn && pendingSubmit && !isLoading && !isAtLimit) {
-      setPendingSubmit(false)
+    if (isLoggedIn && pendingSubmitRef.current && !isLoading && !isAtLimit) {
+      pendingSubmitRef.current = false
       runAnalysis()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoggedIn, pendingSubmit, isLoading, isAtLimit])
+  }, [isLoggedIn, isLoading, isAtLimit])
 
   const canSubmit =
     !isLoading && !isAtLimit && files.length > 0 && decisionGoal.trim().length >= 5

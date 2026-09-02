@@ -21,7 +21,7 @@ function nm(item: any, ...keys: string[]): string {
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeMissing(raw: any[]): MissingInfoItem[] {
-  return (raw ?? []).map((m: any, i: number) => {
+  return (raw ?? []).map((m, i) => {
     if (typeof m === 'string' && m.trim()) {
       return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
     }
@@ -35,7 +35,7 @@ function normalizeMissing(raw: any[]): MissingInfoItem[] {
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeRisks(raw: any[]): RiskItem[] {
-  return (raw ?? []).map((r: any) => ({
+  return (raw ?? []).map(r => ({
     description: nm(r, 'description', 'risk', 'text', 'detail') || '—',
     severity:    (r?.severity ?? 'Medium') as RiskItem['severity'],
     reasoning:   Array.isArray(r?.reasoning) ? r.reasoning : (Array.isArray(r?.reasons) ? r.reasons : []),
@@ -43,7 +43,7 @@ function normalizeRisks(raw: any[]): RiskItem[] {
 }
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeEvidence(raw: any[]): EvidenceItem[] {
-  return (raw ?? []).map((e: any) => ({
+  return (raw ?? []).map(e => ({
     section:    nm(e, 'section', 'area', 'topic', 'name') || 'Document reference',
     page:       e?.page ?? e?.page_number ?? undefined,
     clause:     e?.clause ?? e?.clause_reference ?? undefined,
@@ -195,6 +195,33 @@ function SectionCard({ icon, title, className = '', badge, children }: {
         {badge && <span className="dr-section-badge">{badge}</span>}
       </div>
       <div className="dr-section-body">{children}</div>
+    </div>
+  )
+}
+
+/* ── Truncation notice ───────────────────────────────────────────────────────
+   Documents longer than their character budget are analysed only up to that
+   point. Saying so is part of the product being trustworthy: a reader who
+   believes a 40-page contract was reviewed in full, when it was not, is worse
+   off than one who knows to check the rest themselves.
+*/
+function TruncationNotice({ names }: { names?: string[] }) {
+  if (!names || names.length === 0) return null
+  return (
+    <div className="dr-truncation-notice" role="status">
+      <span className="dr-truncation-icon" aria-hidden="true">⚠</span>
+      <div>
+        <p className="dr-truncation-title">
+          {names.length === 1
+            ? 'One document was too long to analyse in full'
+            : `${names.length} documents were too long to analyse in full`}
+        </p>
+        <p className="dr-truncation-body">
+          Only the earlier part of {names.join(', ')} was reviewed. Anything later in{' '}
+          {names.length === 1 ? 'the document' : 'those documents'} was not included in this
+          analysis — review those sections yourself, or split the file and run it again.
+        </p>
+      </div>
     </div>
   )
 }
@@ -782,6 +809,61 @@ function getSuggestedQuestions(docType?: string): string[] {
   return SUGGESTED_QUESTIONS_BY_TYPE[docType ?? 'general'] ?? SUGGESTED_QUESTIONS_BY_TYPE.general
 }
 
+/* ── Decision Assistant context ──────────────────────────────────────────────
+   The report is re-sent with every question, so its size is a recurring cost,
+   not a one-off. These ceilings mirror MAX_ASSISTANT_CONTEXT_CHARS in
+   api/_lib/aiConfig.ts, which enforces the same limit server-side — the browser
+   is not trusted to be the only thing bounding what we send to OpenAI.
+*/
+const ASSISTANT_CONTEXT_CHAR_LIMIT = 6000
+const ASSISTANT_CONTEXT_MAX_ITEMS = 5
+const ASSISTANT_CONTEXT_MAX_FIELD = 300
+
+function clip(text: string | undefined | null, max = ASSISTANT_CONTEXT_MAX_FIELD): string {
+  if (!text) return ''
+  return text.length > max ? `${text.slice(0, max)}…` : text
+}
+
+/**
+ * Serialise the parts of a report the Assistant actually reasons over.
+ *
+ * The arrays are bounded *before* serialising rather than by cutting the
+ * finished JSON string — truncating JSON mid-structure produces something
+ * invalid that the model then has to guess its way through.
+ */
+function buildAssistantContext(report: DecisionReport): string {
+  const context = {
+    recommendation: clip(report.recommendation, 600),
+    confidence_score: report.confidence_score,
+    confidence_rationale: clip(report.confidence_rationale),
+    ranking: (report.ranking ?? []).slice(0, ASSISTANT_CONTEXT_MAX_ITEMS).map(r => ({
+      rank: r.rank,
+      name: r.name,
+      summary: clip(r.summary),
+    })),
+    hidden_risks: (report.hidden_risks ?? []).slice(0, ASSISTANT_CONTEXT_MAX_ITEMS).map(r => ({
+      description: clip(r.description),
+      severity: r.severity,
+    })),
+    missing_information: (report.missing_information ?? []).slice(0, ASSISTANT_CONTEXT_MAX_ITEMS).map(m => ({
+      title: m.title,
+      whyItMatters: clip(m.whyItMatters),
+    })),
+    evidence_found: (report.evidence_found ?? []).slice(0, ASSISTANT_CONTEXT_MAX_ITEMS).map(e => ({
+      section: e.section,
+      page: e.page,
+      clause: e.clause,
+      context: clip(e.context),
+    })),
+    decision_defense: clip(report.decision_defense, 600),
+    what_would_change: clip(report.what_would_change, 600),
+    decision_strength: report.decision_strength,
+    compared_categories: report.compared_categories,
+  }
+  // No pretty-printing: indentation is pure token cost on every question asked.
+  return JSON.stringify(context).slice(0, ASSISTANT_CONTEXT_CHAR_LIMIT)
+}
+
 function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSuggestion, t }: {
   report: DecisionReport
   decisionGoal?: string
@@ -815,19 +897,7 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
     // The question quota and per-question credit charge are enforced by
     // /api/challenge-ai against the verified account — the browser cannot be
     // the place that decides whether a question is allowed.
-    const reportContext = JSON.stringify({
-      recommendation: report.recommendation,
-      confidence_score: report.confidence_score,
-      confidence_rationale: report.confidence_rationale,
-      ranking: report.ranking,
-      hidden_risks: report.hidden_risks,
-      missing_information: report.missing_information,
-      evidence_found: report.evidence_found,
-      decision_defense: report.decision_defense,
-      what_would_change: report.what_would_change,
-      decision_strength: report.decision_strength,
-      compared_categories: report.compared_categories,
-    }, null, 2)
+    const reportContext = buildAssistantContext(report)
 
     const result = await challengeAI(q, reportContext, decisionGoal ?? '')
 
@@ -1107,8 +1177,12 @@ function RecommendedActionsSection({ actions }: { actions: RecommendedAction[] }
 
 /* ── Stage 4: Negotiation Suggestions ── */
 function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: NegotiationSuggestion[]; docType?: string }) {
-  if (!suggestions || suggestions.length === 0) return null
+  // Hooks have to run in the same order on every render, so this sits above the
+  // early returns below — previously it was skipped whenever the section had
+  // nothing to show, which is exactly the case React cannot recover from.
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+
+  if (!suggestions || suggestions.length === 0) return null
 
   const title = docType === 'cv' ? '' : docType === 'business_proposal' ? 'Negotiation & Commitment Points' : 'Negotiation Suggestions'
   if (!title) return null
@@ -1300,6 +1374,23 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
   )
 }
 
+/**
+ * Bullet list with an empty-state fallback. Defined at module scope, not inside
+ * ExecutiveDecisionPackage — a component created during render is a brand-new
+ * type on every pass, so React unmounts and remounts the whole subtree each
+ * time instead of updating it.
+ */
+function Bullets({ items, fallback }: { items: string[]; fallback: string }) {
+  if (!items.length) return <p className="edp-answer edp-answer--muted">{fallback}</p>
+  return (
+    <ul className="edp-bullets">
+      {items.map((it, i) => (
+        <li key={i} className="edp-bullet"><span className="edp-bullet-mark">›</span>{it}</li>
+      ))}
+    </ul>
+  )
+}
+
 /* ── Executive Decision Package (closing summary of the 8 decision questions) ── */
 function ExecutiveDecisionPackage({
   report,
@@ -1354,17 +1445,6 @@ function ExecutiveDecisionPackage({
   const readyLabel =
     readiness >= 70 ? t('report.edpReadyHigh') : readiness >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
   const readyColor = readiness >= 70 ? '#22C55E' : readiness >= 45 ? '#F59E0B' : '#EF4444'
-
-  const Bullets = ({ items, fallback }: { items: string[]; fallback: string }) =>
-    items.length ? (
-      <ul className="edp-bullets">
-        {items.map((it, i) => (
-          <li key={i} className="edp-bullet"><span className="edp-bullet-mark">›</span>{it}</li>
-        ))}
-      </ul>
-    ) : (
-      <p className="edp-answer edp-answer--muted">{fallback}</p>
-    )
 
   return (
     <section className="edp-card">
@@ -1630,6 +1710,9 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
 
         {/* Expert Framework Badge */}
         <ExpertFrameworkBadge docType={docType} />
+
+        {/* Say so before the findings if we did not read a document in full */}
+        <TruncationNotice names={report.truncated_documents} />
 
         {/* 1. Executive Summary */}
         <ExecutiveSummary report={report} />

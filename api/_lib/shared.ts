@@ -1,4 +1,11 @@
 import OpenAI from 'openai'
+import {
+  REPORT_MODEL,
+  MAX_CONTENT_CHARS,
+  buildDocsBlock,
+  readUsage,
+  type TokenUsage,
+} from './aiConfig.js'
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
@@ -78,11 +85,19 @@ OUTPUT FORMAT (JSON ONLY, no markdown, no extra keys):
 
 Generate ALL text fields in the user's selected language.`
 
-export async function generateReport(content: string, language: string) {
+export interface GeneratedReport {
+  data: Record<string, unknown>
+  usage: TokenUsage
+  /** True when the content was longer than MAX_CONTENT_CHARS and was cut. */
+  truncated: boolean
+}
+
+export async function generateReport(content: string, language: string): Promise<GeneratedReport> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
-  const truncated = content.slice(0, 15000)
+  const wasTruncated = content.length > MAX_CONTENT_CHARS
+  const truncated = wasTruncated ? content.slice(0, MAX_CONTENT_CHARS) : content
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: REPORT_MODEL,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -90,7 +105,7 @@ export async function generateReport(content: string, language: string) {
     ],
   })
   const raw = completion.choices[0]?.message?.content ?? '{}'
-  return JSON.parse(raw)
+  return { data: JSON.parse(raw), usage: readUsage(completion), truncated: wasTruncated }
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -339,22 +354,29 @@ function getFrameworkPrompt(documentType: string): string {
   }
 }
 
+export interface GeneratedDecisionReport {
+  data: Record<string, unknown>
+  usage: TokenUsage
+  /** Names of documents that exceeded their character budget and were cut. */
+  truncatedDocuments: string[]
+}
+
 export async function generateDecisionReport(
   documents: DecisionDocument[],
   language: string,
   decisionGoal: string,
   documentType: string = 'auto',
-): Promise<Record<string, unknown>> {
+): Promise<GeneratedDecisionReport> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
   const systemPrompt = getFrameworkPrompt(documentType)
 
-  const docsBlock = documents
-    .map((d, i) => `--- Document ${i + 1}: ${d.name} ---\n${d.content.slice(0, 8000)}`)
-    .join('\n\n')
+  // Shares a fixed character budget across the uploaded documents, and reports
+  // which ones were cut so the UI can say so instead of silently dropping them.
+  const { block: docsBlock, truncated } = buildDocsBlock(documents)
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o',
+    model: REPORT_MODEL,
     response_format: { type: 'json_object' },
     max_tokens: 8192,
     messages: [
@@ -367,5 +389,9 @@ export async function generateDecisionReport(
   })
 
   const raw = completion.choices[0]?.message?.content ?? '{}'
-  return JSON.parse(raw)
+  return {
+    data: JSON.parse(raw),
+    usage: readUsage(completion),
+    truncatedDocuments: truncated,
+  }
 }

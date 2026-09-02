@@ -3,6 +3,10 @@ import admin from 'firebase-admin'
 
 // ── Stripe ──────────────────────────────────────────────────────────────────
 export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? '', {
+  // Pinned deliberately: this code is written against the 2023-10-16 response
+  // shapes. Stripe types `apiVersion` as the newest version only, so pinning an
+  // older one requires a cast — Stripe's own typings prescribe exactly this.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   apiVersion: '2023-10-16' as any,
 })
 

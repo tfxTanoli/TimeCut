@@ -16,7 +16,7 @@ export default function PricingPage() {
   // API refuses to create a subscription for it, and the card links to the
   // contact form rather than a card form.
   const [paymentPlan, setPaymentPlan] = useState<'starter' | 'pro' | null>(null)
-  const [banner, setBanner] = useState<'success' | 'canceled' | null>(null)
+  const [dismissedBanner, setDismissedBanner] = useState<'success' | 'canceled' | null>(null)
   const [cfg, setCfg] = useState<PlanConfig>(getCachedPlanConfig())
   const [reportsPerMonth, setReportsPerMonth] = useState<number | null>(null)
   const navigate = useNavigate()
@@ -27,10 +27,14 @@ export default function PricingPage() {
   const starterCredits = (cfg.plans.starter.credits ?? 0).toLocaleString()
   const proCredits = (cfg.plans.pro.credits ?? 0).toLocaleString()
 
-  useEffect(() => {
-    if (searchParams.get('success') === 'true') setBanner('success')
-    if (searchParams.get('canceled') === 'true') setBanner('canceled')
-  }, [searchParams])
+  // Derived straight from the URL instead of mirrored into state by an effect.
+  // Dismissal records *which* banner was dismissed, so returning from Stripe
+  // with a different outcome still shows the new one.
+  const bannerFromUrl: 'success' | 'canceled' | null =
+    searchParams.get('success') === 'true' ? 'success'
+      : searchParams.get('canceled') === 'true' ? 'canceled'
+        : null
+  const banner = bannerFromUrl && bannerFromUrl !== dismissedBanner ? bannerFromUrl : null
 
   function handlePaidPlan(plan: 'starter' | 'pro') {
     if (!user) { openAuthModal(); return }
@@ -66,6 +70,18 @@ export default function PricingPage() {
   // a "typical" analysis (~20 pages, single doc) sets the per-report credit cost,
   // so if the estimated monthly credits fit inside Starter we suggest Starter, else Pro.
   const typicalReportCost = Math.max(1, computeReportCost(cfg, { pages: 20, docs: 1 }))
+
+  // "500 AI Credits" means nothing to a first-time visitor; "~25 analyses per
+  // month" does. Both are shown, but the analysis count leads. Derived from the
+  // same config as everything else, so an admin editing credits or credit costs
+  // updates this too — rounded to a multiple of five because it is an estimate,
+  // not a quota.
+  function analysesPerMonth(plan: 'starter' | 'pro'): number {
+    const credits = cfg.plans[plan].credits ?? 0
+    return Math.max(1, Math.round(credits / typicalReportCost / 5) * 5)
+  }
+  const analysesLabel = (plan: 'starter' | 'pro') =>
+    t('pricing.analysesPerMonth').replace('{n}', String(analysesPerMonth(plan)))
   const recommended: 'starter' | 'pro' | null =
     reportsPerMonth == null
       ? null
@@ -96,13 +112,13 @@ export default function PricingPage() {
       {banner === 'success' && (
         <div className="pricing-banner pricing-banner--success">
           <span>Payment successful! Welcome to TimeCut.</span>
-          <button className="pricing-banner-dismiss" onClick={() => setBanner(null)}>✕</button>
+          <button className="pricing-banner-dismiss" onClick={() => setDismissedBanner(bannerFromUrl)}>✕</button>
         </div>
       )}
       {banner === 'canceled' && (
         <div className="pricing-banner pricing-banner--canceled">
           <span>Payment was canceled. No charge was made.</span>
-          <button className="pricing-banner-dismiss" onClick={() => setBanner(null)}>✕</button>
+          <button className="pricing-banner-dismiss" onClick={() => setDismissedBanner(bannerFromUrl)}>✕</button>
         </div>
       )}
 
@@ -147,6 +163,10 @@ export default function PricingPage() {
                 <span className="pricing-price">{formatPrice(cfg.plans.starter.priceCents)}</span>
                 <span className="pricing-period">{t('pricing.starterPeriod')}</span>
               </div>
+              <p className="pricing-analyses">{analysesLabel('starter')}</p>
+              <p className="pricing-analyses-sub">
+                {t('pricing.starterF1').replace('{credits}', starterCredits)}
+              </p>
               <button
                 className="pricing-cta btn-outline"
                 onClick={() => handlePaidPlan('starter')}
@@ -156,7 +176,8 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.starterSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['starterF1','starterF2','starterF3','starterF4','starterF5','starterF6','starterF7','starterF8','starterF9'] as const).map(k => (
+                {/* F1 is the credit line, now shown under the price above. */}
+                {(['starterF2','starterF3','starterF4','starterF5','starterF6','starterF7','starterF8','starterF9'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', starterCredits)}
                   </li>
@@ -174,6 +195,10 @@ export default function PricingPage() {
                 <span className="pricing-price">{formatPrice(cfg.plans.pro.priceCents)}</span>
                 <span className="pricing-period">{t('pricing.proPeriod')}</span>
               </div>
+              <p className="pricing-analyses">{analysesLabel('pro')}</p>
+              <p className="pricing-analyses-sub">
+                {t('pricing.proF1').replace('{credits}', proCredits)}
+              </p>
               <button
                 className="pricing-cta btn-primary"
                 onClick={() => handlePaidPlan('pro')}
@@ -183,7 +208,8 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.proSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['proF1','proF2','proF3','proF4','proF5','proF6'] as const).map(k => (
+                {/* F1 is the credit line, now shown under the price above. */}
+                {(['proF2','proF3','proF4','proF5','proF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', proCredits)}
                   </li>
