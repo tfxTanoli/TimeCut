@@ -2,6 +2,9 @@ import OpenAI from 'openai'
 import {
   REPORT_MODEL,
   MAX_CONTENT_CHARS,
+  CONTENT_TIMEOUT_MS,
+  REPORT_TIMEOUT_MS,
+  OPENAI_MAX_RETRIES,
   buildDocsBlock,
   readUsage,
   type TokenUsage,
@@ -103,7 +106,7 @@ export async function generateReport(content: string, language: string): Promise
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: `Language: ${language}\n\nContent to analyze:\n${truncated}` },
     ],
-  })
+  }, { timeout: CONTENT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
   const raw = completion.choices[0]?.message?.content ?? '{}'
   return { data: JSON.parse(raw), usage: readUsage(completion), truncated: wasTruncated }
 }
@@ -386,7 +389,7 @@ export async function generateDecisionReport(
         content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}`,
       },
     ],
-  })
+  }, { timeout: REPORT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
 
   const raw = completion.choices[0]?.message?.content ?? '{}'
   return {

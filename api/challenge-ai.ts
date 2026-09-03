@@ -2,7 +2,13 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import OpenAI from 'openai'
 import { verifyAuth, ApiError } from './_lib/auth.js'
 import { resolveEntitlement, chargeAssistantQuestion, refundCredits } from './_lib/entitlements.js'
-import { ASSISTANT_MODEL, MAX_ASSISTANT_CONTEXT_CHARS, readUsage } from './_lib/aiConfig.js'
+import {
+  ASSISTANT_MODEL,
+  MAX_ASSISTANT_CONTEXT_CHARS,
+  ASSISTANT_TIMEOUT_MS,
+  OPENAI_MAX_RETRIES,
+  readUsage,
+} from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 
 const CHALLENGE_SYSTEM = `You are an AI Decision Reviewer assistant for TimeCut.
@@ -71,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
       ],
       max_tokens: 600,
-    })
+    }, { timeout: ASSISTANT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
 
     const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
     await recordAiUsage({

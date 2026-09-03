@@ -4,7 +4,7 @@ import fs from 'fs'
 import PDFParser from 'pdf2json'
 import { generateDecisionReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL } from './_lib/aiConfig.js'
+import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 import {
   resolveEntitlement,
@@ -391,6 +391,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }
       console.error('[DECISION ERROR]', e)
       if (e instanceof ApiError) return res.status(e.status).json({ code: e.code, error: e.message })
+      // A deadline hit is not a broken request — say what happened and confirm
+      // the refund, rather than showing the raw SDK message.
+      if (isTimeoutError(e)) return res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE })
       const message = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e)
       return res.status(500).json({ error: message || 'Decision analysis failed' })
     }

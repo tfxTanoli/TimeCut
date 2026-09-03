@@ -32,8 +32,14 @@ import {
   ASSISTANT_MODEL,
   MAX_CONTENT_CHARS,
   MAX_ASSISTANT_CONTEXT_CHARS,
+  CONTENT_TIMEOUT_MS,
+  REPORT_TIMEOUT_MS,
+  ASSISTANT_TIMEOUT_MS,
+  OPENAI_MAX_RETRIES,
   buildDocsBlock,
   readUsage,
+  isTimeoutError,
+  TIMEOUT_MESSAGE,
 } from '../api/_lib/aiConfig.js'
 import { recordAiUsage } from '../api/_lib/aiUsage.js'
 
@@ -417,7 +423,7 @@ async function generateReport(content: string, language: string) {
       { role: 'system', content: SYSTEM_PROMPT },
       { role: 'user', content: `Language: ${language}\n\nContent to analyze:\n${truncated}` },
     ],
-  })
+  }, { timeout: CONTENT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
   const raw = completion.choices[0]?.message?.content ?? '{}'
   return { data: JSON.parse(raw), usage: readUsage(completion), truncated: wasTruncated }
 }
@@ -1453,7 +1459,7 @@ app.post('/api/analyze-decision', (req, res, next) => {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}` },
       ],
-    })
+    }, { timeout: REPORT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
 
     const raw = completion.choices[0]?.message?.content ?? '{}'
     const parsed = JSON.parse(raw)
@@ -1482,6 +1488,9 @@ app.post('/api/analyze-decision', (req, res, next) => {
       else await refundCredits(ent, charged.credits, { reports: 1, documents: charged.docs })
     }
     if (sendApiError(res, err)) return
+    // A deadline hit is not a broken request — say what happened and confirm
+    // the refund, rather than showing the raw SDK message.
+    if (isTimeoutError(err)) { res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE }); return }
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
     console.error('[analyze-decision] Error:', message, err)
     res.status(500).json({ error: message || 'Analysis failed' })
@@ -1542,7 +1551,7 @@ Never fabricate information not found in the report.`,
           content: `Decision Goal: ${decisionGoal ?? 'Not specified'}\n\nReport Data:\n${boundedContext}\n\nUser Question: ${question}`,
         },
       ],
-    })
+    }, { timeout: ASSISTANT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
 
     const answer = completion.choices[0]?.message?.content ?? 'Unable to generate a response.'
     await recordAiUsage({
