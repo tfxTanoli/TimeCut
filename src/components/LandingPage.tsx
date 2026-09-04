@@ -22,6 +22,7 @@ interface Props {
 export default function LandingPage({ uploadSection, ...props }: Props) {
   const { t } = useTranslation()
   const seenFadeEls = useRef<Set<Element>>(new Set())
+  const uploadRef = useRef<HTMLDivElement>(null)
   const [activeDemo, setActiveDemo] = useState<DemoTab>('supplier')
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -49,8 +50,17 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
   // keep TypeScript happy — props passed from HomePage are not used by LandingPage directly
   void props
 
+  /**
+   * The upload box is now in the hero, so this scrolls back up to it. The
+   * brief outline is what tells someone their click did something: without it
+   * a visitor near the top of the page sees no change at all.
+   */
   function scrollToUpload() {
-    document.getElementById('upload-section')?.scrollIntoView({ behavior: 'smooth' })
+    const el = uploadRef.current
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.classList.add('lp-hero-upload--flash')
+    window.setTimeout(() => el.classList.remove('lp-hero-upload--flash'), 1400)
   }
 
   function scrollToExample() {
@@ -89,43 +99,44 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
           <p className="lp-hero-tagline fade-up" style={{ transitionDelay: '90ms' }}>
             {t('home.lpHeadline')}
           </p>
-          <p className="lp-subheadline fade-up" style={{ transitionDelay: '140ms' }}>
-            {t('home.lpSubheadline')}
-          </p>
-          <div className="lp-hero-actions fade-up" style={{ transitionDelay: '180ms' }}>
-            <button className="btn-primary btn-cta lp-primary-cta" onClick={scrollToUpload}>
-              {t('home.lpCta')}
-            </button>
-            <button className="lp-demo-cta" onClick={scrollToExample}>
-              {t('home.lpDemoCta')}
-            </button>
-            <div className="lp-trust-badges">
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust1')}</span>
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust2')}</span>
-              <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust3')}</span>
+
+          {/* Upload box lives in the hero: the first screen shows the product
+              itself, not a description of it. Everything that explains TimeCut
+              sits below the box, where it answers questions a visitor has
+              already started acting on. */}
+          {uploadSection && (
+            <div
+              id="upload-section"
+              ref={uploadRef}
+              className="lp-hero-upload fade-up"
+              style={{ transitionDelay: '130ms' }}
+            >
+              <h2 className="lp-hero-upload-title">{t('home.uploadTitle')}</h2>
+              <p className="lp-hero-upload-sub">{t('home.uploadSub')}</p>
+              {uploadSection}
             </div>
-            <p className="lp-no-cc">{t('home.lpNoCc')}</p>
+          )}
+
+          {/* Supporting copy — moved below the upload box. The primary CTA that
+              used to sit here only scrolled down to this box, so it is gone
+              rather than pointing back up at content already on screen; the
+              form's own submit button is the primary action now. */}
+          <div className="lp-hero-support fade-up" style={{ transitionDelay: '170ms' }}>
+            <p className="lp-subheadline">{t('home.lpSubheadline')}</p>
+            <div className="lp-hero-actions">
+              <button className="lp-demo-cta" onClick={scrollToExample}>
+                {t('home.lpDemoCta')}
+              </button>
+              <div className="lp-trust-badges">
+                <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust1')}</span>
+                <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust2')}</span>
+                <span className="lp-trust-badge"><span className="lp-trust-check">✓</span> {t('home.lpTrust3')}</span>
+              </div>
+              <p className="lp-no-cc">{t('home.lpNoCc')}</p>
+            </div>
           </div>
         </div>
       </section>
-
-      {/* ══════════════════════════════════════════
-          UPLOAD SECTION (moved here — directly after hero)
-      ══════════════════════════════════════════ */}
-      {uploadSection && (
-        <section id="upload-section" className="lp-section lp-section--upload-wrapper">
-          <div className="container">
-            <p className="lp-eyebrow fade-up">{t('home.uploadEyebrow')}</p>
-            <h2 className="lp-section-title fade-up" style={{ transitionDelay: '60ms' }}>
-              {t('home.uploadTitle')}
-            </h2>
-            <p className="lp-section-sub fade-up" style={{ transitionDelay: '100ms', fontSize: '14px' }}>
-              {t('home.uploadSub')}
-            </p>
-            {uploadSection}
-          </div>
-        </section>
-      )}
 
       {/* ══════════════════════════════════════════
           EXAMPLE OUTPUT — 3 tabs + expand/collapse
