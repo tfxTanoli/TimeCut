@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import Stripe from 'stripe'
 import admin from 'firebase-admin'
-import { stripe, getAdminDb, planFromSubscription } from './_lib/stripe-admin.js'
+import { stripe, getAdminDb, planFromSubscription, webhookVerification } from './_lib/stripe-admin.js'
 
 // Vercel must NOT parse the body — Stripe needs the raw bytes to verify the signature
 export const config = { api: { bodyParser: false } }
@@ -143,16 +143,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const sig = req.headers['stripe-signature'] as string
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const verification = webhookVerification()
+  if ('refuse' in verification) {
+    console.error(`[webhook] ${verification.refuse}`)
+    // 500 rather than 400: Stripe retries, so the events are not lost once the
+    // secret is configured.
+    return res.status(500).json({ error: 'Webhook signing secret not configured' })
+  }
   const rawBody = await getRawBody(req)
 
   let event: Stripe.Event
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret)
-    } else {
-      event = JSON.parse(rawBody.toString()) as Stripe.Event
-    }
+    event = 'secret' in verification
+      ? stripe.webhooks.constructEvent(rawBody, sig, verification.secret)
+      : JSON.parse(rawBody.toString()) as Stripe.Event
   } catch (err) {
     return res.status(400).send(`Webhook error: ${err instanceof Error ? err.message : 'unknown'}`)
   }

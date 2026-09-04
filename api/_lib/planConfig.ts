@@ -77,6 +77,23 @@ export const DEFAULT_PLAN_CONFIG: PlanConfig = {
 
 let cache: PlanConfig | null = null
 
+/**
+ * Drop keys the stored config left as null before merging.
+ *
+ * A stored `credits: null` used to spread over the default and resolve to a
+ * zero allowance, which locked the highest-paying accounts out of the product
+ * the moment they subscribed. Null means "not configured here", so the default
+ * has to survive it. Where the default is itself null — `priceCents` on the
+ * Contact Sales plans — nothing changes.
+ */
+function withoutNulls(override: Partial<PlanLimits>): Partial<PlanLimits> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(override)) {
+    if (v !== null && v !== undefined) out[k] = v
+  }
+  return out as Partial<PlanLimits>
+}
+
 function mergeConfig(raw: Partial<PlanConfig> | undefined | null): PlanConfig {
   if (!raw) return DEFAULT_PLAN_CONFIG
   const plans = { ...DEFAULT_PLAN_CONFIG.plans }
@@ -88,7 +105,7 @@ function mergeConfig(raw: Partial<PlanConfig> | undefined | null): PlanConfig {
       // Firestore can flip a single flag without dropping the others.
       plans[key] = {
         ...plans[key],
-        ...override,
+        ...withoutNulls(override),
         features: { ...plans[key].features, ...(override.features ?? {}) },
       }
     }

@@ -33,6 +33,27 @@ export const STRIPE_PLAN_MAP: Record<string, string> = {
   timecutbusiness: 'business',
 }
 
+/**
+ * An unsigned webhook is a way to grant yourself any plan for nothing: the
+ * handlers below activate subscriptions from the event body alone. Skipping
+ * verification is therefore only ever acceptable on a local machine running
+ * Stripe test keys — never in a deployment, and never with a live key.
+ */
+export function webhookVerification(): { secret: string } | { skip: true } | { refuse: string } {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET
+  if (secret) return { secret }
+
+  const isLiveKey = (process.env.STRIPE_SECRET_KEY ?? '').startsWith('sk_live')
+  if (isLiveKey) {
+    return { refuse: 'STRIPE_WEBHOOK_SECRET is required when using live Stripe keys. Refusing to trust an unsigned event.' }
+  }
+  if (process.env.VERCEL) {
+    return { refuse: 'STRIPE_WEBHOOK_SECRET is not set on this deployment. Refusing to trust an unsigned event.' }
+  }
+  console.warn('[webhook] No STRIPE_WEBHOOK_SECRET — accepting unsigned events (local test mode only).')
+  return { skip: true }
+}
+
 // ── Firebase Admin ───────────────────────────────────────────────────────────
 // Serverless functions are stateless so we guard against re-initialisation
 let _adminDb: admin.firestore.Firestore | null = null

@@ -23,7 +23,7 @@ import {
   computeReportCost,
   type Entitlement,
 } from '../api/_lib/entitlements.js'
-import { planFromSubscription, STRIPE_PLANS as SELF_SERVE_PLANS } from '../api/_lib/stripe-admin.js'
+import { planFromSubscription, webhookVerification, STRIPE_PLANS as SELF_SERVE_PLANS } from '../api/_lib/stripe-admin.js'
 // Models, input ceilings and pricing live in one module shared with api/, so
 // the dev server and Vercel can never disagree about which model runs what or
 // how much text it is allowed to send.
@@ -797,15 +797,17 @@ app.post('/api/stripe-webhook',
   express.raw({ type: 'application/json' }),
   async (req, res) => {
     const sig = req.headers['stripe-signature'] as string
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+    const verification = webhookVerification()
+    if ('refuse' in verification) {
+      console.error(`[webhook] ${verification.refuse}`)
+      return res.status(500).json({ error: 'Webhook signing secret not configured' })
+    }
     let event: Stripe.Event
 
     try {
-      if (webhookSecret) {
-        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret)
-      } else {
-        event = JSON.parse(req.body.toString()) as Stripe.Event
-      }
+      event = 'secret' in verification
+        ? stripe.webhooks.constructEvent(req.body, sig, verification.secret)
+        : JSON.parse(req.body.toString()) as Stripe.Event
     } catch (err) {
       res.status(400).send(`Webhook error: ${err instanceof Error ? err.message : 'unknown'}`)
       return
