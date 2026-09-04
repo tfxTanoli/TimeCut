@@ -32,10 +32,24 @@
       "Bash(Start-Sleep -Seconds 4)",
       "Bash(Get-Content \"C:\\\\Users\\\\HP\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\d--Fiverr-time-cut-ai\\\\2ca5c945-7d28-42fa-9973-2bfec3997a97\\\\tasks\\\\b5l63fw6h.output\" -Tail 10)",
       "mcp__chrome-devtools__emulate",
-      "Bash(mkdir -p \"C:/Users/HP/.claude/projects/d--Fiverr-time-cut-ai/memory\")"
+      "Bash(mkdir -p \"C:/Users/HP/.claude/projects/d--Fiverr-time-cut-ai/memory\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:5173/)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(command -v chromium-cli)",
+      "Bash(npx --version)",
+      "Bash(chromium-cli --help)",
+      "Bash(echo \"exit:$?\")",
+      "Bash(npm ls *)",
+      "Bash(curl -s http://localhost:5173/examples -o /dev/null -w \"%{http_code}\\\\n\")",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='node.exe'\\\\\" | Select-Object ProcessId,CommandLine | Format-List\")",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 21144,27140,27672,12948,28140,8236,22212 -Force -ErrorAction SilentlyContinue\")",
+      "Bash(nohup npx vite --port 5173 --strictPort > /tmp/vite-dev2.log 2>&1 & *)",
+      "Bash(powershell -NoProfile -Command 'Get-CimInstance Win32_Process -Filter \"Name='\\\\''node.exe'\\\\''\" | Where-Object { $_.CommandLine -like '\\\\''*vite*'\\\\'' -or $_.CommandLine -like '\\\\''*5173*'\\\\'' } | Select-Object ProcessId,CommandLine')",
+      "Bash(powershell -NoProfile -Command \"Stop-Process -Id 26556,8244 -Force -ErrorAction SilentlyContinue\")"
     ],
     "additionalDirectories": [
-      "C:\\Users\\HP\\.claude\\projects\\d--Fiverr-time-cut-ai"
+      "C:\\Users\\HP\\.claude\\projects\\d--Fiverr-time-cut-ai",
+      "\\tmp"
     ]
   }
 }

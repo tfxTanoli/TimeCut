@@ -1,0 +1,603 @@
+<title>Stripe Live Readiness Audit</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --paper:        #F6F7F9;
+    --surface:      #FFFFFF;
+    --surface-sunk: #EDEFF3;
+    --ink:          #151A21;
+    --ink-soft:     #4A5462;
+    --ink-faint:    #7B8593;
+    --rule:         #DCE0E7;
+    --rule-strong:  #C3C9D3;
+    --accent:       #2E4470;
+    --accent-soft:  #E6EAF3;
+
+    --pass:      #2A6B4F;
+    --pass-bg:   #E3F0E9;
+    --partial:   #8A5A0B;
+    --partial-bg:#F6EBD6;
+    --fail:      #A32F2C;
+    --fail-bg:   #F7E2E1;
+
+    --shadow: 0 1px 2px rgba(21, 26, 33, .05), 0 8px 24px -16px rgba(21, 26, 33, .25);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:        #0F1319;
+      --surface:      #161B23;
+      --surface-sunk: #1D232C;
+      --ink:          #E6E9EE;
+      --ink-soft:     #A6AFBC;
+      --ink-faint:    #757F8D;
+      --rule:         #262D38;
+      --rule-strong:  #333C49;
+      --accent:       #93AAD8;
+      --accent-soft:  #1C2536;
+
+      --pass:      #6FC49B;
+      --pass-bg:   #17271F;
+      --partial:   #D8A54A;
+      --partial-bg:#2A2214;
+      --fail:      #E38481;
+      --fail-bg:   #2C1918;
+
+      --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:        #0F1319;
+    --surface:      #161B23;
+    --surface-sunk: #1D232C;
+    --ink:          #E6E9EE;
+    --ink-soft:     #A6AFBC;
+    --ink-faint:    #757F8D;
+    --rule:         #262D38;
+    --rule-strong:  #333C49;
+    --accent:       #93AAD8;
+    --accent-soft:  #1C2536;
+
+    --pass:      #6FC49B;
+    --pass-bg:   #17271F;
+    --partial:   #D8A54A;
+    --partial-bg:#2A2214;
+    --fail:      #E38481;
+    --fail-bg:   #2C1918;
+
+    --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -16px rgba(0, 0, 0, .8);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  /* ── Masthead ────────────────────────────────────────── */
+  .masthead {
+    border-bottom: 2px solid var(--ink);
+    padding: 48px 0 20px;
+    margin-bottom: 32px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .masthead h1 {
+    font-family: Newsreader, Georgia, serif;
+    font-size: clamp(30px, 5vw, 44px);
+    font-weight: 500;
+    line-height: 1.1;
+    letter-spacing: -.015em;
+    margin: 6px 0 0;
+    text-wrap: balance;
+  }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    margin: 0;
+  }
+  .masthead-meta {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    line-height: 1.8;
+    color: var(--ink-faint);
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  /* ── Verdict ─────────────────────────────────────────── */
+  .verdict {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 5px solid var(--fail);
+    border-radius: 3px;
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    margin-bottom: 14px;
+  }
+  .verdict-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    color: var(--fail);
+    font-weight: 500;
+    margin: 0 0 8px;
+  }
+  .verdict h2 {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 25px;
+    font-weight: 500;
+    line-height: 1.25;
+    margin: 0 0 12px;
+    text-wrap: balance;
+  }
+  .verdict p { margin: 0; color: var(--ink-soft); max-width: 64ch; }
+  .verdict p + p { margin-top: 10px; }
+
+  .tally {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 44px;
+  }
+  .tally-cell { background: var(--surface); padding: 16px 18px; }
+  .tally-num {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 27px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    display: block;
+  }
+  .tally-cell:nth-child(1) .tally-num { color: var(--pass); }
+  .tally-cell:nth-child(2) .tally-num { color: var(--partial); }
+  .tally-cell:nth-child(3) .tally-num { color: var(--fail); }
+  .tally-cell:nth-child(4) .tally-num { color: var(--ink); }
+  .tally-lab {
+    font-size: 12px;
+    color: var(--ink-faint);
+    margin-top: 7px;
+    display: block;
+    line-height: 1.4;
+  }
+
+  /* ── Sections ────────────────────────────────────────── */
+  section { margin-bottom: 52px; }
+  h2.sec {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 26px;
+    font-weight: 500;
+    letter-spacing: -.01em;
+    margin: 0 0 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+  .sec-note {
+    color: var(--ink-soft);
+    margin: 12px 0 24px;
+    max-width: 68ch;
+  }
+
+  h3.plan {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin: 32px 0 10px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  h3.plan .price {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 19px;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--accent);
+  }
+  h3.plan .tag {
+    font-size: 11px;
+    letter-spacing: .06em;
+    color: var(--ink-faint);
+    font-weight: 400;
+  }
+
+  /* ── Ledger table ────────────────────────────────────── */
+  .ledger-scroll { overflow-x: auto; }
+  table.ledger {
+    width: 100%;
+    min-width: 620px;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  table.ledger th {
+    text-align: left;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--rule-strong);
+    background: var(--surface-sunk);
+    white-space: nowrap;
+  }
+  table.ledger td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    font-size: 14px;
+  }
+  table.ledger tr:last-child td { border-bottom: none; }
+  table.ledger td.claim { font-weight: 500; width: 27%; }
+  table.ledger td.status { width: 118px; white-space: nowrap; }
+  table.ledger td.finding { color: var(--ink-soft); font-size: 13.5px; line-height: 1.55; }
+
+  .chip {
+    display: inline-block;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .chip.pass    { color: var(--pass);    background: var(--pass-bg); }
+  .chip.partial { color: var(--partial); background: var(--partial-bg); }
+  .chip.fail    { color: var(--fail);    background: var(--fail-bg); }
+
+  code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .89em;
+    background: var(--surface-sunk);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+
+  /* ── Findings ────────────────────────────────────────── */
+  .finding-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+    box-shadow: var(--shadow);
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 4px 18px;
+  }
+  .finding-card.blocker { border-left: 5px solid var(--fail); }
+  .finding-card.high    { border-left: 5px solid var(--partial); }
+  .fnum {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.3;
+    grid-row: 1 / span 3;
+  }
+  .fhead {
+    font-family: Newsreader, Georgia, serif;
+    font-size: 20px;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .fmeta {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--ink-faint);
+    margin: 6px 0 10px;
+    letter-spacing: .02em;
+  }
+  .fbody { margin: 0; color: var(--ink-soft); max-width: 68ch; }
+  .fbody + .fbody { margin-top: 10px; }
+  .fbody strong { color: var(--ink); font-weight: 600; }
+
+  /* ── Checklist ───────────────────────────────────────── */
+  ol.gate {
+    counter-reset: gate;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  ol.gate li {
+    counter-increment: gate;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 14px 18px 14px 52px;
+    position: relative;
+    font-size: 14.5px;
+  }
+  ol.gate li::before {
+    content: counter(gate, decimal-leading-zero);
+    position: absolute;
+    left: 18px;
+    top: 14px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+  ol.gate li strong { font-weight: 600; }
+  ol.gate li span { color: var(--ink-soft); }
+
+  .callout {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    border-radius: 2px;
+    margin: 24px 0 0;
+    font-size: 14px;
+    color: var(--ink-soft);
+    max-width: 68ch;
+  }
+  .callout strong { color: var(--ink); }
+
+  footer {
+    border-top: 1px solid var(--rule-strong);
+    padding-top: 18px;
+    margin-top: 56px;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11.5px;
+    color: var(--ink-faint);
+    line-height: 1.8;
+  }
+
+  a { color: var(--accent); }
+  a:focus-visible, li:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  @media (max-width: 620px) {
+    .masthead { flex-direction: column; align-items: flex-start; }
+    .masthead-meta { text-align: left; }
+    .finding-card { grid-template-columns: 1fr; gap: 0; }
+    .fnum { grid-row: auto; font-size: 15px; margin-bottom: 4px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div>
+      <p class="eyebrow">TimeCut AI · Pre-launch verification</p>
+      <h1>Stripe Live Readiness Audit</h1>
+    </div>
+    <div class="masthead-meta">
+      Scope: every ✓ on /pricing<br>
+      Method: static review of <code>src/</code> + <code>api/</code><br>
+      Branch: main @ 3fb2317
+    </div>
+  </header>
+
+  <div class="verdict">
+    <p class="verdict-label">Recommendation</p>
+    <h2>Do not switch Stripe to Live yet.</h2>
+    <p>Of the 30 ✓ features advertised across the four plans, 11 are not delivered as described and 6 more are advertised as plan-exclusive but are available to every plan, including Free. Separately, three defects in the payment lifecycle would produce customers who are charged and not upgraded, and a subscriber who cannot use the product at all.</p>
+    <p>The core analysis product is real and good — the report, the risks, the evidence, the playbook, the assistant all work. The problem is the gap between what the pricing page promises and what the code enforces, plus a handful of activation bugs. Both are fixable; neither is fixed today.</p>
+  </div>
+
+  <div class="tally">
+    <div class="tally-cell"><span class="tally-num">13</span><span class="tally-lab">Delivered as advertised</span></div>
+    <div class="tally-cell"><span class="tally-num">6</span><span class="tally-lab">Delivered, but not exclusive to the plan that sells it</span></div>
+    <div class="tally-cell"><span class="tally-num">11</span><span class="tally-lab">Not implemented, or not enforceable</span></div>
+    <div class="tally-cell"><span class="tally-num">9</span><span class="tally-lab">Payment &amp; lifecycle defects</span></div>
+  </div>
+
+  <section>
+    <h2 class="sec">Feature-by-feature verification</h2>
+    <p class="sec-note">Each row is one ✓ (or ✕) as it appears on the live pricing page, checked against the code that would have to implement it. <span style="white-space:nowrap"><span class="chip pass">Verified</span></span> means a paying customer genuinely receives it. <span style="white-space:nowrap"><span class="chip partial">Partial</span></span> means it exists but is either unenforced, degraded, or given away to lower plans. <span style="white-space:nowrap"><span class="chip fail">Not built</span></span> means there is no implementation.</p>
+
+    <h3 class="plan">Free <span class="price">$0</span> <span class="tag">6 ✓ · 3 ✕</span></h3>
+    <div class="ledger-scroll">
+      <table class="ledger">
+        <thead><tr><th>Advertised</th><th>Status</th><th>Finding</th></tr></thead>
+        <tbody>
+          <tr><td class="claim">1 free report</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Counted in a Firestore transaction (<code>consumeFreeReport</code>), but the counter lives on the user's own document, which Firestore rules let that user overwrite. Signed-out visitors are metered in <code>localStorage</code> only — clearing site data or opening a private window resets it, so free analyses are effectively unlimited and each one costs you an OpenAI call.</td></tr>
+          <tr><td class="claim">Up to 20 pages · max 3 documents</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">The 20-page cap is checked server-side, but from an <code>x-page-limit</code> request header the browser supplies — anyone can send a larger number. The 3-document cap is enforced nowhere: the uploader hard-codes 10 files for every plan and the API accepts 10.</td></tr>
+          <tr><td class="claim">Basic AI Decision Report</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">Full report generated and rendered.</td></tr>
+          <tr><td class="claim">Hidden Risks &amp; Missing Information</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">Both sections render with severity and reasoning.</td></tr>
+          <tr><td class="claim">Confidence Score &amp; Evidence Found</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">Score, breakdown and evidence map all render.</td></tr>
+          <tr><td class="claim">3 Decision Assistant questions</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Enforced in the browser against a user-writable counter. The <code>/api/challenge-ai</code> endpoint itself has no auth and no limit, so the cap is advisory.</td></tr>
+          <tr><td class="claim">✕ Decision Playbook</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Shown in full to Free users. Nothing gates <code>DecisionPlaybookSection</code>.</td></tr>
+          <tr><td class="claim">✕ Smart Skeptic Questions</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Shown in full to Free users as the Verification Questions section. Ungated.</td></tr>
+          <tr><td class="claim">✕ PDF Export</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">The Download button works for any signed-in user regardless of plan.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="plan">Starter <span class="price">$9/mo</span> <span class="tag">9 ✓</span></h3>
+    <div class="ledger-scroll">
+      <table class="ledger">
+        <thead><tr><th>Advertised</th><th>Status</th><th>Finding</th></tr></thead>
+        <tbody>
+          <tr><td class="claim">500 AI Credits included</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">A real monthly ledger exists and meters correctly. But it is written from the browser to a document the user can edit, and consumption happens <em>after</em> the analysis with <code>clamp: true</code>, so the final report of a cycle can overrun the allowance at your cost.</td></tr>
+          <tr><td class="claim">Around 20–30 typical analyses/month</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">A typical 20-page single-document report costs 20 credits; 500 ÷ 20 = 25. The claim is honest.</td></tr>
+          <tr><td class="claim">Up to 5 documents per report</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding"><strong>The single most direct mismatch on the page.</strong> <code>maxDocs</code> is defined in config and displayed in the checkout modal, but no code path reads it to enforce anything. Every plan — including Free — can upload 10 documents. A Starter customer paying for "up to 5" is being sold a limit that isn't real in either direction.</td></tr>
+          <tr><td class="claim">Full AI Decision Report</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">Delivered.</td></tr>
+          <tr><td class="claim">Decision Playbook</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Delivered — and also to Free, which advertises it as excluded.</td></tr>
+          <tr><td class="claim">Smart Skeptic Questions</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Delivered — and also to Free, which advertises it as excluded.</td></tr>
+          <tr><td class="claim">Decision Assistant</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">Works, charges 1 credit per question.</td></tr>
+          <tr><td class="claim">PDF Export</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">There is no PDF export. The button calls <code>window.print()</code>, and the print stylesheet only targets <code>.result-content</code> — the decision report renders inside <code>.dr-content</code>, so navigation, banners and the CTA are not hidden. What the customer gets is a browser print of a web page, not the clean export the page implies. Also not gated: Free users get the same button.</td></tr>
+          <tr><td class="claim">Unused credits expire at month-end</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">True — but the ledger key is the <em>calendar</em> month, while the FAQ on the same page says credits "refresh with each billing cycle." Someone who subscribes on the 28th loses their allowance three days later. These two statements cannot both hold.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="plan">Pro <span class="price">$29/mo</span> <span class="tag">8 ✓</span></h3>
+    <div class="ledger-scroll">
+      <table class="ledger">
+        <thead><tr><th>Advertised</th><th>Status</th><th>Finding</th></tr></thead>
+        <tbody>
+          <tr><td class="claim">3,000 AI Credits included</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Same real-but-client-side ledger as Starter.</td></tr>
+          <tr><td class="claim">Everything in Starter</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">True, with the same caveats as Starter's own rows.</td></tr>
+          <tr><td class="claim">Up to 10 documents per report</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Technically accurate, but only because 10 is the global cap applied to every plan. Nothing derives it from the Pro plan.</td></tr>
+          <tr><td class="claim">Unlimited Decision Assistant (within credits)</td><td class="status"><span class="chip pass">Verified</span></td><td class="finding">No question cap on paid plans; credits are the only limit, as stated.</td></tr>
+          <tr><td class="claim">Decision Defense</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">Generated and rendered — for every plan, including Free. Not a Pro differentiator in practice.</td></tr>
+          <tr><td class="claim">Priority AI Processing</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">No queue, no priority lane, no plan-aware routing. Every plan hits the same endpoint with the same OpenAI call. There is nothing that could be prioritised.</td></tr>
+          <tr><td class="claim">Faster Analysis</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Identical model (<code>gpt-4o</code>), identical parameters, identical 60-second function budget for all plans. A Pro analysis is not faster than a Free one, and cannot be.</td></tr>
+          <tr><td class="claim">Complete Report Export</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Resolves to the same <code>window.print()</code> as every other plan. There is no "complete" export distinct from the ordinary one.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><strong>Worth noting:</strong> Pro's only genuinely exclusive feature in the code is the "If I Were You" advisor section — and that one isn't listed on the pricing page at all. Three of the eight things Pro <em>is</em> sold on don't exist, while the one thing it uniquely delivers goes unmentioned.</div>
+
+    <h3 class="plan">Business <span class="price">Contact Sales</span> <span class="tag">7 ✓</span></h3>
+    <div class="ledger-scroll">
+      <table class="ledger">
+        <thead><tr><th>Advertised</th><th>Status</th><th>Finding</th></tr></thead>
+        <tbody>
+          <tr><td class="claim">Team Workspace</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">No teams, organisations, seats, invitations or shared reports anywhere in the codebase. Every account is a single user.</td></tr>
+          <tr><td class="claim">Admin Dashboard</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">The <code>/admin</code> page is your own operator console, gated to an email allowlist you control. It is not a per-customer dashboard and cannot be granted to a subscriber.</td></tr>
+          <tr><td class="claim">Custom AI Framework</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Prompts are fixed per document type. No per-customer prompt, rubric or framework configuration exists.</td></tr>
+          <tr><td class="claim">API Access</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">No API keys, no tokens, no documented or authenticated public endpoint. Nothing to grant.</td></tr>
+          <tr><td class="claim">Custom Credit Allocation</td><td class="status"><span class="chip fail">Not built</span></td><td class="finding">Business is configured with <code>credits: null</code>, which the app reads as <strong>zero</strong>. A Business subscriber would be treated as out of credits from the moment they subscribe and shown the upgrade modal on their first analysis. As written, this is the worst possible outcome: the highest-paying customer is the only one who cannot use the product.</td></tr>
+          <tr><td class="claim">Usage Dashboard</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">The profile page shows credits, reports, documents and assistant questions. Real, but identical for every plan — not a Business feature.</td></tr>
+          <tr><td class="claim">Priority Support</td><td class="status"><span class="chip partial">Partial</span></td><td class="finding">A process commitment rather than code. Deliverable if you commit to it; there is no ticketing or routing behind it today.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><strong>The Business card is the highest-risk item on the page.</strong> Its button says "Contact Sales" but opens a card form and charges <strong>$149/month</strong> — a hard-coded fallback in <code>api/_lib/planConfig.ts</code>, a price shown nowhere on the pricing page. A customer can be charged $149 for seven features, six of which do not exist, and then be locked out of the product by the zero-credit bug. This path should be disabled before Live regardless of what else you fix.</div>
+  </section>
+
+  <section>
+    <h2 class="sec">Payment lifecycle</h2>
+    <p class="sec-note">You asked specifically whether payment correctly changes the plan, unlocks the right limits, and revokes access on cancellation or failure. Findings are ordered by how much damage each does on day one of Live.</p>
+
+    <div class="finding-card blocker">
+      <span class="fnum">01</span>
+      <div>
+        <p class="fhead">A successful payment can leave the customer on Free</p>
+        <p class="fmeta">BLOCKER · api/stripe-webhook.ts · src/components/PaymentModal.tsx</p>
+      </div>
+      <div>
+        <p class="fbody">Activation happens in the browser: after <code>confirmPayment()</code> the modal calls <code>/api/activate-plan</code>. If the tab is closed, the network drops, or the request fails, the upgrade never happens — and the customer has already been charged.</p>
+        <p class="fbody">There is no server-side fallback, despite appearances. The webhook handles <code>checkout.session.completed</code>, but this flow uses <code>subscriptions.create</code> with Payment Elements, not Stripe Checkout — <strong>that event never fires</strong>. The <code>invoice.payment_succeeded</code> handler only acts when <code>billing_reason === 'subscription_cycle'</code>, and the first invoice is <code>subscription_create</code>, so it skips the initial payment too.</p>
+        <p class="fbody">Worse, the modal treats a failed activation call as success: on a network error it shows "You're on PRO!" with the comment "webhook will catch it." It won't. The customer sees a confirmation, has been billed, and is still on Free.</p>
+      </div>
+    </div>
+
+    <div class="finding-card blocker">
+      <span class="fnum">02</span>
+      <div>
+        <p class="fhead">Anyone can grant themselves any plan</p>
+        <p class="fmeta">BLOCKER · api/activate-plan.ts · firestore.rules</p>
+      </div>
+      <div>
+        <p class="fbody"><code>/api/activate-plan</code> has no authentication. It takes <code>uid</code> and <code>plan</code> straight from the request body and never checks that the payment it verifies belongs to that user or matches that plan's price. A Starter customer can replay their own succeeded payment with <code>plan: "pro"</code> and receive Pro for $9.</p>
+        <p class="fbody">Independently, Firestore rules grant each user full write access to their own document. A signed-in user can set <code>plan: "pro"</code> and a future <code>planExpiresAt</code> from the browser console, and zero out their credit ledger, without touching Stripe at all. <strong>Every limit and every feature gate in the product is client-side over data the customer controls.</strong></p>
+        <p class="fbody"><code>/api/expire-plan</code> is likewise unauthenticated and accepts any <code>uid</code> — anyone who learns another user's ID can force a downgrade.</p>
+      </div>
+    </div>
+
+    <div class="finding-card blocker">
+      <span class="fnum">03</span>
+      <div>
+        <p class="fhead">Nothing on the server checks a plan before spending your money</p>
+        <p class="fmeta">BLOCKER · api/analyze-decision.ts · api/challenge-ai.ts</p>
+      </div>
+      <div>
+        <p class="fbody">Not one API route verifies a Firebase ID token. <code>/api/analyze-decision</code> accepts uploads from anyone, trusts a client-supplied header for the page limit, applies a fixed 10-file cap regardless of plan, and calls OpenAI. It never reads the user's plan or credit balance.</p>
+        <p class="fbody">The practical consequence is that limits are suggestions. The commercial consequence is that your OpenAI spend is uncapped and unattributable — a scripted client can run reports indefinitely with no account at all.</p>
+      </div>
+    </div>
+
+    <div class="finding-card high">
+      <span class="fnum">04</span>
+      <div>
+        <p class="fhead">There is no way to cancel, and the FAQ says there is</p>
+        <p class="fmeta">HIGH · src/pages/ProfilePage.tsx</p>
+      </div>
+      <div>
+        <p class="fbody">The pricing FAQ reads: "Cancel anytime from your account settings with no questions asked." The profile page has no cancel control, no billing section and no link to a Stripe billing portal — no portal session endpoint exists. The only way a customer can stop being billed is to email you.</p>
+        <p class="fbody">This is a consumer-protection exposure as much as a product gap, and it is the cheapest item on this list to fix: one Stripe Billing Portal endpoint and one button.</p>
+      </div>
+    </div>
+
+    <div class="finding-card high">
+      <span class="fnum">05</span>
+      <div>
+        <p class="fhead">Failed payments keep full access for about five days</p>
+        <p class="fmeta">HIGH · api/stripe-webhook.ts</p>
+      </div>
+      <div>
+        <p class="fbody">The webhook handles <code>customer.subscription.deleted</code> but not <code>invoice.payment_failed</code> or <code>customer.subscription.updated</code>. When a renewal fails, the subscription goes <code>past_due</code> and the app notices nothing: <code>planExpiresAt</code> was set to the last period end plus a 3-day buffer, and the client only calls <code>expire-plan</code> after a further 48-hour grace — and only if the user happens to open the app. Roughly five days of paid access after a failed charge, then a downgrade that depends on the customer visiting the site.</p>
+        <p class="fbody">Cancellation itself is handled correctly: Stripe fires <code>subscription.deleted</code> at period end, and access is revoked then, which matches the "keep access until the end of your billing period" promise.</p>
+      </div>
+    </div>
+
+    <div class="finding-card high">
+      <span class="fnum">06</span>
+      <div>
+        <p class="fhead">The upload screen quotes limits that no longer exist</p>
+        <p class="fmeta">MEDIUM · src/components/DecisionUpload.tsx · src/lib/userService.ts</p>
+      </div>
+      <div>
+        <p class="fbody">Two stale limit tables survive alongside the real config. The uploader tells Starter users "50 pages" and Pro users "100 pages" when the config gives both unlimited, and tells everyone they may upload 10 documents regardless of plan. <code>PLAN_LIMITS</code> in <code>userService.ts</code> still claims 2 / 5 / 20 monthly reports and feeds the usage bar.</p>
+        <p class="fbody">Harmless on its own, but it means a customer is shown three different sets of numbers for the same plan across the pricing page, the checkout modal and the product.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="sec">What has to be true before Live</h2>
+    <p class="sec-note">In order. Items 1–4 are the ones that decide whether a customer can be charged for something they don't receive; the rest close the advertising gap.</p>
+    <ol class="gate">
+      <li><strong>Disable the Business purchase path.</strong> <span>Make the card a contact form or a mailto. Nobody should be able to put $149 through a button labelled "Contact Sales" for features that don't exist.</span></li>
+      <li><strong>Make activation server-authoritative.</strong> <span>Handle <code>invoice.payment_succeeded</code> for <code>subscription_create</code> (or move to Checkout Sessions), and derive the plan from the Stripe price — never from the request body. Stop reporting success in the UI when activation failed.</span></li>
+      <li><strong>Lock down the write paths.</strong> <span>Verify a Firebase ID token in <code>activate-plan</code>, <code>expire-plan</code>, <code>analyze-decision</code> and <code>challenge-ai</code>; change Firestore rules so <code>plan</code>, <code>planExpiresAt</code> and the credit ledger are server-write-only.</span></li>
+      <li><strong>Enforce plan limits on the server.</strong> <span>Read the plan, check credits and <code>maxDocs</code> / <code>maxPages</code> before calling OpenAI, and debit after. The backend already has <code>getPlanConfig()</code> and <code>computeReportCost()</code> — today only the Stripe pricing helper uses that file.</span></li>
+      <li><strong>Gate the features the Free card marks ✕.</strong> <span>Decision Playbook, Smart Skeptic Questions and export must be withheld from Free, or the ✕ marks have to come off the card.</span></li>
+      <li><strong>Resolve the Pro claims.</strong> <span>Either implement Priority Processing / Faster Analysis / Complete Report Export, or remove those three lines. Consider listing "If I Were You", which Pro genuinely and exclusively delivers.</span></li>
+      <li><strong>Fix Business credits.</strong> <span><code>credits: null</code> currently resolves to zero. Give Business a real allocation before anyone can buy it.</span></li>
+      <li><strong>Ship real export, or rename it.</strong> <span>Either generate a PDF, or fix the print stylesheet for <code>.dr-content</code> and call it "Print / Save as PDF" on the pricing page.</span></li>
+      <li><strong>Add self-serve cancellation.</strong> <span>A Stripe Billing Portal session and a button in the profile, so the FAQ becomes true.</span></li>
+      <li><strong>Reconcile credit expiry wording.</strong> <span>Either key the ledger to the billing period, or change the FAQ to say credits reset at calendar month-end.</span></li>
+      <li><strong>Delete the stale limit tables.</strong> <span>Remove <code>PAGE_LIMITS</code> and <code>PLAN_LIMITS</code> so the product quotes the same numbers the pricing page does.</span></li>
+    </ol>
+    <div class="callout">Items 1, 5, 6 and 7 are copy and configuration changes and could be done in an afternoon — that alone would make the pricing page honest. Items 2, 3 and 4 are the real engineering work and are what make the plans <em>mean</em> anything. Live payments are safe once 1–4 are done and the rest are either fixed or removed from the page.</div>
+  </section>
+
+  <footer>
+    Static code review — no test transactions were run against Stripe.<br>
+    Reviewed: pricing page and i18n strings, plan config (client + server), analysis and assistant APIs, Stripe subscription creation, webhook, activation and expiry routes, Firestore security rules, report rendering and gating.<br>
+    Not covered: the live Stripe dashboard configuration, Vercel environment variables, and which webhook events are actually registered on the endpoint — all three should be confirmed separately before switching keys.
+  </footer>
+
+</div>
