@@ -722,7 +722,7 @@ const zhCN: Record<string, string> = {
   'home.lpHiwEyebrow': '工作原理',
   'home.lpHiwTitle': '4个简单步骤发现隐藏风险',
   'home.lpHiw1Title': '上传文件',
-  'home.lpHiw1Desc': '上传1至10份PDF或文本文件。合同、简历、提案、报告 — 任何需要决策的文件。',
+  'home.lpHiw1Desc': '最多可上传10份PDF或文本文件，具体数量取决于您的套餐。合同、简历、提案、报告 — 任何需要决策的文件。',
   'home.lpHiw2Title': '设定决策目标',
   'home.lpHiw2Desc': '告诉AI您想做什么决策。此背景将影响每个风险、排名和建议。',
   'home.lpHiw3Title': 'AI同时比较所有内容',

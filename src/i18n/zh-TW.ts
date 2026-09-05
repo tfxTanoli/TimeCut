@@ -722,7 +722,7 @@ const zhTW: Record<string, string> = {
   'home.lpHiwEyebrow': '運作原理',
   'home.lpHiwTitle': '4個簡單步驟發現隱藏風險',
   'home.lpHiw1Title': '上傳文件',
-  'home.lpHiw1Desc': '上傳1至10份PDF或文字文件。合約、履歷、提案、報告 — 任何需要決策的文件。',
+  'home.lpHiw1Desc': '最多可上傳10份PDF或文字文件，實際數量取決於您的方案。合約、履歷、提案、報告 — 任何需要決策的文件。',
   'home.lpHiw2Title': '設定決策目標',
   'home.lpHiw2Desc': '告訴AI您想做什麼決策。此背景將影響每個風險、排名和建議。',
   'home.lpHiw3Title': 'AI同時比較所有內容',
