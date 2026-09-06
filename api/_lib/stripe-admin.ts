@@ -117,9 +117,16 @@ export async function planFromSubscription(
   const productRef = subscription.items.data[0]?.price?.product
   if (!productRef) return null
 
+  // `retrieve()` is typed as always returning a live Product, but
+  // `subscription.items.data[0]?.price?.product` can genuinely be a
+  // DeletedProduct at runtime — the cast has to admit that so `product.deleted`
+  // stays a real `true | void` union. Narrowed to just `Product`, its `deleted`
+  // field types as bare `void`, which a strict compiler refuses to test for
+  // truthiness (this passed our own tsc but failed Vercel's separate
+  // per-function check, which is stricter here).
   const product = typeof productRef === 'string'
     ? await stripe.products.retrieve(productRef)
-    : (productRef as Stripe.Product)
+    : (productRef as Stripe.Product | Stripe.DeletedProduct)
 
   if ('deleted' in product && product.deleted) return null
 
