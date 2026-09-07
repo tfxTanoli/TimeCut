@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth, MIN_PASSWORD_LENGTH } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { isAdminEmail } from '../lib/admin'
@@ -29,6 +29,9 @@ export default function AuthModal() {
   const [resendLoading, setResendLoading] = useState(false)
   const [resendSent, setResendSent]   = useState(false)
   const [signupEmail, setSignupEmail] = useState('')
+  // True when the verify screen was reached via "this email already exists"
+  // rather than a fresh signup — the copy differs, the resend button does not.
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
 
   // Reset the form whenever the modal opens or switches between login/signup.
   // Adjusting state during render is React's documented alternative to a reset
@@ -45,6 +48,7 @@ export default function AuthModal() {
       setSuccess(false)
       setVerifyScreen(false)
       setResendSent(false)
+      setAlreadyRegistered(false)
       setTermsAccepted(false)
       setName(''); setEmail(''); setPassword('')
     }
@@ -71,11 +75,15 @@ export default function AuthModal() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    // Signup asks for the minimum that actually matters: a name to address the
+    // user by, a password Firebase will accept, and consent. The uppercase and
+    // digit rules that used to sit here were removed — they rejected strong
+    // passphrases and turned an ordinary signup into a guessing game.
     if (tab === 'signup') {
-      if (!name.trim()) { setError('Please enter your full name.'); return }
-      if (password.length < 8) { setError('Password must be at least 8 characters.'); return }
-      if (!/[A-Z]/.test(password)) { setError('Password must contain at least one uppercase letter.'); return }
-      if (!/[0-9]/.test(password)) { setError('Password must contain at least one number.'); return }
+      if (!name.trim()) { setError('Please enter your name.'); return }
+      if (password.length < MIN_PASSWORD_LENGTH) {
+        setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`); return
+      }
       if (!termsAccepted) { setError('Please accept the terms and conditions to continue.'); return }
     }
     setLoading(true)
@@ -90,11 +98,26 @@ export default function AuthModal() {
         }, 900)
       } else {
         await signup(email, password, name)
-        setSignupEmail(email)
+        setSignupEmail(email.trim())
+        setAlreadyRegistered(false)
         setVerifyScreen(true)
       }
     } catch (err) {
-      setError(authErrorMessage(firebaseErrorCode(err), tab, t))
+      const code = firebaseErrorCode(err)
+      // Keep the raw cause in the console: when a user reports "it just said
+      // try again", this is the only way to find out which code they hit.
+      console.warn(`[auth] ${tab} failed`, code || '(no code)', err)
+      // "Already registered" is not really an error on the signup tab — it is
+      // almost always someone who signed up before and never clicked the
+      // verification link. Route them to the same screen with a resend button
+      // instead of a dead-end message, so that address stops being unusable.
+      if (tab === 'signup' && code === 'auth/email-already-in-use') {
+        setSignupEmail(email.trim())
+        setAlreadyRegistered(true)
+        setVerifyScreen(true)
+      } else {
+        setError(authErrorMessage(code, tab, t))
+      }
     } finally {
       setLoading(false)
     }
@@ -154,10 +177,21 @@ export default function AuthModal() {
             <div className="auth-modal-success-ring">
               <IconMail />
             </div>
-            <p className="auth-modal-success-title">Check your inbox</p>
+            <p className="auth-modal-success-title">
+              {alreadyRegistered ? 'You already have an account' : 'Check your inbox'}
+            </p>
             <p className="auth-modal-success-sub">
-              We sent a verification link to <strong>{signupEmail}</strong>.<br />
-              Click it to activate your account.
+              {alreadyRegistered ? (
+                <>
+                  <strong>{signupEmail}</strong> is already registered.<br />
+                  Log in below, or resend the verification email if you never confirmed it.
+                </>
+              ) : (
+                <>
+                  We sent a verification link to <strong>{signupEmail}</strong>.<br />
+                  Click it to activate your account.
+                </>
+              )}
             </p>
             <button
               type="button"
@@ -169,8 +203,12 @@ export default function AuthModal() {
               {resendLoading ? <><span className="btn-spinner" />Sending…</> : resendSent ? '✓ Email resent!' : 'Resend verification email'}
             </button>
             <p className="auth-modal-switch" style={{ marginTop: 12 }}>
-              Already verified?{' '}
-              <button className="form-link" type="button" onClick={() => { setVerifyScreen(false); setTab('login') }}>
+              {alreadyRegistered ? 'Know your password?' : 'Already verified?'}{' '}
+              <button
+                className="form-link"
+                type="button"
+                onClick={() => { setVerifyScreen(false); setAlreadyRegistered(false); setTab('login'); setPassword('') }}
+              >
                 Log in
               </button>
             </p>
@@ -215,7 +253,12 @@ export default function AuthModal() {
             </div>
 
             <div className={`auth-modal-body ${switching ? 'auth-modal-body--fade' : ''}`}>
-              <form className="auth-modal-form" onSubmit={handleSubmit} noValidate autoComplete="off">
+              {/* autoComplete stays on: the form previously combined
+                  autoComplete="off" with readOnly inputs unlocked on focus to
+                  defeat browser autofill. That trick also defeats password
+                  managers and iOS/Android autofill, which is a common way for a
+                  real user's signup to end up submitting empty or stale fields. */}
+              <form className="auth-modal-form" onSubmit={handleSubmit} noValidate>
                 {tab === 'signup' && (
                   <div className="form-group">
                     <label className="form-label">{t('auth.fullName')}</label>
@@ -242,9 +285,11 @@ export default function AuthModal() {
                     onChange={e => setEmail(e.target.value)}
                     required
                     disabled={loading}
-                    autoComplete="off"
-                    readOnly
-                    onFocus={e => e.currentTarget.removeAttribute('readonly')}
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                   />
                 </div>
 
@@ -264,11 +309,9 @@ export default function AuthModal() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
-                    minLength={tab === 'signup' ? 6 : undefined}
+                    minLength={tab === 'signup' ? MIN_PASSWORD_LENGTH : undefined}
                     disabled={loading}
-                    autoComplete="new-password"
-                    readOnly
-                    onFocus={e => e.currentTarget.removeAttribute('readonly')}
+                    autoComplete={tab === 'signup' ? 'new-password' : 'current-password'}
                   />
                 </div>
 
@@ -356,6 +399,20 @@ function authErrorMessage(code: string, tab: 'login' | 'signup', t: (k: string) 
     case 'auth/too-many-requests':     return t('auth.errTooManyRequests')
     case 'auth/popup-closed-by-user':  return t('auth.errPopupClosed')
     case 'auth/email-not-verified':    return 'Please verify your email before logging in. Check your inbox for the verification link.'
+    // Codes that used to fall through to the generic "Sign up failed. Please
+    // try again." — the message a real tester saw with no idea what to change.
+    case 'auth/network-request-failed':
+      return 'Could not reach our servers. Check your connection and try again.'
+    case 'auth/operation-not-allowed':
+      return 'Email sign-up is currently unavailable. Please contact support@timecut.online.'
+    case 'auth/missing-password':
+      return 'Please enter a password.'
+    case 'auth/missing-email':
+      return 'Please enter your email address.'
+    case 'auth/popup-blocked':
+      return 'Your browser blocked the Google sign-in popup. Allow popups for this site, or sign up with email instead.'
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Please contact support@timecut.online.'
     default: return tab === 'login' ? t('auth.errLoginFailed') : t('auth.errSignupFailed')
   }
 }

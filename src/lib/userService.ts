@@ -78,10 +78,11 @@ export async function createUserDocument(user: User, name?: string) {
   })
 }
 
-export async function updateLastLogin(uid: string) {
-  const userRef = doc(db, 'users', uid)
-  await updateDoc(userRef, { lastLoginAt: serverTimestamp() })
-}
+// `updateLastLogin` used to live here and was called on every sign-in. It was
+// a bare `updateDoc`, which throws `not-found` when the user document is
+// missing — so an account whose document never got written could never log in
+// again. `createUserDocument` already refreshes lastLoginAt and creates the
+// document when it is absent, so the login paths call that instead.
 
 export async function logActivity(
   uid: string,

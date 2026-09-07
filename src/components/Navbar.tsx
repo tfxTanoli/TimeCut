@@ -12,7 +12,7 @@ interface Props {
 
 export default function Navbar({ onLogoClick }: Props) {
   const navigate = useNavigate()
-  const { user, displayName } = useAuth()
+  const { user, displayName, logout } = useAuth()
   const { openLogin, openSignup } = useAuthModal()
   const { lang, setLang } = useLanguage()
   const { t } = useTranslation()
@@ -126,8 +126,28 @@ export default function Navbar({ onLogoClick }: Props) {
           </ul>
           <div className="mobile-menu-actions">
             {user ? (
+              /* The signed-in block used to be an inert <span> showing the
+                 user's name, and the avatar button that opens the account menu
+                 is desktop-only — so /profile (personal details, plan usage and
+                 "Manage or Cancel Subscription") was unreachable on a phone,
+                 and there was no way to log out either. */
               <div className="mobile-menu-user">
-                <span className="mobile-menu-email">{displayName || user.email}</span>
+                <div className="mobile-menu-identity">
+                  <div className="mobile-menu-avatar"><span>{initials}</span></div>
+                  <div className="mobile-menu-identity-text">
+                    <span className="mobile-menu-name">{displayName || t('user.yourAccount')}</span>
+                    <span className="mobile-menu-email">{user.email}</span>
+                  </div>
+                </div>
+                <Link to="/profile" className="mobile-menu-profile" onClick={closeMenu}>
+                  {t('user.profile')}
+                </Link>
+                <button
+                  className="mobile-menu-logout"
+                  onClick={async () => { closeMenu(); await logout(); navigate('/') }}
+                >
+                  {t('user.logOut')}
+                </button>
               </div>
             ) : (
               <>

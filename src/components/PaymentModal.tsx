@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { loadStripe } from '@stripe/stripe-js'
 import {
   Elements,
@@ -187,6 +188,17 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
 /* ─── Success screen ─── */
 function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; onClose: () => void }) {
   const details = planDetails(plan, cfg)
+  const navigate = useNavigate()
+
+  // "Start Analyzing" used to only close the modal, leaving the customer on the
+  // pricing page they had just paid from — told they could start, with no way
+  // to. It now closes the modal and lands them on the upload box itself.
+  // ScrollToTop honours the hash, so /#upload-section scrolls there on arrival.
+  function goToUpload() {
+    onClose()
+    navigate('/#upload-section')
+  }
+
   return (
     <div className="pm-success">
       <div className="pm-success-icon">✓</div>
@@ -194,7 +206,7 @@ function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; 
       <p className="pm-success-sub">
         Your subscription is active. Enjoy {details?.features[0]} and all {details?.label} features.
       </p>
-      <button className="btn-primary btn-cta pm-pay-btn" onClick={onClose}>
+      <button className="btn-primary btn-cta pm-pay-btn" onClick={goToUpload}>
         Start Analyzing →
       </button>
     </div>

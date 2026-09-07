@@ -22,7 +22,6 @@ import { doc, onSnapshot } from 'firebase/firestore'
 import { auth, db, googleProvider } from '../lib/firebase'
 import {
   createUserDocument,
-  updateLastLogin,
   logActivity,
   updateUserName,
   getCurrentMonthKey,
@@ -56,6 +55,16 @@ interface AuthContextValue {
   changePassword: (newPassword: string) => Promise<void>
   reauthAndChangePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
+
+/**
+ * Minimum password length, shared by the signup form and the profile page's
+ * change-password form so the two never disagree. Firebase Auth's own floor is
+ * 6; we ask for 8 and impose no character-class rules on top. Requiring an
+ * uppercase letter and a digit was rejecting passwords that are perfectly
+ * strong (a long passphrase) while adding a failure mode to every signup, so
+ * length is the only rule now.
+ */
+export const MIN_PASSWORD_LENGTH = 8
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -174,22 +183,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function refreshUsage() {}
 
   async function login(email: string, password: string) {
-    const cred = await signInWithEmailAndPassword(auth, email, password)
+    const cred = await signInWithEmailAndPassword(auth, email.trim(), password)
     if (!cred.user.emailVerified) {
       await signOut(auth)
       throw Object.assign(new Error('Email not verified'), { code: 'auth/email-not-verified' })
     }
-    await updateLastLogin(cred.user.uid)
-    await logActivity(cred.user.uid, 'login', { provider: 'email' })
+    // `createUserDocument` rather than `updateLastLogin`: it creates the
+    // document when it is missing instead of throwing. An account whose
+    // Firestore document never got written (a signup interrupted mid-flight)
+    // used to fail every subsequent login here — the credentials were correct,
+    // but the bare `updateDoc` threw `not-found` and the modal reported a login
+    // failure. Now the first login after such a signup repairs the account.
+    // Best-effort like the signup steps: the user is already signed in by this
+    // point, so bookkeeping must never read back as a failed login.
+    await Promise.allSettled([
+      createUserDocument(cred.user),
+      logActivity(cred.user.uid, 'login', { provider: 'email' }),
+    ]).then(results => {
+      results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .forEach(r => console.warn('[login] non-fatal post-login step failed:', r.reason))
+    })
     // Snapshot listener attached by onAuthStateChanged above; no manual setUserData needed
   }
 
+  /**
+   * Create an account.
+   *
+   * Only `createUserWithEmailAndPassword` may fail the signup. Everything after
+   * it — the display name, the Firestore user document, the activity log — is
+   * best-effort, because by that point the Auth account already exists and
+   * cannot be un-created from the client. Letting those steps throw was the
+   * bug behind "Sign up failed. Please try again.": a transient Firestore
+   * hiccup (slow mobile connection, or the auth token not yet propagated to the
+   * Firestore channel) surfaced as a generic failure even though the account
+   * had been created, and the retry then hit `auth/email-already-in-use` — a
+   * dead end with no way forward for that address.
+   *
+   * The user document is recreated on the next successful login by
+   * `createUserDocument`, so a miss here is self-healing rather than fatal.
+   */
   async function signup(email: string, password: string, name: string) {
-    const cred = await createUserWithEmailAndPassword(auth, email, password)
-    await updateProfile(cred.user, { displayName: name })
-    await createUserDocument(cred.user, name)
-    await logActivity(cred.user.uid, 'signup', { provider: 'email' })
-    const emailPayload = JSON.stringify({ email, name })
+    const cleanEmail = email.trim()
+    const cleanName = name.trim()
+    const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password)
+
+    await Promise.allSettled([
+      updateProfile(cred.user, { displayName: cleanName }),
+      createUserDocument(cred.user, cleanName),
+      logActivity(cred.user.uid, 'signup', { provider: 'email' }),
+    ]).then(results => {
+      results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .forEach(r => console.warn('[signup] non-fatal post-create step failed:', r.reason))
+    })
+
+    const emailPayload = JSON.stringify({ email: cleanEmail, name: cleanName })
     fetch('/api/send-verification-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -200,24 +249,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       headers: { 'Content-Type': 'application/json' },
       body: emailPayload,
     }).catch(e => console.warn('[welcome-email] send failed:', e))
-    // Sign out immediately:user must verify email before accessing the app
-    await signOut(auth)
+
+    // Sign out immediately: user must verify email before accessing the app.
+    // Best-effort too — the account exists either way, and a failure here must
+    // not read back to the user as a failed signup.
+    await signOut(auth).catch(e => console.warn('[signup] sign-out failed:', e))
   }
 
   async function loginWithGoogle() {
     const cred = await signInWithPopup(auth, googleProvider)
     const isNew = cred.user.metadata.creationTime === cred.user.metadata.lastSignInTime
-    await createUserDocument(cred.user)
+    // Best-effort for the same reason as email login: the popup has already
+    // signed the user in, so a Firestore hiccup must not report a failed login.
+    // `createUserDocument` refreshes lastLoginAt on the existing-user path, so
+    // no separate updateLastLogin call is needed.
+    await Promise.allSettled([
+      createUserDocument(cred.user),
+      logActivity(cred.user.uid, isNew ? 'signup' : 'login', { provider: 'google' }),
+    ]).then(results => {
+      results
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+        .forEach(r => console.warn('[google-login] non-fatal post-login step failed:', r.reason))
+    })
     if (isNew) {
-      await logActivity(cred.user.uid, 'signup', { provider: 'google' })
       fetch('/api/send-welcome-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: cred.user.email, name: cred.user.displayName ?? '' }),
       }).catch(e => console.warn('[welcome-email] send failed:', e))
-    } else {
-      await updateLastLogin(cred.user.uid)
-      await logActivity(cred.user.uid, 'login', { provider: 'google' })
     }
   }
 
