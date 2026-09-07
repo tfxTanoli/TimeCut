@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth, MIN_PASSWORD_LENGTH } from '../contexts/AuthContext'
 import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
 import { computeReportCost } from '../lib/planConfig'
@@ -109,7 +109,7 @@ export default function ProfilePage() {
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
     setPwError('')
-    if (newPw.length < 6) { setPwError(t('profile.pwTooShort')); return }
+    if (newPw.length < MIN_PASSWORD_LENGTH) { setPwError(t('profile.pwTooShort')); return }
     if (newPw !== confirmPw) { setPwError(t('profile.pwNoMatch')); return }
     if (!currentPw) { setPwError(t('profile.pwMissing')); return }
     setPwSaving(true)
