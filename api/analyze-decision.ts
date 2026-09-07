@@ -17,6 +17,12 @@ import {
   computeReportCost,
   type Entitlement,
 } from './_lib/entitlements.js'
+// Mirrors MIN_DECISION_GOAL_LENGTH in src/components/DecisionUpload.tsx. The
+// API and the browser bundle build separately (see tsconfig.api.json), so this
+// is duplicated the same way the plan config is — change both together, or the
+// form will let through a goal the server then rejects with a 400.
+const MIN_DECISION_GOAL_LENGTH = 2
+
 // v2 — updated prompt forces all required fields
 
 /* ── Normalize GPT response to match expected TypeScript types ── */
@@ -249,8 +255,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const decisionGoal =
       (Array.isArray(fields.decisionGoal) ? fields.decisionGoal[0] : fields.decisionGoal) ?? ''
-    if (!decisionGoal || decisionGoal.trim().length < 5) {
-      return res.status(400).json({ error: 'Decision goal is required (minimum 5 characters)' })
+    if (!decisionGoal || decisionGoal.trim().length < MIN_DECISION_GOAL_LENGTH) {
+      return res.status(400).json({
+        error: `Decision goal is required (minimum ${MIN_DECISION_GOAL_LENGTH} characters)`,
+      })
     }
 
     const language =

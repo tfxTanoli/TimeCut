@@ -609,6 +609,8 @@ const zhCN: Record<string, string> = {
   'decision.analyzing': '分析中...',
   'decision.signInToAnalyze': '登录以分析',
   'decision.signInHint': '只需登录一次，登录后将自动开始分析。',
+  'decision.needDocument': '请至少上传一个文件以继续。',
+  'decision.needGoal': '请简要说明您的决策以继续。',
   'decision.usageText': '本月剩余{remaining}/{limit}次分析',
   'decision.usageTextCredits': '本月剩余 {remaining}/{limit} AI积分',
   'decision.usageTextReports': '本月剩余 {remaining}/{limit} 份免费报告',
