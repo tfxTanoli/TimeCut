@@ -677,6 +677,8 @@ const en: Record<string, string> = {
   'decision.analyzing': 'Analyzing...',
   'decision.signInToAnalyze': 'Sign In to Analyze',
   'decision.signInHint': 'Sign in once — your analysis starts automatically right after.',
+  'decision.needDocument': 'Add at least one document to continue.',
+  'decision.needGoal': 'Add a few words about your decision to continue.',
   'decision.usageText': '{remaining} of {limit} analyses remaining this month',
   'decision.usageTextCredits': '{remaining} of {limit} AI credits left this month',
   'decision.usageTextReports': '{remaining} of {limit} free reports left this month',

@@ -15,6 +15,15 @@ const LANGUAGES = [
 const MAX_FILES_ABSOLUTE = 10
 const ACCEPT = '.pdf,.txt,application/pdf,text/plain'
 
+// Shortest decision goal we accept. This was 5, which silently disabled the
+// Analyze button for real answers like "CV" or "Hire?" with nothing on screen
+// explaining why — the button just looked broken. The goal only steers the
+// analysis (the documents and the chosen framework carry it), so there is no
+// technical floor above "not an accidental keystroke". Whenever the form is
+// incomplete the UI now says exactly what is missing.
+// api/analyze-decision.ts enforces the same number server-side — keep in step.
+export const MIN_DECISION_GOAL_LENGTH = 2
+
 const DOCUMENT_TYPES: { value: DocumentType; labelKey: string; descKey: string; icon: string }[] = [
   { value: 'auto', labelKey: 'decision.docTypeAutoLabel', descKey: 'decision.docTypeAutoDesc', icon: '🔍' },
   { value: 'cv', labelKey: 'decision.docTypeCvLabel', descKey: 'decision.docTypeCvDesc', icon: '👤' },
@@ -131,7 +140,7 @@ export default function DecisionUpload({
   const pendingSubmitRef = useRef(false)
 
   function runAnalysis() {
-    if (files.length === 0 || decisionGoal.trim().length < 5) return
+    if (!formComplete) return
     onDecisionSubmit(files, decisionGoal.trim(), language, documentType)
   }
 
@@ -152,8 +161,17 @@ export default function DecisionUpload({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, isLoading, isAtLimit])
 
-  const canSubmit =
-    !isLoading && !isAtLimit && files.length > 0 && decisionGoal.trim().length >= 5
+  // Split out from canSubmit so the UI can say *which* part is missing rather
+  // than just greying the button out.
+  const formComplete =
+    files.length > 0 && decisionGoal.trim().length >= MIN_DECISION_GOAL_LENGTH
+  const canSubmit = !isLoading && !isAtLimit && formComplete
+
+  const incompleteHint = isLoading || isAtLimit || formComplete
+    ? null
+    : files.length === 0
+      ? t('decision.needDocument')
+      : t('decision.needGoal')
 
   const goalExamples = t('decision.goalExamples')
 
@@ -306,7 +324,15 @@ export default function DecisionUpload({
                 : `✨ ${t('decision.analyzeBtn')}`}
           </button>
         </div>
-        {!isLoggedIn && !isLoading && (
+        {/* Say what is still missing. Without this the disabled button read as
+            broken — the client's tester typed a 2-character goal and had no way
+            to know why nothing happened. */}
+        {incompleteHint && (
+          <p className="du-incomplete-hint">{incompleteHint}</p>
+        )}
+        {/* Only once the form is actually ready: at that point signing in is
+            genuinely the last remaining step. */}
+        {!isLoggedIn && !isLoading && formComplete && (
           <p className="du-signin-hint">{t('decision.signInHint')}</p>
         )}
 

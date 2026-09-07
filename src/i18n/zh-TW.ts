@@ -609,6 +609,8 @@ const zhTW: Record<string, string> = {
   'decision.analyzing': '分析中...',
   'decision.signInToAnalyze': '登入以分析',
   'decision.signInHint': '只需登入一次，登入後將自動開始分析。',
+  'decision.needDocument': '請至少上傳一個檔案以繼續。',
+  'decision.needGoal': '請簡要說明您的決策以繼續。',
   'decision.usageText': '本月剩餘{remaining}/{limit}次分析',
   'decision.usageTextCredits': '本月剩餘 {remaining}/{limit} AI點數',
   'decision.usageTextReports': '本月剩餘 {remaining}/{limit} 份免費報告',
