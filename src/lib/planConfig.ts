@@ -90,7 +90,20 @@ export const DEFAULT_PLAN_CONFIG: PlanConfig = {
 
 const LS_KEY = 'tc-plan-config'
 
-let memoryCache: PlanConfig | null = null
+// Two distinct caches, deliberately kept apart.
+//
+// `liveConfig` is a config that came back from Firestore this session — it is
+// authoritative and safe to keep serving. `snapshot` is only the localStorage
+// copy written by a *previous* session; it exists so the first paint shows
+// prices instead of a flash of the built-in defaults.
+//
+// These used to be one variable, and that was a live pricing bug: reading the
+// snapshot populated the cache, and getPlanConfig() then short-circuited on
+// that cache and never contacted Firestore. Once a browser had seen a price it
+// kept rendering it forever, so an admin price change reached only visitors
+// with an empty localStorage. A stale snapshot must never satisfy a fetch.
+let liveConfig: PlanConfig | null = null
+let snapshot: PlanConfig | null = null
 let inflight: Promise<PlanConfig> | null = null
 
 /** Deep-merge a partial Firestore doc onto defaults so missing keys stay valid. */
@@ -139,12 +152,13 @@ function mergeConfig(raw: Partial<PlanConfig> | undefined | null): PlanConfig {
  * then a localStorage snapshot, then the built-in defaults. Always non-null.
  */
 export function getCachedPlanConfig(): PlanConfig {
-  if (memoryCache) return memoryCache
+  if (liveConfig) return liveConfig
+  if (snapshot) return snapshot
   try {
     const stored = localStorage.getItem(LS_KEY)
     if (stored) {
-      memoryCache = mergeConfig(JSON.parse(stored))
-      return memoryCache
+      snapshot = mergeConfig(JSON.parse(stored))
+      return snapshot
     }
   } catch { /* ignore */ }
   return DEFAULT_PLAN_CONFIG
@@ -157,20 +171,22 @@ export function getCachedPlanConfig(): PlanConfig {
  */
 export async function savePlanConfig(cfg: PlanConfig): Promise<void> {
   await setDoc(doc(db, 'config', 'plans'), { ...cfg, updatedAt: serverTimestamp() }, { merge: true })
-  memoryCache = cfg
+  liveConfig = cfg
+  snapshot = cfg
   try { localStorage.setItem(LS_KEY, JSON.stringify(cfg)) } catch { /* ignore */ }
 }
 
 /** Fetch the live config from Firestore (cached, single inflight request). */
 export async function getPlanConfig(force = false): Promise<PlanConfig> {
-  if (!force && memoryCache) return memoryCache
+  if (!force && liveConfig) return liveConfig
   if (!force && inflight) return inflight
 
   inflight = (async () => {
     try {
       const snap = await getDoc(doc(db, 'config', 'plans'))
       const merged = mergeConfig(snap.exists() ? (snap.data() as Partial<PlanConfig>) : null)
-      memoryCache = merged
+      liveConfig = merged
+      snapshot = merged
       try { localStorage.setItem(LS_KEY, JSON.stringify(merged)) } catch { /* ignore */ }
       return merged
     } catch (e) {
