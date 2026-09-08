@@ -333,7 +333,7 @@ const en: Record<string, string> = {
   'hiw.faq3Q': 'Can TimeCut replace lawyers or professional advisors?',
   'hiw.faq3A': 'No. TimeCut provides AI-assisted decision support. It should not replace legal, financial, medical, hiring, compliance, or other professional advice.',
   'hiw.faq4Q': 'What types of documents can I upload?',
-  'hiw.faq4A': 'Contracts, CVs, supplier quotations, business proposals, research papers, reports, PDFs, and Word documents.',
+  'hiw.faq4A': 'Contracts, CVs, supplier quotations, business proposals, research papers, and reports — uploaded as PDF (.pdf) or plain-text (.txt) files.',
   'hiw.faq5Q': 'How accurate is the analysis?',
   'hiw.faq5A': 'TimeCut uses AI reasoning together with evidence extracted from your uploaded documents. Users should always verify important decisions before taking action.',
   'hiw.faq6Q': 'How are AI Credits calculated?',
@@ -1003,6 +1003,39 @@ const en: Record<string, string> = {
   'decision.docTypeContractDesc': 'Legal risk review by a Contract Reviewer',
   'decision.docTypeProposalLabel': 'Business Proposal',
   'decision.docTypeProposalDesc': 'Strategic review by a Business Consultant',
+  // ── FAQ Page ──
+  'faqp.badge': 'Help Center',
+  'faqp.title': 'Frequently Asked Questions',
+  'faqp.subtitle': 'Everything about how TimeCut analyzes your documents, what it costs, and how your data is handled.',
+  'faqp.catProduct': 'About TimeCut',
+  'faqp.catDocuments': 'Documents & Analysis',
+  'faqp.catPricing': 'Plans, Pricing & AI Credits',
+  'faqp.catAccount': 'Account, Privacy & Data',
+
+  'faqp.q1Q': 'Do I need an account to run an analysis?',
+  'faqp.q1A': 'Yes. A free account is required so your reports and AI Credit balance stay tied to you. Signing up takes a few seconds and no credit card is required for the Free plan.',
+  'faqp.q2Q': 'Which file types and sizes can I upload?',
+  'faqp.q2A': 'TimeCut accepts PDF (.pdf) and plain-text (.txt) files, up to 10 MB each. The number of documents and pages per report depends on your plan: Free covers up to 3 documents and 20 pages, Starter up to 5 documents, and Pro up to 10 documents with no page limit.',
+  'faqp.q3Q': 'My scanned PDF was rejected. Why?',
+  'faqp.q3A': 'TimeCut reads the text layer inside a PDF. A scanned or photographed document is an image with no extractable text, so there is nothing to analyze. Export a text-based PDF from the original file, or paste the text into a .txt file and upload that instead.',
+  'faqp.q4Q': 'Which languages does TimeCut support?',
+  'faqp.q4A': 'The website is available in English, Simplified Chinese and Traditional Chinese. Reports can be generated in 12 languages, including English, Spanish, French, German, Portuguese, Italian, Arabic, Turkish, Japanese, Korean, and both Chinese variants — pick your report language before you run the analysis.',
+  'faqp.q5Q': 'How long does an analysis take?',
+  'faqp.q5A': 'Most reports are ready in under a minute. Longer documents and multi-document comparisons take a little more time because every page is read before the report is written.',
+  'faqp.q6Q': 'Do you offer refunds?',
+  'faqp.q6A': 'You can cancel at any time and keep access until the end of the billing period you already paid for. We do not refund partial billing periods unless applicable law requires it. If something went wrong with a charge, email support@timecut.online and we will look into it.',
+  'faqp.q7Q': 'Who can see the documents I upload?',
+  'faqp.q7A': 'Only you. Uploaded files are processed in memory to produce your report and are never stored on TimeCut servers afterwards. Saved reports live in your own account and are protected by per-account database rules, so no other user can read them.',
+  'faqp.q8Q': 'Can I delete my account and my data?',
+  'faqp.q8A': 'Yes. Email support@timecut.online from your account address and we will delete your account together with the reports and usage history attached to it.',
+
+  // ── 404 ──
+  'nf.code': '404',
+  'nf.title': 'This page does not exist',
+  'nf.subtitle': 'The link may be out of date, or the address may be mistyped. Here is the way back.',
+  'nf.home': 'Back to Home',
+  'nf.contact': 'Contact Support',
+
 }
 
 export default en

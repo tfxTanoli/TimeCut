@@ -22,6 +22,9 @@ const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage   = lazy(() => import('./pages/TermsPage'))
 const AboutPage   = lazy(() => import('./pages/AboutPage'))
 const AdminPage   = lazy(() => import('./pages/AdminPage'))
+const FaqPage      = lazy(() => import('./pages/FaqPage'))
+const SecurityPage = lazy(() => import('./pages/SecurityPage'))
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 // Admins land on /admin only — keep them off the regular user dashboard
 // (e.g. if they hit the back button or open a bookmarked "/" link).
@@ -68,6 +71,10 @@ export default function App() {
               <Route path="/terms"   element={<TermsPage />} />
               <Route path="/about"   element={<AboutPage />} />
               <Route path="/admin"   element={<AdminPage />} />
+              <Route path="/faq"      element={<FaqPage />} />
+              <Route path="/security" element={<SecurityPage />} />
+              {/* Catch-all: an unmatched path used to render an empty page. */}
+              <Route path="*"         element={<NotFoundPage />} />
             </Routes>
           </Suspense>
           <AuthModal />
