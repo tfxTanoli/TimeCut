@@ -470,7 +470,6 @@ const en: Record<string, string> = {
   'pricing.freeMiss1': 'Decision Playbook',
   'pricing.freeMiss2': 'Smart Skeptic Questions',
   'pricing.freeMiss3': 'Print / Save as PDF',
-  'pricing.freeNote': 'Earn 1 more free report by referring a friend.',
 
   // STARTER
   'pricing.starter': 'STARTER',
@@ -518,7 +517,7 @@ const en: Record<string, string> = {
 
   'pricing.faqTitle': 'Pricing FAQs',
   'pricing.faq1Q': 'Is the Free plan really free?',
-  'pricing.faq1A': 'Yes. No credit card required. You get {n} free report (up to {pages} pages, {docs} documents) to try the product. You can earn an extra free report by referring a friend, or upgrade anytime for AI Credits and the full report.',
+  'pricing.faq1A': 'Yes. No credit card required. You get {n} free report (up to {pages} pages, {docs} documents) to try the product. Upgrade anytime for AI Credits and the full report.',
   'pricing.faq2Q': 'What are AI Credits?',
   'pricing.faq2A': 'AI Credits power your analyses. Each report consumes credits based on document size and complexity — larger or multi-document analyses use more. This keeps pricing fair and flexible. A typical analysis uses around 15–25 credits.',
   'pricing.faq3Q': 'What happens to unused credits?',

@@ -19,7 +19,7 @@ export default function SecurityPage() {
           <span className="hero-badge">Trust &amp; Safety</span>
           <h1 className="page-hero-title">Security at TimeCut</h1>
           <p className="page-hero-sub">
-            How your documents, your account and your payment details are protected. Last updated: September 2025.
+            How your documents, your account and your payment details are protected. Last updated: September 2026.
           </p>
         </div>
       </section>

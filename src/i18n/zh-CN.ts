@@ -411,7 +411,6 @@ const zhCN: Record<string, string> = {
   'pricing.freeMiss1': '决策手册',
   'pricing.freeMiss2': '智能质疑问题',
   'pricing.freeMiss3': '打印／另存为PDF',
-  'pricing.freeNote': '成功推荐好友可再获得1份免费报告。',
 
   // 入门版
   'pricing.starter': '入门版',
@@ -459,7 +458,7 @@ const zhCN: Record<string, string> = {
 
   'pricing.faqTitle': '定价常见问题',
   'pricing.faq1Q': '免费计划真的免费吗？',
-  'pricing.faq1A': '是的。无需信用卡。您将获得 {n} 份免费报告（最多 {pages} 页、{docs} 个文档）来体验产品。成功推荐好友可再获得1份免费报告，或随时升级以获得AI积分和完整报告。',
+  'pricing.faq1A': '是的。无需信用卡。您将获得 {n} 份免费报告（最多 {pages} 页、{docs} 个文档）来体验产品。您可随时升级以获得AI积分和完整报告。',
   'pricing.faq2Q': '什么是AI积分？',
   'pricing.faq2A': 'AI积分为您的分析提供动力。每份报告根据文档大小和复杂度消耗积分——更大或多文档的分析会消耗更多。这让定价更公平、更灵活。一次典型分析约消耗15–25积分。',
   'pricing.faq3Q': '未使用的积分会怎样？',

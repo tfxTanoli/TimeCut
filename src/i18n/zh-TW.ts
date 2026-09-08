@@ -411,7 +411,6 @@ const zhTW: Record<string, string> = {
   'pricing.freeMiss1': '決策手冊',
   'pricing.freeMiss2': '智慧質疑問題',
   'pricing.freeMiss3': '列印／另存為PDF',
-  'pricing.freeNote': '成功推薦好友可再獲得1份免費報告。',
 
   // 入門版
   'pricing.starter': '入門版',
@@ -459,7 +458,7 @@ const zhTW: Record<string, string> = {
 
   'pricing.faqTitle': '定價常見問題',
   'pricing.faq1Q': '免費方案真的免費嗎？',
-  'pricing.faq1A': '是的。無需信用卡。您將獲得 {n} 份免費報告（最多 {pages} 頁、{docs} 個文件）來體驗產品。成功推薦好友可再獲得1份免費報告，或隨時升級以獲得AI點數和完整報告。',
+  'pricing.faq1A': '是的。無需信用卡。您將獲得 {n} 份免費報告（最多 {pages} 頁、{docs} 個文件）來體驗產品。您可隨時升級以獲得AI點數和完整報告。',
   'pricing.faq2Q': '什麼是AI點數？',
   'pricing.faq2A': 'AI點數為您的分析提供動力。每份報告依文件大小和複雜度消耗點數——更大或多文件的分析會消耗更多。這讓定價更公平、更靈活。一次典型分析約消耗15–25點數。',
   'pricing.faq3Q': '未使用的點數會怎樣？',

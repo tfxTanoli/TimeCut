@@ -2694,16 +2694,6 @@
   text-align: left;
 }
 
-/* Referral note under the Free card features */
-.pricing-note {
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--accent, #2563EB);
-  margin: auto 0 0;
-  padding-top: 14px;
-  text-align: left;
-}
-
 /* ── Report Feedback ("Help Make TimeCut Smarter") ── */
 .rf-card {
   margin: 28px 0;
@@ -6331,11 +6321,11 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  flex: 0.8;
-  min-width: 120px;
-  align-items: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+  align-items: center;
 }
-.lp-eo-score .lp-eo-label { text-align: right; }
+.lp-eo-score .lp-eo-label { text-align: center; }
 .lp-eo-label {
   font-size: 11px;
   font-weight: 700;
@@ -6381,7 +6371,7 @@
     gap: 18px;
   }
   .lp-eo-rec { flex: 0 1 auto; min-width: 0; align-items: flex-start; text-align: left; }
-  .lp-eo-score { flex: 0 0 auto; min-width: 0; align-items: center; align-self: center; margin-top: 4px; }
+  .lp-eo-score { flex: 0 0 auto; min-width: 0; align-items: center; align-self: center; margin-left: 0; margin-top: 4px; }
   .lp-eo-score .lp-eo-label { text-align: center; }
   .lp-eo-label { min-width: unset; }
 }
@@ -6476,13 +6466,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   flex: 1;
   min-width: 100px;
   padding: 8px 12px;
   text-align: center;
 }
-.lp-eo-stat-icon { font-size: 16px; line-height: 1; }
+.lp-eo-stat-icon { font-size: 16px; line-height: 1; margin-bottom: 2px; }
 .lp-eo-stat-count {
   font-size: 22px;
   font-weight: 800;
@@ -6492,6 +6482,7 @@
 .lp-eo-stat-label {
   font-size: 11px;
   font-weight: 600;
+  line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #6B7280;

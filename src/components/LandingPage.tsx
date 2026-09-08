@@ -192,8 +192,8 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
                         <circle cx="36" cy="36" r={r} fill="none" stroke={color} strokeWidth="7"
                           strokeDasharray={circ} strokeDashoffset={offset}
                           strokeLinecap="round" transform="rotate(-90 36 36)" />
-                        <text x="36" y="32" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="700">{pct}</text>
-                        <text x="36" y="44" textAnchor="middle" fill="#6B7280" fontSize="9">/ 100</text>
+                        <text x="36" y="35" textAnchor="middle" fill="#FFFFFF" fontSize="14" fontWeight="700">{pct}</text>
+                        <text x="36" y="47" textAnchor="middle" fill="#6B7280" fontSize="9">/ 100</text>
                       </svg>
                     )
                   })()}

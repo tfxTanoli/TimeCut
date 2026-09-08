@@ -198,7 +198,6 @@ export default function PricingPage() {
                   </li>
                 ))}
               </ul>
-              <p className="pricing-note">{t('pricing.freeNote')}</p>
             </div>
 
             {/* STARTER — flagged "Best Value" in green so it reads as a distinct
