@@ -30,6 +30,22 @@ interface FeedbackRow {
   createdAt?: Timestamp | null
 }
 
+/**
+ * A contact-form submission, as written by ContactPage.
+ *
+ * These are also emailed to the support address, but that delivery is outside
+ * the app's control — when it fails the Firestore copy is the only record of
+ * what the customer sent, so the dashboard reads it directly.
+ */
+interface ContactRow {
+  id: string
+  name?: string
+  email?: string
+  subject?: string
+  message?: string
+  createdAt?: Timestamp | null
+}
+
 const PLAN_ORDER: PlanType[] = ['free', 'starter', 'pro', 'business']
 
 // Only the numeric limits are edited with number inputs. `features` is a set of
@@ -118,7 +134,8 @@ export default function AdminPage() {
   const [cfg, setCfg] = useState<PlanConfig>(DEFAULT_PLAN_CONFIG)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [feedback, setFeedback] = useState<FeedbackRow[]>([])
-  const [tab, setTab] = useState<'config' | 'feedback' | 'usage'>('config')
+  const [contacts, setContacts] = useState<ContactRow[]>([])
+  const [tab, setTab] = useState<'config' | 'feedback' | 'messages' | 'usage'>('config')
   const [monthly, setMonthly] = useState<MonthlyUsage | null>(null)
   const [usageRows, setUsageRows] = useState<UserUsageRow[]>([])
   const [subscribers, setSubscribers] = useState<Record<string, number>>({})
@@ -146,6 +163,15 @@ export default function AdminPage() {
         if (active) setFeedback(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<FeedbackRow, 'id'>) })))
       } catch (e) {
         console.warn('[admin] feedback load failed:', e)
+      }
+
+      // Contact-form submissions. Loaded in its own try so a failure here
+      // cannot take the feedback or usage sections down with it.
+      try {
+        const snap = await getDocs(query(collection(db, 'contacts'), orderBy('createdAt', 'desc'), limit(200)))
+        if (active) setContacts(snap.docs.map(d => ({ id: d.id, ...(d.data() as Omit<ContactRow, 'id'>) })))
+      } catch (e) {
+        console.warn('[admin] contacts load failed:', e)
       }
 
       // AI usage for the current month. The headline totals are one document;
@@ -284,6 +310,9 @@ export default function AdminPage() {
           </button>
           <button className={`admin-tab ${tab === 'feedback' ? 'admin-tab--active' : ''}`} onClick={() => setTab('feedback')}>
             Feedback ({feedback.length})
+          </button>
+          <button className={`admin-tab ${tab === 'messages' ? 'admin-tab--active' : ''}`} onClick={() => setTab('messages')}>
+            Messages ({contacts.length})
           </button>
           <button className={`admin-tab ${tab === 'usage' ? 'admin-tab--active' : ''}`} onClick={() => setTab('usage')}>
             AI Usage &amp; Cost
@@ -442,6 +471,49 @@ export default function AdminPage() {
                         <td>{f.wouldHaveMissed ?? '—'}</td>
                         <td>{f.wouldUseAgain ?? '—'}</td>
                         <td className="admin-insight">{f.mostValuableInsight || '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === 'messages' && (
+          <div className="admin-section">
+            <p className="admin-hint">
+              Every message sent through the <strong>Contact</strong> form. These are also emailed
+              to the support address, but that delivery depends on the domain's mail setup — this
+              list does not, so nothing is lost if the mail bounces. Use the sender's address to
+              reply. Newest first, most recent 200.
+            </p>
+            {contacts.length === 0 ? (
+              <p className="admin-hint">No messages yet.</p>
+            ) : (
+              <div className="admin-table-wrap">
+                <table className="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Subject</th>
+                      <th>Message</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {contacts.map(c => (
+                      <tr key={c.id}>
+                        <td>{c.createdAt?.toDate?.().toLocaleDateString?.() ?? '—'}</td>
+                        <td>{c.name || '—'}</td>
+                        <td>
+                          {c.email
+                            ? <a href={`mailto:${c.email}?subject=${encodeURIComponent(`Re: ${c.subject || 'Your message to TimeCut'}`)}`}>{c.email}</a>
+                            : '—'}
+                        </td>
+                        <td>{c.subject || '—'}</td>
+                        <td className="admin-insight">{c.message || '—'}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -116,13 +116,23 @@ service cloud.firestore {
       allow read, update, delete: if isAdmin();
     }
 
-    // Anyone can submit a contact message (no auth required)
+    // Anyone can submit a contact message (no auth required).
+    //
+    // Admins may read them. Every submission is also emailed to the support
+    // address, but that is a single point of failure the app does not control —
+    // if the support mailbox is misconfigured or the mail is rejected, the
+    // Firestore copy was previously unreadable by anyone, so the message was
+    // simply lost. Reading is the whole point of storing them.
+    //
+    // Writes stay closed: a submitted message is a record of what the customer
+    // actually sent, and nothing should be able to edit it after the fact.
     match /contacts/{contactId} {
       allow create: if request.resource.data.keys().hasAll(['name', 'email', 'subject', 'message'])
         && request.resource.data.name is string
         && request.resource.data.email is string
         && request.resource.data.message is string;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     // ── AI usage & cost ledger ───────────────────────────────────────────────
