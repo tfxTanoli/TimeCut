@@ -46,6 +46,8 @@ interface AuthContextValue {
   creditsRemaining: number
   creditsUsage: CreditsUsage
   freeReportsRemaining: number
+  /** Total free reports this account is entitled to (base allowance + referral rewards). */
+  freeReportsAllowed: number
   refreshUsage: () => void
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
@@ -314,6 +316,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user, userData, displayName, loading,
       plan, planExpiresAt, features,
       planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+      freeReportsAllowed,
       refreshUsage,
       login, signup, loginWithGoogle, logout,
       updateDisplayName, changePassword, reauthAndChangePassword,

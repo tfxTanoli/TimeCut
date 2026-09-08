@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth, MIN_PASSWORD_LENGTH } from '../contexts/AuthContext'
 import { useTranslation } from '../hooks/useTranslation'
 import Footer from '../components/Footer'
-import { computeReportCost } from '../lib/planConfig'
+import { computeReportCost, formatPrice, isUnlimited } from '../lib/planConfig'
 import { createBillingPortalSession } from '../api'
 import { firebaseErrorCode } from '../lib/errors'
 
@@ -13,15 +13,32 @@ export default function ProfilePage() {
   const {
     user, userData, displayName, updateDisplayName, reauthAndChangePassword,
     plan, planExpiresAt, loading, planConfig,
-    creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+    creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining, freeReportsAllowed,
   } = useAuth()
+  const { t } = useTranslation()
   const isFreePlan = plan === 'free'
   const creditsPct = creditsAllocated > 0
     ? Math.min(100, Math.round((creditsRemaining / creditsAllocated) * 100))
     : 0
   const typicalCost = computeReportCost(planConfig, TYPICAL_REPORT)
   const typicalAnalysesRemaining = typicalCost > 0 ? Math.floor(creditsRemaining / typicalCost) : 0
-  const { t } = useTranslation()
+
+  // What this plan includes, read from the same `config/plans` document the
+  // Pricing page reads. Previously the account area showed only a plan name and
+  // a credit count, so a customer comparing it against /pricing had no way to
+  // see the two agreed — and any figure hardcoded here would have drifted the
+  // moment an admin edited the config.
+  const planLimits = planConfig.plans[plan]
+  const planPrice = formatPrice(planLimits?.priceCents ?? null)
+  const planAllowance = isFreePlan
+    ? t('profile.planFreeReports').replace('{n}', String(freeReportsAllowed))
+    : t('profile.planCredits').replace('{n}', (creditsAllocated).toLocaleString())
+  const planDocs = isUnlimited(planLimits?.maxDocs)
+    ? t('profile.planUnlimited')
+    : String(planLimits?.maxDocs ?? 0)
+  const planPages = isUnlimited(planLimits?.maxPages)
+    ? t('profile.planUnlimited')
+    : String(planLimits?.maxPages ?? 0)
   const navigate = useNavigate()
 
   const [name, setName]             = useState('')
@@ -153,24 +170,24 @@ export default function ProfilePage() {
               <div className="profile-hero-stats">
                 <div className="profile-stat">
                   <span className="profile-stat-val">{isFreePlan ? freeReportsRemaining : creditsRemaining.toLocaleString()}</span>
-                  <span className="profile-stat-label">{isFreePlan ? 'Free Reports Left' : 'Credits Left'}</span>
+                  <span className="profile-stat-label">{isFreePlan ? t('profile.statFreeReports') : t('profile.statCredits')}</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
                   <span className="profile-stat-val">{creditsUsage.reportsUsed}</span>
-                  <span className="profile-stat-label">Reports This Month</span>
+                  <span className="profile-stat-label">{t('profile.statReportsMonth')}</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
                   <span className="profile-stat-val">{userData.totalAnalyses}</span>
-                  <span className="profile-stat-label">Total All Time</span>
+                  <span className="profile-stat-label">{t('profile.statTotal')}</span>
                 </div>
                 <div className="profile-stat-divider" />
                 <div className="profile-stat">
-                  <span className={`plan-badge plan-badge--${plan}`} style={{ fontSize: 13, padding: '4px 12px' }}>
-                    {plan.toUpperCase()}
+                  <span className="profile-stat-val profile-stat-val--badge">
+                    <span className={`plan-badge plan-badge--${plan}`}>{plan.toUpperCase()}</span>
                   </span>
-                  <span className="profile-stat-label">Your Plan</span>
+                  <span className="profile-stat-label">{t('profile.statPlan')}</span>
                 </div>
               </div>
             )}
@@ -220,20 +237,39 @@ export default function ProfilePage() {
                 <span className="usage-stat-label">{t('usage.assistantUsage')}</span>
               </div>
             </div>
-            <p className="usage-note">{t('usage.note')}</p>
+            {/* Free reports are a lifetime allowance (api/_lib/entitlements.ts
+                never resets `freeReportsUsed`), so the credit-reset note was
+                wrong for exactly the plan that shows "Free Reports Left". */}
+            <p className="usage-note">{t(isFreePlan ? 'usage.noteFree' : 'usage.note')}</p>
           </div>
 
           <div className="profile-grid">
             <div className="profile-card profile-card--subscription">
               <div className="profile-card-header">
                 <IconSubscription />
-                <h2 className="profile-card-title">Subscription</h2>
+                <h2 className="profile-card-title">{t('profile.subscription')}</h2>
               </div>
               <div className="profile-subscription">
                 <div className="profile-subscription-row">
-                  <span className="profile-subscription-label">Current Plan</span>
-                  <span className={`plan-badge plan-badge--${plan}`} style={{ fontSize: 13, padding: '4px 12px' }}>
-                    {plan.toUpperCase()}
+                  <span className="profile-subscription-label">{t('profile.currentPlan')}</span>
+                  <span className="profile-subscription-plan">
+                    <span className={`plan-badge plan-badge--${plan}`}>{plan.toUpperCase()}</span>
+                    <span className="profile-subscription-price">
+                      {planPrice}
+                      {planLimits?.priceCents ? <span className="profile-subscription-period">{t('profile.perMonth')}</span> : null}
+                    </span>
+                  </span>
+                </div>
+                <div className="profile-subscription-row">
+                  <span className="profile-subscription-label">{t('profile.planIncludes')}</span>
+                  <span className="profile-subscription-value">{planAllowance}</span>
+                </div>
+                <div className="profile-subscription-row">
+                  <span className="profile-subscription-label">{t('profile.planPerReport')}</span>
+                  <span className="profile-subscription-value">
+                    {t('profile.planDocsPages')
+                      .replace('{docs}', planDocs)
+                      .replace('{pages}', planPages)}
                   </span>
                 </div>
                 {plan !== 'free' && userData?.subscriptionStatus

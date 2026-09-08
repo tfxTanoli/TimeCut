@@ -74,8 +74,9 @@ function UpgradeModal({ plan, planLimit, isLoggedIn, onClose, onOpenAuth, t }: U
 
 export default function HomePage() {
   const {
-    user, plan,
+    user, plan, loading: authLoading,
     planConfig, creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining,
+    freeReportsAllowed,
   } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const { t } = useTranslation()
@@ -102,12 +103,16 @@ export default function HomePage() {
   const maxDocs = planLimits?.maxDocs ?? 3
   const maxPages = planLimits?.maxPages ?? 20
 
-  // Values for the usage bar (credits for paid, free reports for free)
+  // Values for the usage bar (credits for paid, free reports for free).
+  // The free-plan figures come from the free-report counters on the user
+  // document, not from the credit ledger: `creditsUsage.reportsUsed` is a
+  // separate counter and mixing the two produced a limit that drifted from the
+  // allowance actually enforced (and from what the Pricing page advertises).
   const displayLimit = user
-    ? (isFreePlan ? Math.max(1, freeReportsRemaining + creditsUsage.reportsUsed) : creditsAllocated)
+    ? (isFreePlan ? Math.max(1, freeReportsAllowed) : creditsAllocated)
     : GUEST_PREVIEW_LIMIT
   const displayUsed = user
-    ? (isFreePlan ? creditsUsage.reportsUsed : creditsUsage.used)
+    ? (isFreePlan ? Math.max(0, freeReportsAllowed - freeReportsRemaining) : creditsUsage.used)
     : 0
 
   /**
@@ -264,6 +269,7 @@ export default function HomePage() {
       maxDocs={maxDocs}
       maxPages={maxPages}
       isLoggedIn={!!user}
+      authLoading={authLoading}
       onOpenAuth={openAuthModal}
       remaining={remaining}
       isAtLimit={isAtLimit}

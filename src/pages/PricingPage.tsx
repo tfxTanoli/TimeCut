@@ -27,6 +27,13 @@ export default function PricingPage() {
   const starterCredits = (cfg.plans.starter.credits ?? 0).toLocaleString()
   const proCredits = (cfg.plans.pro.credits ?? 0).toLocaleString()
 
+  // Free-plan figures come from the same config the account area and the
+  // upload form read, so the three places can never advertise different limits.
+  const freeReports = cfg.plans.free.freeReports ?? 1
+  const freeLimits = t('pricing.freeLimitsLine')
+    .replace('{pages}', String(cfg.plans.free.maxPages))
+    .replace('{docs}', String(cfg.plans.free.maxDocs))
+
   // Derived straight from the URL instead of mirrored into state by an effect.
   // Dismissal records *which* banner was dismissed, so returning from Stripe
   // with a different outcome still shows the new one.
@@ -46,14 +53,37 @@ export default function PricingPage() {
     navigate('/contact?plan=business')
   }
 
+  /**
+   * `currentPlan` falls back to 'free' for signed-out visitors, so without the
+   * user check every visitor was told the Free card was "Your plan" before they
+   * had an account at all.
+   */
   function planBadge(name: string) {
-    return currentPlan === name
-      ? <span className="pricing-current-badge">Your plan</span>
+    return user && currentPlan === name
+      ? <span className="pricing-current-badge">{t('pricing.yourPlan')}</span>
       : null
   }
 
+  /**
+   * The recommendation ribbon and the "Your plan" chip both dock centred on the
+   * card's top edge, so on a subscriber's own card they overlapped. Which plan
+   * you are on beats which plan we recommend, so the ribbon stands down there.
+   */
+  function recommendBadge(name: string, labelKey: string, cls = '') {
+    return currentPlan === name
+      ? null
+      : <span className={`pricing-badge${cls}`}>{t(labelKey)}</span>
+  }
+
   const FAQS = [
-    { q: t('pricing.faq1Q'), a: t('pricing.faq1A') },
+    {
+      q: t('pricing.faq1Q'),
+      // Same config as the Free card above, so the answer cannot contradict it.
+      a: t('pricing.faq1A')
+        .replace('{n}', String(freeReports))
+        .replace('{pages}', String(cfg.plans.free.maxPages))
+        .replace('{docs}', String(cfg.plans.free.maxDocs)),
+    },
     { q: t('pricing.faq2Q'), a: t('pricing.faq2A') },
     { q: t('pricing.faq3Q'), a: t('pricing.faq3A') },
     { q: t('pricing.faq4Q'), a: t('pricing.faq4A') },
@@ -126,36 +156,55 @@ export default function PricingPage() {
         <div className="container">
           <div className="pricing-grid pricing-grid--4col">
 
-            {/* FREE */}
+            {/* FREE
+                Every card below repeats the same slot order — name, tagline,
+                price, headline figure + supporting line, CTA, subtitle,
+                divider, features, closing note. The headline/supporting slot is
+                rendered even where there is no credit figure to show, because
+                skipping it on Free and Business was what pushed their CTAs and
+                dividers ~65px out of line with Starter and Pro. */}
             <div className="pricing-card" onClick={() => navigate('/get-started')}>
               {planBadge('free')}
               <p className="pricing-plan-name">{t('pricing.free')}</p>
               <p className="pricing-plan-tagline">{t('pricing.freeTagline')}</p>
               <div className="pricing-price-row">
                 <span className="pricing-price">{formatPrice(cfg.plans.free.priceCents)}</span>
+                <span className="pricing-period">{t('pricing.freePeriodLabel')}</span>
               </div>
+              <p className="pricing-analyses">
+                {t('pricing.freeReportsLine').replace('{n}', String(freeReports))}
+              </p>
+              <p className="pricing-analyses-sub">{freeLimits}</p>
               <Link to="/get-started" className="pricing-cta btn-outline">
                 {t('pricing.freeCta')}
               </Link>
               <p className="pricing-plan-subtitle">{t('pricing.freeSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['freeF1','freeF2','freeF3','freeF4','freeF5','freeF6'] as const).map(k => (
+                {(['freeF3','freeF4','freeF5','freeF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
+                    <span className="feat-icon feat-icon--yes">✓</span>
+                    <span>{t(`pricing.${k}`)
+                      .replace('{n}', String(freeReports))
+                      .replace('{pages}', String(cfg.plans.free.maxPages))
+                      .replace('{docs}', String(cfg.plans.free.maxDocs))
+                      .replace('{questions}', String(cfg.plans.free.assistantQuestions))}</span>
                   </li>
                 ))}
                 {(['freeMiss1','freeMiss2','freeMiss3'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--no">
-                    <span className="feat-icon feat-icon--no">✕</span> {t(`pricing.${k}`)}
+                    <span className="feat-icon feat-icon--no">✕</span>
+                    <span>{t(`pricing.${k}`)}</span>
                   </li>
                 ))}
               </ul>
               <p className="pricing-note">{t('pricing.freeNote')}</p>
             </div>
 
-            {/* STARTER */}
-            <div className="pricing-card" onClick={() => handlePaidPlan('starter')}>
+            {/* STARTER — flagged "Best Value" in green so it reads as a distinct
+                recommendation from Pro's blue "Most Popular". */}
+            <div className="pricing-card pricing-card--value" onClick={() => handlePaidPlan('starter')}>
+              {recommendBadge('starter', 'pricing.bestValue', ' pricing-badge--value')}
               {planBadge('starter')}
               <p className="pricing-plan-name">{t('pricing.starter')}</p>
               <p className="pricing-plan-tagline">{t('pricing.starterTagline')}</p>
@@ -168,18 +217,24 @@ export default function PricingPage() {
                 {t('pricing.starterF1').replace('{credits}', starterCredits)}
               </p>
               <button
-                className="pricing-cta btn-outline"
+                className="pricing-cta btn-outline pricing-cta--value"
                 onClick={() => handlePaidPlan('starter')}
               >
                 {t('pricing.starterCta')}
               </button>
-              <p className="pricing-plan-subtitle">{t('pricing.starterSubtitle')}</p>
+              <p className="pricing-plan-subtitle">
+                {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.starter.maxDocs))}
+              </p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {/* F1 is the credit line, now shown under the price above. */}
-                {(['starterF2','starterF3','starterF4','starterF5','starterF6','starterF7','starterF8','starterF9'] as const).map(k => (
+                {(['starterF4','starterF5','starterF6','starterF7','starterF8','starterF9'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', starterCredits)}
+                    <span className="feat-icon feat-icon--yes">✓</span>
+                    <span>{t(`pricing.${k}`)
+                      .replace('{credits}', starterCredits)
+                      .replace('{n}', String(analysesPerMonth('starter')))
+                      .replace('{docs}', String(cfg.plans.starter.maxDocs))}</span>
                   </li>
                 ))}
               </ul>
@@ -188,6 +243,7 @@ export default function PricingPage() {
 
             {/* PRO */}
             <div className="pricing-card pricing-card--highlight" onClick={() => handlePaidPlan('pro')}>
+              {recommendBadge('pro', 'pricing.mostPopular')}
               {planBadge('pro')}
               <p className="pricing-plan-name">{t('pricing.pro')}</p>
               <p className="pricing-plan-tagline">{t('pricing.proTagline')}</p>
@@ -205,13 +261,18 @@ export default function PricingPage() {
               >
                 {t('pricing.proCta')}
               </button>
-              <p className="pricing-plan-subtitle">{t('pricing.proSubtitle')}</p>
+              <p className="pricing-plan-subtitle">
+                {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.pro.maxDocs))}
+              </p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {/* F1 is the credit line, now shown under the price above. */}
-                {(['proF2','proF3','proF4','proF5','proF6'] as const).map(k => (
+                {(['proF2','proF4','proF5','proF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`).replace('{credits}', proCredits)}
+                    <span className="feat-icon feat-icon--yes">✓</span>
+                    <span>{t(`pricing.${k}`)
+                      .replace('{credits}', proCredits)
+                      .replace('{docs}', String(cfg.plans.pro.maxDocs))}</span>
                   </li>
                 ))}
               </ul>
@@ -229,6 +290,8 @@ export default function PricingPage() {
               <div className="pricing-price-row">
                 <span className="pricing-price pricing-price--custom">{t('pricing.customPriceLabel')}</span>
               </div>
+              <p className="pricing-analyses">{t('pricing.customAnalysesLine')}</p>
+              <p className="pricing-analyses-sub">{t('pricing.customF1')}</p>
               <button
                 className="pricing-cta btn-outline"
                 onClick={e => { e.stopPropagation(); handleContactSales() }}
@@ -238,12 +301,14 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['customF1','customF2','customF3','customF4','customF5'] as const).map(k => (
+                {(['customF2','customF3','customF4','customF5'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
-                    <span className="feat-icon feat-icon--yes">✓</span> {t(`pricing.${k}`)}
+                    <span className="feat-icon feat-icon--yes">✓</span>
+                    <span>{t(`pricing.${k}`)}</span>
                   </li>
                 ))}
               </ul>
+              <p className="pricing-disclaimer">{t('pricing.customDisclaimer')}</p>
             </div>
 
           </div>

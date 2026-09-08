@@ -7532,3 +7532,252 @@
   .profile-stat { flex: 0 1 auto; min-width: 0; }
   .profile-stat-divider { display: none; }
 }
+
+
+/* ════════════════════════════════════════════════════════════════
+   ALIGNMENT & PLAN-DISPLAY PASS
+   Appended last on purpose: several rules below correct declarations
+   that appear earlier in this file (and in later override blocks), so
+   they need to be the last equal-specificity word.
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Pricing cards: one shared vertical rhythm ──
+   Every card renders the same slots, but they were free-sizing, so the four
+   CTAs landed at four different heights (165 / 229 / 230 / 157px from the card
+   top) and the dividers with them. Fixed minimums for each slot line the cards
+   up as a row. */
+.pricing-price-row {
+  align-items: baseline;
+  min-height: 44px;
+  margin-bottom: 12px;
+}
+.pricing-analyses {
+  margin: 0 0 2px;
+  min-height: 22px;
+}
+.pricing-analyses-sub {
+  margin: 0 0 14px;
+  min-height: 18px;
+}
+/* The Free card CTA is a react-router Link and the others are buttons.
+   Anchors inherit the page line-height and buttons do not, so the same class
+   rendered 50px tall on Free and 39px on Pro. Pin both. */
+.pricing-cta {
+  min-height: 46px;
+  line-height: 1.2;
+  padding: 12px 14px;
+}
+.pricing-plan-subtitle { min-height: 32px; }
+
+/* A 41px floor on every feature row left single-line items swimming in space
+   and still failed to align rows between cards (a two-line item is taller than
+   the floor anyway). An even gap with the icon locked to the first text line
+   reads as a list instead. */
+.pricing-feat {
+  min-height: 0;
+  align-items: flex-start;
+  gap: 9px;
+}
+.pricing-features { gap: 12px; }
+.feat-icon {
+  margin-top: 0;
+  width: 14px;
+  text-align: center;
+  line-height: 1.45;
+  font-size: 12px;
+}
+
+/* ── Plan indicators ──
+   Pro keeps the blue "Most Popular" ribbon it was styled for but never
+   rendered; Starter gets an emerald "Best Value" one so the two recommended
+   plans are told apart by colour, not just by which has a border. */
+.pricing-badge--value {
+  background: linear-gradient(135deg, #047857 0%, #10B981 100%);
+}
+.pricing-card--value {
+  border: 2px solid #10B981;
+  box-shadow: 0 8px 32px rgba(16,185,129,0.16);
+}
+.pricing-card--value:hover { box-shadow: 0 16px 40px rgba(16,185,129,0.22); }
+.pricing-cta--value.btn-outline {
+  border-color: rgba(16,185,129,0.55);
+  color: #34D399;
+}
+.pricing-cta--value.btn-outline:not(:disabled):hover,
+.pricing-cta--value.btn-outline:hover {
+  border-color: #10B981;
+  color: #6EE7B7;
+  background: rgba(16,185,129,0.10);
+}
+
+/* ── Landing page: comparison table ──
+   The TimeCut column centred the tick and its text as one block, so the tick
+   started at a different x on every row. Left-aligning both value columns puts
+   the ticks in a column and squares them with their headers. */
+.lp-comp-col--other,
+.lp-comp-cell--other { text-align: left; }
+.lp-comp-col--us { text-align: left; }
+.lp-comp-cell--us {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  text-align: left;
+}
+.lp-comp-check { margin-right: 0; width: 14px; flex-shrink: 0; }
+
+/* ── Landing page: use-case cards ──
+   Seven cards in a five-column grid left three empty cells trailing the second
+   row. Wrapping flex keeps the card size but centres whatever the last row
+   holds. */
+.lp-usecases-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+/* Fixed track widths rather than `flex-grow`: a growing basis made the four
+   cards on the full row narrower than the three on the short one. border-box so
+   the 22px padding counts inside the track. */
+.lp-uc-card {
+  box-sizing: border-box;
+  flex: 0 1 calc(25% - 15px);
+  max-width: calc(25% - 15px);
+  min-width: 0;
+}
+@media (max-width: 1100px) {
+  .lp-uc-card { flex-basis: calc(33.333% - 14px); max-width: calc(33.333% - 14px); }
+}
+@media (max-width: 760px) {
+  .lp-uc-card { flex-basis: calc(50% - 10px); max-width: calc(50% - 10px); }
+}
+@media (max-width: 640px) {
+  .lp-uc-card { flex-basis: 100%; max-width: none; }
+}
+
+/* ── Upload form: expert-framework picker ──
+   Same problem: five cards, three columns, one stranded empty cell. */
+.du-doctype-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+}
+.du-doctype-btn {
+  box-sizing: border-box;
+  flex: 0 1 calc(33.333% - 6.7px);
+  max-width: calc(33.333% - 6.7px);
+  min-width: 0;
+}
+@media (max-width: 760px) {
+  .du-doctype-btn { flex-basis: calc(50% - 5px); max-width: calc(50% - 5px); }
+}
+@media (max-width: 520px) {
+  .du-doctype-btn { flex-basis: 100%; max-width: none; }
+}
+
+/* ── Upload form: submit row ──
+   The language select rendered 28px tall next to a 48px Analyze button and sat
+   visibly adrift in the middle of the row. */
+.du-submit-row .du-lang {
+  height: 48px;
+  min-height: 48px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 10px;
+  min-width: 150px;
+}
+
+/* Two rows clipped the placeholder on a phone: the example text ran past the
+   bottom edge of the box mid-word. */
+.du-goal-input { min-height: 88px; }
+
+/* ── Upload form: text alignment on desktop ──
+   `.lp-hero-upload` sets `text-align: center`, which the form inherits: step
+   titles and subtitles centred themselves while the step number, the framework
+   cards and the plan bar stayed hard left. Mobile already resolves this by
+   centring everything (see the max-width:600px block); on desktop the honest
+   fix is the other direction, so the title starts where its number does. */
+@media (min-width: 601px) {
+  .lp-hero-upload .du-step-header,
+  .lp-hero-upload .du-step-title,
+  .lp-hero-upload .du-step-sub { text-align: left; }
+  .lp-hero-upload .du-step-header > div { flex: 1; min-width: 0; }
+}
+
+/* ── Profile: hero stat row ──
+   The plan chip made its stat 65px tall against 55px for the three numeric
+   ones; centred vertically, that pushed its label about 5px below the others
+   and past the panel inner edge. A shared value band aligns all four labels. */
+.profile-hero-stats { align-items: stretch; }
+.profile-stat { justify-content: flex-start; }
+.profile-stat-val {
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.profile-stat-val--badge { font-size: 13px; }
+.profile-stat-val--badge .plan-badge { font-size: 12px; padding: 4px 12px; }
+
+/* ── Profile: subscription plan summary ── */
+.profile-subscription-plan {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.profile-subscription-price {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-h);
+}
+.profile-subscription-period {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  margin-left: 1px;
+}
+.profile-subscription-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+  text-align: right;
+}
+
+/* A long address plus the "Cannot change" chip overflowed the field right
+   border on a phone. Let the address ellipsise instead of pushing the chip out. */
+.profile-readonly-field > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  /* Wrapping the stat row put two stats on their own full-width lines and the
+     remaining two side by side. A 2x2 grid is even at any of these counts. */
+  .profile-hero-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    row-gap: 16px;
+    column-gap: 8px;
+  }
+  .profile-stat { padding: 0 6px; }
+  .profile-subscription-row { gap: 12px; }
+  .profile-subscription-value { font-size: 13px; }
+}
+
+/* The bar is hidden for guests on mobile (see the max-width:768px block). Hide
+   it while auth is still resolving too, so a visitor does not get a bar that
+   appears and then removes itself once the session comes back signed out. */
+@media (max-width: 768px) {
+  .plan-usage-bar--pending { display: none; }
+}
+
+/* ── Plan badge: missing and dark-theme variants ──
+   `business` had no colour of its own, so the highest tier rendered as an
+   unstyled chip. Each plan now reads distinctly on the dark card. */
+.plan-badge--starter  { background: rgba(16,185,129,0.16); color: #34D399; border: 1px solid rgba(16,185,129,0.32); }
+.plan-badge--pro      { background: rgba(59,130,246,0.16); color: #60A5FA; border: 1px solid rgba(59,130,246,0.32); }
+.plan-badge--business { background: rgba(168,85,247,0.16); color: #C084FC; border: 1px solid rgba(168,85,247,0.32); }
+.plan-badge--custom   { background: rgba(245,158,11,0.16); color: #FBBF24; border: 1px solid rgba(245,158,11,0.32); }

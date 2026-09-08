@@ -45,6 +45,12 @@ interface Props {
   maxPages?: number
   remaining?: number
   isLoggedIn?: boolean
+  /**
+   * True while Firebase is still restoring the session. Until it resolves,
+   * `isLoggedIn` is false for everyone — including a signed-in user reloading
+   * the page — so the usage bar must not claim they are signed out.
+   */
+  authLoading?: boolean
   onOpenAuth?: () => void
   isAtLimit?: boolean
   hideHero?: boolean
@@ -86,6 +92,7 @@ export default function DecisionUpload({
   maxPages = 20,
   remaining = 1,
   isLoggedIn = false,
+  authLoading = false,
   onOpenAuth,
   isAtLimit = false,
   hideHero = false,
@@ -296,7 +303,9 @@ export default function DecisionUpload({
             value={decisionGoal}
             onChange={e => setDecisionGoal(e.target.value)}
             placeholder={goalExamples}
-            rows={2}
+            /* Two rows fitted the placeholder on a desktop and cut it off
+               mid-word on a phone, where it wraps to four lines. */
+            rows={3}
             maxLength={500}
           />
           <span className="du-goal-count">{decisionGoal.length}/500</span>
@@ -336,18 +345,29 @@ export default function DecisionUpload({
           <p className="du-signin-hint">{t('decision.signInHint')}</p>
         )}
 
-        {/* ── Plan usage bar ── */}
-        <div className={`plan-usage-bar${!isLoggedIn ? ' plan-usage-bar--guest' : ''}`}>
+        {/* ── Plan usage bar ──
+            Three states, not two. "Sign in to track your usage" is only ever
+            correct for a genuine visitor: while Firebase restores the session
+            `isLoggedIn` is false for a signed-in user too, and showing the
+            guest line there told people who were already logged in to log in. */}
+        <div className={`plan-usage-bar${!isLoggedIn && !authLoading ? ' plan-usage-bar--guest' : ''}${authLoading ? ' plan-usage-bar--pending' : ''}`}>
           <div className="plan-usage-left">
-            <span className={`plan-badge plan-badge--${plan}`}>{plan.charAt(0).toUpperCase() + plan.slice(1)}</span>
+            {/* Withheld while loading: `plan` defaults to free until the user
+                document arrives, and flashing "Free" at a paying subscriber
+                reads as a downgrade. */}
+            {!authLoading && (
+              <span className={`plan-badge plan-badge--${plan}`}>{plan.charAt(0).toUpperCase() + plan.slice(1)}</span>
+            )}
             <span className="plan-usage-text">
-              {isLoggedIn
-                ? t(plan === 'free' ? 'decision.usageTextReports' : 'decision.usageTextCredits')
-                    .replace('{remaining}', String(remaining)).replace('{limit}', String(planLimit))
-                : t('decision.usageGuest')}
+              {authLoading
+                ? t('decision.usageLoading')
+                : isLoggedIn
+                  ? t(plan === 'free' ? 'decision.usageTextReports' : 'decision.usageTextCredits')
+                      .replace('{remaining}', String(remaining)).replace('{limit}', String(planLimit))
+                  : t('decision.usageGuest')}
             </span>
           </div>
-          {isLoggedIn && (
+          {isLoggedIn && !authLoading && (
             <div className="plan-usage-bar-track">
               <div
                 className="plan-usage-bar-fill"
