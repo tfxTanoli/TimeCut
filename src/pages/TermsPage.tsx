@@ -22,7 +22,7 @@ export default function TermsPage() {
         <div className="container page-hero-inner">
           <span className="hero-badge">Legal</span>
           <h1 className="page-hero-title">Terms of Service</h1>
-          <p className="page-hero-sub">Last updated: June 2025</p>
+          <p className="page-hero-sub">Last updated: August 2026</p>
         </div>
       </section>
 
