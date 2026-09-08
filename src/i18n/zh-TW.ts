@@ -5,7 +5,7 @@ const zhTW: Record<string, string> = {
   'nav.features': '功能特色',
   'nav.examples': '範例',
   'nav.pricing': '定價',
-  'nav.blog': '部落格',
+  'nav.blog': '博客',
   'nav.logIn': '登入',
   'nav.getStarted': '立即開始',
   'nav.accountMenu': '帳戶選單',
@@ -19,7 +19,7 @@ const zhTW: Record<string, string> = {
   'footer.pricing': '定價',
   'footer.faq': '常見問題',
   'footer.company': '公司',
-  'footer.blog': '部落格',
+  'footer.blog': '博客',
   'footer.about': '關於我們',
   'footer.privacy': '隱私政策',
   'footer.terms': '服務條款',
@@ -491,7 +491,7 @@ const zhTW: Record<string, string> = {
   'pricing.ctaBtn': '免費開始',
 
   // ── Blog Page ──
-  'blog.badge': '時間智能部落格',
+  'blog.badge': '時間智能博客',
   'blog.title': '更聰明地思考您閱讀的內容',
   'blog.subtitle': '關於注意力、時間以及如何保護最重要事物的見解：您的專注力。',
   'blog.catAll': '全部',

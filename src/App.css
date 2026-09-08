@@ -415,6 +415,11 @@
   border-radius: 12px;
   padding: 12px 24px;
   flex-shrink: 0;
+  /* There is no global border-box reset in this stylesheet, so without this the
+     `width: 100%` the phone breakpoint sets would be the CONTENT width and the
+     panel would render 34px wider than the card it sits in (32px padding + 2px
+     border), overhanging the card's right edge. */
+  box-sizing: border-box;
 }
 .profile-stat {
   text-align: center;
@@ -7753,7 +7758,12 @@
     row-gap: 16px;
     column-gap: 8px;
   }
-  .profile-stat { padding: 0 6px; }
+  .profile-stat { padding: 0 2px; }
+  /* "REPORTS THIS MONTH" is the longest label and wrapped to a second line in a
+     ~138px column, which made the top row taller than the bottom one. Trimming
+     the tracking and size keeps every label on one line so the 2x2 grid stays
+     square. */
+  .profile-stat-label { font-size: 10px; letter-spacing: 0.3px; }
   .profile-subscription-row { gap: 12px; }
   .profile-subscription-value { font-size: 13px; }
 }
