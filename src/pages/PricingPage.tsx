@@ -9,7 +9,7 @@ import { getCachedPlanConfig, getPlanConfig, formatPrice, computeReportCost, typ
 
 export default function PricingPage() {
   const { t } = useTranslation()
-  const { user, userData, plan: currentPlan } = useAuth()
+  const { user, userData, plan: currentPlan, freeReportsRemaining } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const [searchParams] = useSearchParams()
   // Only self-serve plans can open checkout. Business is Contact Sales — the
@@ -34,6 +34,25 @@ export default function PricingPage() {
     .replace('{pages}', String(cfg.plans.free.maxPages))
     .replace('{docs}', String(cfg.plans.free.maxDocs))
 
+  // Anyone on a paid plan already has everything the Free card lists, so it is
+  // no longer an offer to them — it is just a description of the entry tier.
+  const isPaidSubscriber = !!user && currentPlan !== 'free'
+
+  /**
+   * The Free allowance is a one-time grant, not a monthly one: the server keeps
+   * `freeReportsUsed` on the user document and only ever increments it, so
+   * nothing resets it at a month boundary (unlike AI Credits, which live in a
+   * per-month ledger). The card says so explicitly, and a signed-in free user
+   * sees what they actually have left rather than a generic "start" prompt.
+   */
+  const freeCtaLabel = !user
+    ? t('pricing.freeCta')
+    : isPaidSubscriber
+      ? t('pricing.freeIncluded')
+      : freeReportsRemaining > 0
+        ? t('pricing.freeRemaining').replace('{n}', String(freeReportsRemaining))
+        : t('pricing.freeExhausted')
+
   // Derived straight from the URL instead of mirrored into state by an effect.
   // Dismissal records *which* banner was dismissed, so returning from Stripe
   // with a different outcome still shows the new one.
@@ -46,6 +65,22 @@ export default function PricingPage() {
   function handlePaidPlan(plan: 'starter' | 'pro') {
     if (!user) { openAuthModal(); return }
     setPaymentPlan(plan)
+  }
+
+  /**
+   * The Free card used to navigate to /get-started unconditionally, which meant
+   * a signed-in Pro subscriber clicking it was shown the sign-UP modal — the
+   * "why is the Free plan still offered to me after I paid?" complaint. Every
+   * paid card already checked the session; this one never did.
+   *
+   *  • signed out        → open signup, same as the paid cards
+   *  • signed in, free   → nothing to sign up for; send them to the upload box
+   *  • signed in, paid   → not an offer at all, so the card does nothing
+   */
+  function handleFreePlan() {
+    if (!user) { openAuthModal(); return }
+    if (isPaidSubscriber) return
+    navigate('/#upload-section')
   }
 
   /** Business is provisioned by sales, so its CTA goes to the contact form. */
@@ -163,7 +198,10 @@ export default function PricingPage() {
                 rendered even where there is no credit figure to show, because
                 skipping it on Free and Business was what pushed their CTAs and
                 dividers ~65px out of line with Starter and Pro. */}
-            <div className="pricing-card" onClick={() => navigate('/get-started')}>
+            <div
+              className={`pricing-card${isPaidSubscriber ? ' pricing-card--inactive' : ''}`}
+              onClick={handleFreePlan}
+            >
               {planBadge('free')}
               <p className="pricing-plan-name">{t('pricing.free')}</p>
               <p className="pricing-plan-tagline">{t('pricing.freeTagline')}</p>
@@ -175,10 +213,16 @@ export default function PricingPage() {
                 {t('pricing.freeReportsLine').replace('{n}', String(freeReports))}
               </p>
               <p className="pricing-analyses-sub">{freeLimits}</p>
-              <Link to="/get-started" className="pricing-cta btn-outline">
-                {t('pricing.freeCta')}
-              </Link>
+              <button
+                type="button"
+                className="pricing-cta btn-outline"
+                disabled={isPaidSubscriber}
+                onClick={e => { e.stopPropagation(); handleFreePlan() }}
+              >
+                {freeCtaLabel}
+              </button>
               <p className="pricing-plan-subtitle">{t('pricing.freeSubtitle')}</p>
+              <p className="pricing-free-note">{t('pricing.freeOneTimeNote')}</p>
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {(['freeF3','freeF4','freeF5','freeF6'] as const).map(k => (
@@ -224,6 +268,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">
                 {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.starter.maxDocs))}
               </p>
+              <p className="pricing-free-note" aria-hidden="true" />
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {/* F1 is the credit line, now shown under the price above. */}
@@ -263,6 +308,7 @@ export default function PricingPage() {
               <p className="pricing-plan-subtitle">
                 {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.pro.maxDocs))}
               </p>
+              <p className="pricing-free-note" aria-hidden="true" />
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {/* F1 is the credit line, now shown under the price above. */}
@@ -298,6 +344,7 @@ export default function PricingPage() {
                 {t('pricing.customCta')}
               </button>
               <p className="pricing-plan-subtitle">{t('pricing.customSubtitle')}</p>
+              <p className="pricing-free-note" aria-hidden="true" />
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {(['customF2','customF3','customF4','customF5'] as const).map(k => (

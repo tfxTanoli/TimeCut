@@ -2687,6 +2687,33 @@
   opacity: 0.7;
 }
 
+/* Sits under the Free card's CTA. The free allowance is granted once per
+   account — the server keeps `freeReportsUsed` as a lifetime counter on the
+   user document, with nothing resetting it at a month boundary, unlike AI
+   Credits which live in a per-month ledger. The card previously said only
+   "forever", which reads as a renewing allowance.
+
+   Only the Free card has text here, but the slot is rendered empty on the other
+   three and given a fixed height. Every card's divider and feature rows are
+   aligned to the same baseline, so an element present on one card only shifts
+   that card's rows down — measured at 37.5px before this height was reserved.
+   This is the same reason the headline/supporting slot above is rendered even
+   where there is no credit figure to show. */
+.pricing-free-note {
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text);
+  opacity: 0.6;
+  margin: 6px 0 0;
+  min-height: 32px;
+  text-align: center;
+}
+
+/* A paid subscriber already has everything the Free tier lists, so its card
+   stops presenting itself as something to click. */
+.pricing-card--inactive { cursor: default; }
+.pricing-card--inactive:hover { transform: none; box-shadow: none; }
+
 /* Small-font credit disclaimer under paid plan cards */
 .pricing-disclaimer {
   font-size: 11px;
