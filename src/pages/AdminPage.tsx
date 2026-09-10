@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   collection, doc, getDoc, getDocs, getCountFromServer,
   orderBy, query, where, limit, type Timestamp,
@@ -130,6 +131,7 @@ const COST_FIELDS: { key: keyof PlanConfig['creditCosts']; label: string }[] = [
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
   const [allowed, setAllowed] = useState<'checking' | 'yes' | 'no'>('checking')
   const [cfg, setCfg] = useState<PlanConfig>(DEFAULT_PLAN_CONFIG)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
@@ -148,6 +150,16 @@ export default function AdminPage() {
     isAdminEmail(user?.email).then(ok => { if (active) setAllowed(ok ? 'yes' : 'no') })
     return () => { active = false }
   }, [user, authLoading])
+
+  // Signing out while on this page used to strand the admin here: the access
+  // check flipped to 'no' and rendered a bare "you do not have access" screen
+  // with no link and no redirect, which is what a logged-out admin saw instead
+  // of the home page. There is nothing for a signed-out visitor to see at
+  // /admin, so send them home. A signed-in non-admin is a different case and
+  // still gets told why, with a way out — see the render branch below.
+  useEffect(() => {
+    if (!authLoading && !user) navigate('/', { replace: true })
+  }, [authLoading, user, navigate])
 
   useEffect(() => {
     if (allowed !== 'yes') return
@@ -290,11 +302,18 @@ export default function AdminPage() {
   if (authLoading || allowed === 'checking') {
     return <div className="page-loading" />
   }
+  // Signed out: the effect above is already navigating home, so render the
+  // loading placeholder rather than flashing a denial at someone who has simply
+  // logged out.
+  if (!user) {
+    return <div className="page-loading" />
+  }
   if (allowed === 'no') {
     return (
       <div className="admin-page container">
         <h1 className="admin-title">Admin</h1>
         <p className="admin-denied">You do not have access to this page.</p>
+        <Link to="/" className="btn-primary">Back to home</Link>
         <Footer />
       </div>
     )
