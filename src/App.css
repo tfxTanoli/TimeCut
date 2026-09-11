@@ -1455,6 +1455,38 @@
   gap: 10px;
   flex-shrink: 0;
 }
+
+/* ── Report actions on phones ──
+   "Print / Save as PDF" and Share were `display: none` below 600px, so on a
+   phone the report had no way to save, send or print it — the feature existed
+   and was simply invisible to anyone not on a desktop.
+
+   They were hidden because the bar is one row of back-button + centred title +
+   both actions, which cannot fit in ~390px. The fix is to let that row wrap and
+   give the actions their own full-width line rather than removing them. The bar
+   carries a fixed 52px height, which would crop the second row, so it relaxes
+   to a minimum here. The print stylesheet still hides these buttons, which is
+   correct — they should not appear in the PDF itself. */
+@media (max-width: 600px) {
+  .result-nav-inner {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 52px;
+    row-gap: 8px;
+    padding-top: 8px;
+    padding-bottom: 10px;
+  }
+  .result-nav-actions {
+    width: 100%;
+    gap: 8px;
+  }
+  .result-nav-actions .icon-btn {
+    flex: 1 1 0;
+    justify-content: center;
+    padding: 9px 10px;
+    font-size: 12.5px;
+  }
+}
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -1808,7 +1840,6 @@
   .hero-worth-question { font-size: 30px; }
   .demo-card { flex-direction: column; }
   .demo-input { border-right: none; border-bottom: 1px solid var(--border); }
-  .result-nav-actions { display: none; }
   /* Keep language select (small, left) and Start Analysis (right) on ONE line */
   .input-footer { flex-direction: row; align-items: center; gap: 8px; }
   .input-footer .lang-select { flex: 0 0 auto; min-width: 0; padding: 10px 28px 10px 10px; font-size: 13px; }
