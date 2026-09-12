@@ -288,15 +288,21 @@ export default function ProfilePage() {
                         <span className="profile-report-goal">
                           {r.decisionGoal || t('profile.reportsUntitled')}
                         </span>
+                        {/* Built as a list and joined, so a missing date never
+                            leaves a dangling "·" in front of the document
+                            count — which is exactly what a report written
+                            before the timestamp fix looks like. */}
                         <span className="profile-report-meta">
-                          {r.createdAt?.toDate
-                            ? r.createdAt.toDate().toLocaleDateString(undefined, {
-                                year: 'numeric', month: 'short', day: 'numeric',
-                              })
-                            : ''}
-                          {r.documentNames.length > 0 && (
-                            <> · {t('profile.reportsDocs').replace('{n}', String(r.documentNames.length))}</>
-                          )}
+                          {[
+                            r.createdAt?.toDate
+                              ? r.createdAt.toDate().toLocaleDateString(undefined, {
+                                  year: 'numeric', month: 'short', day: 'numeric',
+                                })
+                              : null,
+                            r.documentNames.length > 0
+                              ? t('profile.reportsDocs').replace('{n}', String(r.documentNames.length))
+                              : null,
+                          ].filter(Boolean).join(' · ')}
                         </span>
                       </span>
                       {r.confidenceScore != null && (
