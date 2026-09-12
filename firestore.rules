@@ -110,9 +110,32 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Report feedback: anyone may submit; only admins may read/manage.
+    // Report feedback: submitted from the report page, read only by admins.
+    //
+    // Creation used to require nothing at all — not a session, not a size
+    // limit — so anyone could script unlimited document creation straight into
+    // this collection at our cost. Feedback is only ever offered to someone who
+    // has just been shown a report, and that requires an account, so a signed-in
+    // caller is now required and every field is bounded.
+    function feedbackFieldsValid() {
+      return request.resource.data.keys().hasAll(['helped', 'confidence', 'wouldHaveMissed'])
+        && request.resource.data.keys().size() <= 12
+        && request.resource.data.helped is string
+        && request.resource.data.helped.size() <= 100
+        && request.resource.data.confidence is string
+        && request.resource.data.confidence.size() <= 100
+        && request.resource.data.wouldHaveMissed is string
+        && request.resource.data.wouldHaveMissed.size() <= 100
+        && (!('mostValuableInsight' in request.resource.data)
+            || (request.resource.data.mostValuableInsight is string
+                && request.resource.data.mostValuableInsight.size() <= 2000))
+        && (!('decisionGoal' in request.resource.data)
+            || (request.resource.data.decisionGoal is string
+                && request.resource.data.decisionGoal.size() <= 1000));
+    }
+
     match /feedback/{feedbackId} {
-      allow create: if request.resource.data.keys().hasAll(['helped', 'confidence', 'wouldHaveMissed']);
+      allow create: if request.auth != null && feedbackFieldsValid();
       allow read, update, delete: if isAdmin();
     }
 
@@ -126,13 +149,47 @@ service cloud.firestore {
     //
     // Writes stay closed: a submitted message is a record of what the customer
     // actually sent, and nothing should be able to edit it after the fact.
+    // Sizes are bounded here as well as in the form and the API. Without them
+    // this was an unauthenticated write of up to 1MB per document, repeatable
+    // as fast as a script could issue it — a direct route to a Firestore bill
+    // with no UI involved. The API's own rate limits do not apply to a client
+    // writing straight to Firestore, so the ceiling has to live in the rules.
     match /contacts/{contactId} {
       allow create: if request.resource.data.keys().hasAll(['name', 'email', 'subject', 'message'])
+        && request.resource.data.keys().size() <= 8
         && request.resource.data.name is string
+        && request.resource.data.name.size() > 0
+        && request.resource.data.name.size() <= 200
         && request.resource.data.email is string
-        && request.resource.data.message is string;
+        && request.resource.data.email.size() > 0
+        && request.resource.data.email.size() <= 200
+        && request.resource.data.subject is string
+        && request.resource.data.subject.size() <= 200
+        && request.resource.data.message is string
+        && request.resource.data.message.size() > 0
+        && request.resource.data.message.size() <= 4000;
       allow read: if isAdmin();
       allow update, delete: if false;
+    }
+
+    // Newsletter signups from the blog. Same shape of protection as contacts:
+    // open to anyone (that is the point of a signup box) but bounded, write
+    // only, and readable only by an admin. The document id is the address, so
+    // signing up twice overwrites rather than piling up duplicates.
+    match /newsletter/{email} {
+      allow create, update: if request.resource.data.keys().hasAll(['email'])
+        && request.resource.data.keys().size() <= 4
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 0
+        && request.resource.data.email.size() <= 200;
+      allow read, delete: if isAdmin();
+    }
+
+    // Rate-limit counters for the public API routes. Written only by the
+    // server (the Admin SDK bypasses these rules); a client that could edit
+    // them could lift its own limits, which is the whole point of having them.
+    match /rateLimits/{key} {
+      allow read, write: if false;
     }
 
     // ── AI usage & cost ledger ───────────────────────────────────────────────

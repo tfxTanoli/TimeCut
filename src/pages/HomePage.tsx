@@ -12,6 +12,7 @@ import {
   logActivity,
   incrementAnalysisStats,
   saveAnalysis,
+  saveDecisionAnalysis,
 } from '../lib/userService'
 import { isUnlimited } from '../lib/planConfig'
 
@@ -89,6 +90,9 @@ export default function HomePage() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [currentDecisionGoal, setCurrentDecisionGoal] = useState('')
+  // Id of the saved copy, so the report on screen can offer a permanent link
+  // to itself instead of existing only until the next navigation.
+  const [savedReportId, setSavedReportId] = useState<string | null>(null)
 
   const isFreePlan = plan === 'free'
   // Logged-in: paid plans gate on AI Credits, free plan gates on free reports.
@@ -206,10 +210,22 @@ export default function HomePage() {
       const result = await analyzeDecision(files, goal, language, documentType)
       if (result.data) {
         setDecisionReport(result.data)
-        // Credits were charged server-side, from the pages and documents the
-        // server actually parsed, before the model was called. The ledger
-        // listener refreshes the usage bar on its own.
-        await logActivity(user.uid, 'analysis_completed', { language, documentType })
+        // Persist it before anything else can navigate away. The report is the
+        // thing the customer paid for, so it has to outlive this component —
+        // it is listed on the profile and reachable at /report/:id from here on.
+        // Both calls are best-effort: the report is already on screen, and a
+        // bookkeeping failure must not read back as a failed analysis.
+        const [reportId] = await Promise.all([
+          saveDecisionAnalysis(user.uid, result.data, {
+            decisionGoal: goal,
+            language,
+            documentType,
+            documentNames: files.map(f => f.name),
+          }),
+          logActivity(user.uid, 'analysis_completed', { language, documentType })
+            .catch(e => console.warn('[analysis_completed] log failed:', e)),
+        ])
+        setSavedReportId(reportId)
       } else {
         setShowDecisionLoader(false)
         handleApiFailure(result.code, result.error)
@@ -229,6 +245,7 @@ export default function HomePage() {
     setShowDecisionLoader(false)
     setUploadedFiles([])
     setCurrentDecisionGoal('')
+    setSavedReportId(null)
   }
 
   if (decisionReport) {
@@ -240,6 +257,7 @@ export default function HomePage() {
           language={analysisLanguage}
           uploadedFiles={uploadedFiles}
           decisionGoal={currentDecisionGoal}
+          reportId={savedReportId}
         />
       </Suspense>
     )

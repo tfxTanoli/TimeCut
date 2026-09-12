@@ -4,14 +4,18 @@ import {
   updateDoc,
   addDoc,
   getDoc,
+  getDocs,
   collection,
+  limit,
+  orderBy,
+  query,
   serverTimestamp,
   increment,
   type Timestamp,
 } from 'firebase/firestore'
 import { db } from './firebase'
 import type { User } from 'firebase/auth'
-import type { InputTab, TimeCutReport } from '../types'
+import type { DecisionReport, InputTab, TimeCutReport } from '../types'
 
 export type PlanType = 'free' | 'starter' | 'pro' | 'business' | 'custom'
 
@@ -124,6 +128,123 @@ export async function saveAnalysis(
     language,
     createdAt: serverTimestamp(),
   })
+}
+
+// ── Decision reports ─────────────────────────────────────────────────────────
+// A decision report used to live only in React state, so a refresh, a Back
+// press or any navigation destroyed the thing the customer had just spent
+// credits on — and the Security page promised the opposite ("saved to your own
+// account so you can find it again from your profile"). Reports are persisted
+// per account now, under the same `users/{uid}/analyses` collection the rules
+// already restrict to its owner.
+
+/** One stored report, as listed on the profile and opened at /report/:id. */
+export interface StoredDecisionReport {
+  id: string
+  report: DecisionReport
+  decisionGoal: string
+  language: string
+  documentType: string
+  documentNames: string[]
+  createdAt?: Timestamp | null
+}
+
+/**
+ * Firestore rejects `undefined` anywhere in a document, and the report is
+ * assembled from a model response where plenty of optional fields are simply
+ * absent. A JSON round-trip drops those keys instead of throwing, which keeps a
+ * save from failing over a field nobody reads.
+ */
+function stripUndefined<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
+/**
+ * Persist a decision report and return its id.
+ *
+ * Never throws into the analysis flow: the customer already has their report on
+ * screen, and a Firestore hiccup must not read back as a failed analysis. A
+ * miss here costs the history entry, not the report.
+ */
+export async function saveDecisionAnalysis(
+  uid: string,
+  report: DecisionReport,
+  meta: { decisionGoal: string; language: string; documentType: string; documentNames: string[] },
+): Promise<string | null> {
+  try {
+    const ref = await addDoc(collection(db, 'users', uid, 'analyses'), stripUndefined({
+      kind: 'decision',
+      report,
+      decisionGoal: meta.decisionGoal,
+      language: meta.language,
+      documentType: meta.documentType,
+      documentNames: meta.documentNames,
+      createdAt: serverTimestamp(),
+    }))
+    return ref.id
+  } catch (e) {
+    console.warn('[analyses] could not save decision report:', e)
+    return null
+  }
+}
+
+/** Load one stored decision report. Returns null when it is missing or legacy. */
+export async function getDecisionAnalysis(
+  uid: string,
+  id: string,
+): Promise<StoredDecisionReport | null> {
+  const snap = await getDoc(doc(db, 'users', uid, 'analyses', id))
+  if (!snap.exists()) return null
+  const d = snap.data()
+  // Reports written before this existed stored flat verdict fields rather than
+  // a `report` object, and there is nothing for the decision view to render.
+  if (!d.report) return null
+  return {
+    id: snap.id,
+    report: d.report as DecisionReport,
+    decisionGoal: d.decisionGoal ?? '',
+    language: d.language ?? 'English',
+    documentType: d.documentType ?? 'auto',
+    documentNames: Array.isArray(d.documentNames) ? d.documentNames : [],
+    createdAt: d.createdAt ?? null,
+  }
+}
+
+/** Summary row for the profile's report history, newest first. */
+export interface DecisionReportSummary {
+  id: string
+  decisionGoal: string
+  documentType: string
+  documentNames: string[]
+  recommendation: string
+  confidenceScore: number | null
+  createdAt?: Timestamp | null
+}
+
+export async function listDecisionAnalyses(
+  uid: string,
+  max = 20,
+): Promise<DecisionReportSummary[]> {
+  const snap = await getDocs(query(
+    collection(db, 'users', uid, 'analyses'),
+    orderBy('createdAt', 'desc'),
+    limit(max),
+  ))
+  return snap.docs
+    .filter(d => !!d.data().report)
+    .map(d => {
+      const data = d.data()
+      const report = data.report as DecisionReport
+      return {
+        id: d.id,
+        decisionGoal: data.decisionGoal ?? '',
+        documentType: data.documentType ?? 'auto',
+        documentNames: Array.isArray(data.documentNames) ? data.documentNames : [],
+        recommendation: report?.recommendation ?? '',
+        confidenceScore: typeof report?.confidence_score === 'number' ? report.confidence_score : null,
+        createdAt: data.createdAt ?? null,
+      }
+    })
 }
 
 export async function incrementAnalysisStats(uid: string, timeSavedMinutes: number) {

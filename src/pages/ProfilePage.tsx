@@ -6,6 +6,7 @@ import Footer from '../components/Footer'
 import { computeReportCost, formatPrice, isUnlimited } from '../lib/planConfig'
 import { createBillingPortalSession } from '../api'
 import { firebaseErrorCode } from '../lib/errors'
+import { listDecisionAnalyses, type DecisionReportSummary } from '../lib/userService'
 
 const TYPICAL_REPORT = { pages: 20, docs: 1 } // 20-page single doc, matches marketing copy
 
@@ -55,6 +56,23 @@ export default function ProfilePage() {
 
   const [portalLoading, setPortalLoading] = useState(false)
   const [portalError, setPortalError]     = useState('')
+
+  // Saved reports. Until these were persisted there was nothing to list here at
+  // all, and a report disappeared the moment the customer navigated away.
+  const [reports, setReports] = useState<DecisionReportSummary[]>([])
+  const [reportsState, setReportsState] = useState<'loading' | 'ready' | 'error'>('loading')
+
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    listDecisionAnalyses(user.uid)
+      .then(rows => { if (active) { setReports(rows); setReportsState('ready') } })
+      .catch(e => {
+        console.warn('[profile] could not load saved reports:', e)
+        if (active) setReportsState('error')
+      })
+    return () => { active = false }
+  }, [user])
 
   /**
    * Open the Stripe Billing Portal, where the customer can cancel, swap their
@@ -241,6 +259,54 @@ export default function ProfilePage() {
                 never resets `freeReportsUsed`), so the credit-reset note was
                 wrong for exactly the plan that shows "Free Reports Left". */}
             <p className="usage-note">{t(isFreePlan ? 'usage.noteFree' : 'usage.note')}</p>
+          </div>
+
+          {/* ── Saved reports ── */}
+          <div className="profile-card">
+            <div className="profile-card-header">
+              <IconReports />
+              <h2 className="profile-card-title">{t('profile.reportsTitle')}</h2>
+            </div>
+
+            {reportsState === 'loading' ? (
+              <p className="profile-reports-empty">{t('profile.reportsLoading')}</p>
+            ) : reportsState === 'error' ? (
+              <p className="profile-reports-empty">{t('profile.reportsError')}</p>
+            ) : reports.length === 0 ? (
+              <div className="profile-reports-empty-block">
+                <p className="profile-reports-empty">{t('profile.reportsEmpty')}</p>
+                <Link to="/#upload-section" className="btn-primary btn-cta profile-btn">
+                  {t('profile.reportsEmptyCta')}
+                </Link>
+              </div>
+            ) : (
+              <ul className="profile-reports-list">
+                {reports.map(r => (
+                  <li key={r.id}>
+                    <Link to={`/report/${r.id}`} className="profile-report-row">
+                      <span className="profile-report-main">
+                        <span className="profile-report-goal">
+                          {r.decisionGoal || t('profile.reportsUntitled')}
+                        </span>
+                        <span className="profile-report-meta">
+                          {r.createdAt?.toDate
+                            ? r.createdAt.toDate().toLocaleDateString(undefined, {
+                                year: 'numeric', month: 'short', day: 'numeric',
+                              })
+                            : ''}
+                          {r.documentNames.length > 0 && (
+                            <> · {t('profile.reportsDocs').replace('{n}', String(r.documentNames.length))}</>
+                          )}
+                        </span>
+                      </span>
+                      {r.confidenceScore != null && (
+                        <span className="profile-report-score">{r.confidenceScore}/100</span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="profile-grid">
@@ -459,6 +525,17 @@ function IconSubscription() {
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
       <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  )
+}
+
+function IconReports() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="8" y1="13" x2="16" y2="13" />
+      <line x1="8" y1="17" x2="13" y2="17" />
     </svg>
   )
 }

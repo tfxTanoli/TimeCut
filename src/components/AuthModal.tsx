@@ -9,7 +9,7 @@ import { firebaseErrorCode } from '../lib/errors'
 
 export default function AuthModal() {
   const { mode, close } = useAuthModal()
-  const { login, signup, loginWithGoogle } = useAuth()
+  const { login, signup, loginWithGoogle, resetPassword } = useAuth()
   const { t } = useTranslation()
   const navigate = useNavigate()
 
@@ -32,6 +32,12 @@ export default function AuthModal() {
   // True when the verify screen was reached via "this email already exists"
   // rather than a fresh signup — the copy differs, the resend button does not.
   const [alreadyRegistered, setAlreadyRegistered] = useState(false)
+  // Password-reset flow. `resetScreen` swaps the whole body for the reset form,
+  // `resetSent` for the confirmation. Kept separate from `verifyScreen` so the
+  // two confirmation screens never collide.
+  const [resetScreen, setResetScreen] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
 
   // Reset the form whenever the modal opens or switches between login/signup.
   // Adjusting state during render is React's documented alternative to a reset
@@ -50,6 +56,8 @@ export default function AuthModal() {
       setResendSent(false)
       setAlreadyRegistered(false)
       setTermsAccepted(false)
+      setResetScreen(false)
+      setResetSent(false)
       setName(''); setEmail(''); setPassword('')
     }
   }
@@ -125,18 +133,79 @@ export default function AuthModal() {
 
   async function handleResendVerification() {
     setResendLoading(true)
+    setError(null)
     try {
-      await fetch('/api/send-verification-email', {
+      const res = await fetch('/api/send-verification-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: signupEmail }),
       })
+      // `fetch` resolves for a 4xx/5xx, so this used to show "✓ Email resent!"
+      // for a send that failed — the worst possible answer for someone who is
+      // waiting on an email that will never arrive.
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        setError(res.status === 429
+          ? t('auth.resendTooMany')
+          : (body.error ?? t('auth.resendFailed')))
+        return
+      }
       setResendSent(true)
     } catch {
-      // silently fail:user can try again
+      setError(t('auth.resendFailed'))
     } finally {
       setResendLoading(false)
     }
+  }
+
+  /**
+   * Send the reset link.
+   *
+   * Every outcome except a malformed address shows the same confirmation. A
+   * distinct "no account with that email" message would turn this form into a
+   * way to test which addresses are registered, and it helps nobody: someone
+   * who mistyped their address is told to check the inbox of an address they
+   * do not own either way.
+   */
+  async function handleResetSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setError(null)
+    if (!email.trim()) { setError(t('auth.resetNeedEmail')); return }
+    setResetLoading(true)
+    try {
+      await resetPassword(email)
+      setResetSent(true)
+    } catch (err) {
+      const code = firebaseErrorCode(err)
+      console.warn('[auth] password reset failed', code || '(no code)', err)
+      if (code === 'auth/invalid-email') {
+        setError(t('auth.errInvalidEmail'))
+      } else if (code === 'auth/too-many-requests') {
+        setError(t('auth.resetTooMany'))
+      } else if (code === 'reset/send-failed' || code === 'auth/network-request-failed') {
+        // The server distinguishes "no such account" (which it reports as a
+        // success, see the note above) from a genuine delivery failure. Only
+        // the latter reaches here, and pretending it worked would leave someone
+        // waiting on an email that was never sent.
+        setError(t('auth.resetFailed'))
+      } else {
+        setError(t('auth.resetFailed'))
+      }
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  function openReset() {
+    setError(null)
+    setResetSent(false)
+    setResetScreen(true)
+  }
+
+  function leaveReset() {
+    setError(null)
+    setResetScreen(false)
+    setResetSent(false)
   }
 
   async function handleGoogleLogin() {
@@ -172,7 +241,73 @@ export default function AuthModal() {
           </button>
         </div>
 
-        {verifyScreen ? (
+        {resetScreen ? (
+          resetSent ? (
+            <div className="auth-modal-success">
+              <div className="auth-modal-success-ring">
+                <IconMail />
+              </div>
+              <p className="auth-modal-success-title">{t('auth.resetSentTitle')}</p>
+              <p className="auth-modal-success-sub">
+                {t('auth.resetSentSub').replace('{email}', email.trim())}
+              </p>
+              <button
+                type="button"
+                className="btn-primary btn-cta btn-full"
+                style={{ marginTop: 20 }}
+                onClick={leaveReset}
+              >
+                {t('auth.resetBackToLogin')}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="auth-modal-heading">
+                <h2 className="auth-modal-title">{t('auth.resetTitle')}</h2>
+                <p className="auth-modal-sub">{t('auth.resetSub')}</p>
+              </div>
+              <div className="auth-modal-body">
+                <form className="auth-modal-form" onSubmit={handleResetSubmit} noValidate>
+                  <div className="form-group">
+                    <label className="form-label">{t('auth.emailAddress')}</label>
+                    <input
+                      className="form-input"
+                      type="email"
+                      placeholder={t('auth.emailPlaceholder')}
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      disabled={resetLoading}
+                      autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                    />
+                  </div>
+
+                  {error && <p className="error-banner" style={{ margin: 0 }}>{error}</p>}
+
+                  <button
+                    type="submit"
+                    className="btn-primary btn-cta btn-full auth-modal-submit"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading
+                      ? <><span className="btn-spinner" />{t('auth.resetSending')}</>
+                      : t('auth.resetSubmit')}
+                  </button>
+                </form>
+
+                <p className="auth-modal-switch" style={{ marginTop: 12 }}>
+                  <button className="form-link" type="button" onClick={leaveReset}>
+                    {t('auth.resetBackToLogin')}
+                  </button>
+                </p>
+              </div>
+            </>
+          )
+        ) : verifyScreen ? (
           <div className="auth-modal-success">
             <div className="auth-modal-success-ring">
               <IconMail />
@@ -193,6 +328,12 @@ export default function AuthModal() {
                 </>
               )}
             </p>
+            {/* A failed resend has to be visible here: this screen is the only
+                place the button lives, and it used to report success either
+                way. */}
+            {error && (
+              <p className="error-banner" style={{ margin: '16px 0 0' }}>{error}</p>
+            )}
             <button
               type="button"
               className="btn-primary btn-cta btn-full"
@@ -297,7 +438,12 @@ export default function AuthModal() {
                   <div className="form-label-row">
                     <label className="form-label">{t('auth.password')}</label>
                     {tab === 'login' && (
-                      <button type="button" className="form-link" style={{ fontSize: 12 }}>
+                      <button
+                        type="button"
+                        className="form-link"
+                        style={{ fontSize: 12 }}
+                        onClick={openReset}
+                      >
                         {t('auth.forgotPassword')}
                       </button>
                     )}

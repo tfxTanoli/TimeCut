@@ -23,7 +23,13 @@ import {
   computeReportCost,
   type Entitlement,
 } from '../api/_lib/entitlements.js'
-import { planFromSubscription, webhookVerification, STRIPE_PLANS as SELF_SERVE_PLANS } from '../api/_lib/stripe-admin.js'
+import { planFromSubscription, webhookVerification } from '../api/_lib/stripe-admin.js'
+// Password reset reuses the production sender so the branded template and the
+// enumeration-safe behaviour are identical locally. Without this route the dev
+// server 404s the reset call and the flow looks broken only on localhost.
+import { sendPasswordResetEmail, sendVerificationEmail, NoSuchAccountError } from '../api/_lib/resend.js'
+import { resolveSubscriptionRequest } from '../api/_lib/subscriptions.js'
+import { clientIp, consumeRateLimit, emailKey } from '../api/_lib/rateLimit.js'
 // Models, input ceilings and pricing live in one module shared with api/, so
 // the dev server and Vercel can never disagree about which model runs what or
 // how much text it is allowed to send.
@@ -198,40 +204,9 @@ const PLAN_LIMITS: Record<string, string> = {
   business: 'Unlimited analyses & pages',
 }
 
-async function sendVerificationEmail(to: string, name: string, verificationLink: string) {
-  try {
-    await resend.emails.send({
-      from: 'TimeCut <support@timecut.online>',
-      to,
-      subject: 'Verify your TimeCut email address',
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:32px;background:#0a0a0a;color:#e5e5e5;border-radius:12px;">
-          <div style="text-align:center;margin-bottom:32px;">
-            <h1 style="color:#d4af37;font-size:28px;margin:0;">TimeCut</h1>
-            <p style="color:#888;margin:4px 0 0;">Cut through the noise.</p>
-          </div>
-          <h2 style="color:#ffffff;font-size:22px;">Welcome${name ? `, ${name}` : ''}!</h2>
-          <p style="color:#aaa;line-height:1.6;">
-            Thanks for signing up for <strong style="color:#d4af37;">TimeCut</strong>. Please verify your email address to get started.
-          </p>
-          <div style="text-align:center;margin:32px 0;">
-            <a href="${verificationLink}" style="background:#d4af37;color:#0a0a0a;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px;">Verify Email Address</a>
-          </div>
-          <p style="color:#666;font-size:13px;line-height:1.6;">
-            If you did not create a TimeCut account, you can safely ignore this email.
-            This link will expire in 24 hours.
-          </p>
-          <p style="color:#555;font-size:13px;text-align:center;margin-top:32px;">
-            Questions? <a href="mailto:support@timecut.online" style="color:#d4af37;">support@timecut.online</a>
-          </p>
-        </div>
-      `,
-    })
-    console.log(`[resend] Verification email sent to ${to}`)
-  } catch (err) {
-    console.error('[resend] Failed to send verification email:', err)
-  }
-}
+// The local copy of `sendVerificationEmail` lived here with its own duplicate
+// of the email template. It is gone: the route above uses the shared sender in
+// api/_lib/resend.ts, so the dev server and production send identical mail.
 
 async function sendWelcomeEmail(to: string, name: string) {
   const firstName = name ? name.split(' ')[0] : 'there'
@@ -394,30 +369,9 @@ async function getStripeAmount(plan: string): Promise<number> {
   return FALLBACK_AMOUNT_CENTS[plan] ?? 0
 }
 
-// Cache Stripe product IDs so we don't create duplicates on every request
-const productIdCache: Record<string, string> = {}
-
-async function getOrCreateProductId(plan: string): Promise<string> {
-  if (productIdCache[plan]) return productIdCache[plan]
-
-  const planConfig = STRIPE_PLANS[plan]
-  // Only search for active products
-  const existing = await stripe.products.search({
-    query: `name:"${planConfig.name}" AND active:"true"`,
-    limit: 1,
-  })
-  if (existing.data.length > 0) {
-    productIdCache[plan] = existing.data[0].id
-    return productIdCache[plan]
-  }
-  // Create a fresh active product
-  const product = await stripe.products.create({
-    name: planConfig.name,
-    description: planConfig.description,
-  })
-  productIdCache[plan] = product.id
-  return productIdCache[plan]
-}
+// `getOrCreateProductId` and its cache used to live here as a second copy of
+// the same helper in api/_lib/stripe-admin.ts. Product resolution now happens
+// inside the shared subscriptions module, so the duplicate is gone.
 
 async function generateReport(content: string, language: string) {
   const wasTruncated = content.length > MAX_CONTENT_CHARS
@@ -435,17 +389,65 @@ async function generateReport(content: string, language: string) {
 }
 
 // ── Send verification email via Resend ──
+// Delegates to the shared sender, like the Vercel route. The inline copy that
+// used to live here returned the raw Firebase message for an unknown address
+// ("There is no user record...") — an account-enumeration oracle that the
+// production route had already been fixed to avoid.
 app.post('/api/send-verification-email', express.json(), async (req, res) => {
-  const { email, name } = req.body
-  if (!email) { res.status(400).json({ error: 'Missing email' }); return }
+  const { email, name } = req.body ?? {}
+  if (typeof email !== 'string' || !email.includes('@')) {
+    res.status(400).json({ error: 'A valid email address is required' }); return
+  }
+  const to = email.trim()
+
+  const byEmail = await consumeRateLimit(`verify:${emailKey(to)}`, { limit: 5, windowSeconds: 3600 })
+  const byIp = await consumeRateLimit(`verify-ip:${clientIp(req.headers)}`, { limit: 20, windowSeconds: 3600 })
+  if (!byEmail.allowed || !byIp.allowed) {
+    res.status(429).json({ code: 'RATE_LIMITED', error: 'Too many requests. Please try again later.' }); return
+  }
+
   try {
-    const continueUrl = process.env.FRONTEND_URL ?? 'https://timecut.online'
-    const verificationLink = await admin.auth().generateEmailVerificationLink(email, { url: continueUrl })
-    await sendVerificationEmail(email, name ?? '', verificationLink)
+    await sendVerificationEmail(to, typeof name === 'string' ? name.slice(0, 100) : '')
     res.json({ success: true })
   } catch (err) {
+    // An address with no account is reported as success on purpose; a genuine
+    // delivery failure is not, so the UI can tell the user to retry.
+    if (err instanceof NoSuchAccountError) {
+      console.log(`[send-verification-email] No account for ${to}; reporting success`)
+      res.json({ success: true }); return
+    }
     console.error('[send-verification-email] Error:', err)
-    res.status(500).json({ error: err instanceof Error ? err.message : 'Failed to send verification email' })
+    res.status(500).json({ error: 'Could not send the verification email. Please try again.' })
+  }
+})
+
+// ── Send password reset email via Resend ──
+// Mirrors api/send-password-reset-email.ts: rate limited, and an address with
+// no account returns the same success as one with an account so the route
+// cannot be used to discover who has registered.
+app.post('/api/send-password-reset-email', express.json(), async (req, res) => {
+  const { email, name } = req.body ?? {}
+  if (typeof email !== 'string' || !email.includes('@')) {
+    res.status(400).json({ error: 'A valid email address is required' }); return
+  }
+  const to = email.trim()
+
+  const byEmail = await consumeRateLimit(`reset:${emailKey(to)}`, { limit: 5, windowSeconds: 3600 })
+  const byIp = await consumeRateLimit(`reset-ip:${clientIp(req.headers)}`, { limit: 20, windowSeconds: 3600 })
+  if (!byEmail.allowed || !byIp.allowed) {
+    res.status(429).json({ code: 'RATE_LIMITED', error: 'Too many requests. Please try again later.' }); return
+  }
+
+  try {
+    await sendPasswordResetEmail(to, typeof name === 'string' ? name.slice(0, 100) : '')
+    res.json({ success: true })
+  } catch (err) {
+    if (err instanceof NoSuchAccountError) {
+      console.log(`[send-password-reset-email] No account for ${to}; reporting success`)
+      res.json({ success: true }); return
+    }
+    console.error('[send-password-reset-email] Error:', err)
+    res.status(500).json({ error: 'Could not send the reset email. Please try again.' })
   }
 })
 
@@ -515,89 +517,32 @@ app.post('/api/send-welcome-email', express.json(), async (req, res) => {
 // ── Custom subscription flow (in-app payment modal) ──
 
 // Step 1: create Stripe customer + subscription, return client_secret
+// ── Create / change a subscription ──
+// Delegates to the same module the Vercel route uses. This was previously a
+// second, inline implementation, and it had NOT received the duplicate-
+// subscription guard — so locally, opening the checkout modal created a brand
+// new subscription every single time (a test run produced three for one
+// customer). One module now serves both environments.
 app.post('/api/create-subscription', express.json(), async (req, res) => {
   const authed = await verifyAuth(req)
   if (!authed) {
     res.status(401).json({ code: 'UNAUTHENTICATED', error: 'Please sign in to subscribe.' })
     return
   }
-  const uid = authed.uid
 
-  const { plan, email, name } = req.body
-  const planConfig = STRIPE_PLANS[plan]
-  if (!planConfig || !SELF_SERVE_PLANS[plan]) {
-    res.status(400).json({
-      code: 'PLAN_NOT_SELF_SERVE',
-      error: 'This plan is not available for self-serve checkout. Please contact sales.',
-    })
-    return
-  }
+  const { plan, email, name, confirmSwitch } = req.body ?? {}
 
   try {
-    // Look up existing Stripe customer from Firestore (non-fatal)
-    let customerId: string | undefined
-    if (adminDb) {
-      try {
-        const snap = await adminDb.doc(`users/${uid}`).get()
-        customerId = snap.data()?.stripeCustomerId as string | undefined
-      } catch { /* ignore — will create new customer */ }
-    }
-
-    // Create Stripe customer if not found
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: email || undefined,
-        name: name || undefined,
-        metadata: { firebaseUid: uid },
-      })
-      customerId = customer.id
-      // Save customer ID (non-fatal)
-      if (adminDb) {
-        try {
-          await adminDb.doc(`users/${uid}`).set({ stripeCustomerId: customerId }, { merge: true })
-        } catch { /* ignore */ }
-      }
-    }
-
-    // Get or create Stripe product (fixes "product_data not supported" error)
-    const productId = await getOrCreateProductId(plan)
-
-    // Same source as the pricing page: config/plans in Firestore.
-    const amountCents = await getStripeAmount(plan)
-
-    const subscription = await stripe.subscriptions.create({
-      customer: customerId,
-      items: [{
-        price_data: {
-          currency: 'usd',
-          product: productId,           // ← product ID, not inline product_data
-          unit_amount: amountCents,
-          recurring: { interval: 'month' },
-        },
-      }],
-      payment_behavior: 'default_incomplete',
-      expand: ['latest_invoice.payment_intent'],
-      // Lets the webhook activate the right account without the browser.
-      metadata: { firebaseUid: uid, plan },
+    const { status, body } = await resolveSubscriptionRequest({
+      uid: authed.uid,
+      plan,
+      email,
+      name,
+      confirmSwitch: confirmSwitch === true,
     })
-
-    type ExpandedInvoice = Stripe.Invoice & { payment_intent?: Stripe.PaymentIntent | null }
-    const invoice      = subscription.latest_invoice as ExpandedInvoice
-    const paymentIntent = invoice?.payment_intent ?? null
-
-    if (!paymentIntent?.client_secret) {
-      console.error('[subscription] Missing client_secret for sub:', subscription.id)
-      res.status(500).json({ error: 'Could not initialise payment. Please try again.' })
-      return
-    }
-
-    res.json({
-      subscriptionId: subscription.id,
-      clientSecret: paymentIntent.client_secret,
-      amountCents,
-    })
+    res.status(status).json(body)
   } catch (err) {
-    console.error('[subscription] Error:', err)
+    console.error('[create-subscription] Error:', err)
     res.status(500).json({ error: err instanceof Error ? err.message : 'Subscription creation failed' })
   }
 })

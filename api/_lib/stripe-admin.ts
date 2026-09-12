@@ -107,6 +107,31 @@ export async function getOrCreateProductId(plan: string): Promise<string> {
 }
 
 /**
+ * Subscriptions that currently entitle a customer to a paid plan.
+ *
+ * `create-subscription` consults this before doing anything: without it, every
+ * call created a brand-new subscription, so a customer who already paid and
+ * pressed a pricing card again — or who wanted to move from Starter to Pro —
+ * ended up with two active subscriptions and two monthly charges. Stripe is
+ * asked directly rather than trusting `stripeSubscriptionId` on the user
+ * document, because that field only ever records the most recent one.
+ *
+ * `incomplete` is deliberately excluded: those are abandoned checkouts that
+ * Stripe expires on its own, and treating one as "already subscribed" would
+ * lock a customer out of paying at all.
+ */
+export async function listEntitlingSubscriptions(
+  customerId: string,
+): Promise<Stripe.Subscription[]> {
+  const all = await stripe.subscriptions.list({
+    customer: customerId,
+    status: 'all',
+    limit: 100,
+  })
+  return all.data.filter(s => s.status === 'active' || s.status === 'trialing' || s.status === 'past_due')
+}
+
+/**
  * Determine which TimeCut plan a Stripe subscription is for, using Stripe as
  * the source of truth. Never trust a plan name sent by the browser — the price
  * the customer actually paid is what decides their plan.

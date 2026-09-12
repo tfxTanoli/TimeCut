@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { db } from '../lib/firebase'
 import Footer from '../components/Footer'
 import { useTranslation } from '../hooks/useTranslation'
+import { BLOG_POSTS, formatPostDate } from '../lib/blogPosts'
 
 const CATEGORIES_KEYS = [
   { key: 'blog.catAll', val: 'All' },
@@ -14,106 +17,47 @@ const CATEGORIES_KEYS = [
   { key: 'blog.catEvidence', val: 'Evidence' },
 ]
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+
 export default function BlogPage() {
   const { t } = useTranslation()
   const [activeCategory, setActiveCategory] = useState('All')
 
-  const POSTS = [
-    {
-      category: 'Contracts',
-      categoryKey: 'blog.catContracts',
-      title: t('blog.post1Title'),
-      excerpt: t('blog.post1Excerpt'),
-      date: 'June 24, 2026',
-      readTime: '6 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '📄',
-    },
-    {
-      category: 'Hiring',
-      categoryKey: 'blog.catHiring',
-      title: t('blog.post2Title'),
-      excerpt: t('blog.post2Excerpt'),
-      date: 'June 18, 2026',
-      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '🧑‍💼',
-    },
-    {
-      category: 'Procurement',
-      categoryKey: 'blog.catProcurement',
-      title: t('blog.post3Title'),
-      excerpt: t('blog.post3Excerpt'),
-      date: 'June 10, 2026',
-      readTime: '6 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '📦',
-    },
-    {
-      category: 'Contracts',
-      categoryKey: 'blog.catContracts',
-      title: t('blog.post4Title'),
-      excerpt: t('blog.post4Excerpt'),
-      date: 'June 2, 2026',
-      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '✅',
-    },
-    {
-      category: 'Procurement',
-      categoryKey: 'blog.catProcurement',
-      title: t('blog.post5Title'),
-      excerpt: t('blog.post5Excerpt'),
-      date: 'May 26, 2026',
-      readTime: '4 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '💸',
-    },
-    {
-      category: 'Decision Intelligence',
-      categoryKey: 'blog.catDecisionIntelligence',
-      title: t('blog.post6Title'),
-      excerpt: t('blog.post6Excerpt'),
-      date: 'May 19, 2026',
-      readTime: '7 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '🧠',
-    },
-    {
-      category: 'Risk',
-      categoryKey: 'blog.catRisk',
-      title: t('blog.post7Title'),
-      excerpt: t('blog.post7Excerpt'),
-      date: 'May 12, 2026',
-      readTime: '6 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '🔍',
-    },
-    {
-      category: 'Risk',
-      categoryKey: 'blog.catRisk',
-      title: t('blog.post8Title'),
-      excerpt: t('blog.post8Excerpt'),
-      date: 'May 5, 2026',
-      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '👔',
-    },
-    {
-      category: 'Decision-Making',
-      categoryKey: 'blog.catDecisionMaking',
-      title: t('blog.post9Title'),
-      excerpt: t('blog.post9Excerpt'),
-      date: 'April 28, 2026',
-      readTime: '8 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '🧩',
-    },
-    {
-      category: 'Evidence',
-      categoryKey: 'blog.catEvidence',
-      title: t('blog.post10Title'),
-      excerpt: t('blog.post10Excerpt'),
-      date: 'April 21, 2026',
-      readTime: '5 ' + t('blog.readTime').replace('{n} ', ''),
-      emoji: '📊',
-    },
-  ]
+  // Newsletter. The form used to be `onSubmit={e => e.preventDefault()}` — it
+  // took an address, discarded it, and gave no feedback, so every subscriber
+  // was silently lost. Signups are stored keyed by address (so a repeat signup
+  // overwrites rather than duplicating) and are readable only by an admin.
+  const [email, setEmail] = useState('')
+  const [subscribeState, setSubscribeState] =
+    useState<'idle' | 'saving' | 'done' | 'invalid' | 'error'>('idle')
+
+  async function handleSubscribe(e: React.FormEvent) {
+    e.preventDefault()
+    const clean = email.trim().toLowerCase()
+    if (!EMAIL_PATTERN.test(clean) || clean.length > 200) {
+      setSubscribeState('invalid')
+      return
+    }
+    setSubscribeState('saving')
+    try {
+      // The address is the document id, so the collection cannot fill up with
+      // duplicates of the same subscriber. Firestore ids may not contain "/".
+      await setDoc(doc(db, 'newsletter', encodeURIComponent(clean)), {
+        email: clean,
+        source: 'blog',
+        createdAt: serverTimestamp(),
+      }, { merge: true })
+      setSubscribeState('done')
+      setEmail('')
+    } catch (err) {
+      console.warn('[newsletter] signup failed:', err)
+      setSubscribeState('error')
+    }
+  }
 
   const filteredPosts = activeCategory === 'All'
-    ? POSTS
-    : POSTS.filter(p => p.category === activeCategory)
+    ? BLOG_POSTS
+    : BLOG_POSTS.filter(p => p.category === activeCategory)
 
   const featuredPost = filteredPosts[0]
   const gridPosts = filteredPosts.slice(1)
@@ -143,44 +87,48 @@ export default function BlogPage() {
           </div>
 
           {featuredPost && (
-            <div className="blog-featured">
-              <div className="blog-featured-emoji">{featuredPost.emoji}</div>
+            <Link to={`/blog/${featuredPost.slug}`} className="blog-featured blog-featured--link">
+              <div className="blog-featured-emoji" aria-hidden="true">{featuredPost.emoji}</div>
               <div className="blog-featured-body">
                 <div className="blog-meta">
                   <span className="blog-category">{t(featuredPost.categoryKey)}</span>
-                  <span className="blog-date">{featuredPost.date}</span>
-                  <span className="blog-read">{featuredPost.readTime}</span>
+                  <span className="blog-date">{formatPostDate(featuredPost.date)}</span>
+                  <span className="blog-read">
+                    {t('blog.readTime').replace('{n}', String(featuredPost.readMinutes))}
+                  </span>
                 </div>
-                <h2 className="blog-featured-title">{featuredPost.title}</h2>
-                <p className="blog-featured-excerpt">{featuredPost.excerpt}</p>
-                <span className="coming-soon-badge">{t('blog.comingSoon')}</span>
+                <h2 className="blog-featured-title">{t(featuredPost.titleKey)}</h2>
+                <p className="blog-featured-excerpt">{t(featuredPost.excerptKey)}</p>
+                <span className="blog-read-link">{t('blog.readArticle')} →</span>
               </div>
-            </div>
+            </Link>
           )}
 
           {gridPosts.length > 0 && (
             <div className="blog-grid">
-              {gridPosts.map((post, i) => (
-                <div key={i} className="blog-card">
-                  <div className="blog-card-emoji">{post.emoji}</div>
+              {gridPosts.map(post => (
+                <Link key={post.slug} to={`/blog/${post.slug}`} className="blog-card blog-card--link">
+                  <div className="blog-card-emoji" aria-hidden="true">{post.emoji}</div>
                   <div className="blog-meta">
                     <span className="blog-category">{t(post.categoryKey)}</span>
-                    <span className="blog-date">{post.date}</span>
+                    <span className="blog-date">{formatPostDate(post.date)}</span>
                   </div>
-                  <h3 className="blog-card-title">{post.title}</h3>
-                  <p className="blog-card-excerpt">{post.excerpt}</p>
+                  <h3 className="blog-card-title">{t(post.titleKey)}</h3>
+                  <p className="blog-card-excerpt">{t(post.excerptKey)}</p>
                   <div className="blog-card-footer">
-                    <span className="blog-read">{post.readTime}</span>
-                    <span className="coming-soon-badge">{t('blog.comingSoon')}</span>
+                    <span className="blog-read">
+                      {t('blog.readTime').replace('{n}', String(post.readMinutes))}
+                    </span>
+                    <span className="blog-read-link">{t('blog.readArticle')} →</span>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
 
           {filteredPosts.length === 0 && (
             <div className="blog-empty">
-              <p>No posts in this category yet. Check back soon!</p>
+              <p>{t('blog.emptyCategory')}</p>
             </div>
           )}
         </div>
@@ -192,10 +140,42 @@ export default function BlogPage() {
             <h2 className="newsletter-title">{t('blog.newsletterTitle')}</h2>
             <p className="newsletter-sub">{t('blog.newsletterSub')}</p>
           </div>
-          <form className="newsletter-form" onSubmit={e => e.preventDefault()}>
-            <input type="email" className="newsletter-input" placeholder={t('blog.emailPlaceholder')} />
-            <button type="submit" className="btn-primary btn-cta">{t('blog.subscribe')}</button>
-          </form>
+          {subscribeState === 'done' ? (
+            <p className="newsletter-done">✓ {t('blog.newsletterDone')}</p>
+          ) : (
+            <form className="newsletter-form" onSubmit={handleSubscribe}>
+              <input
+                type="email"
+                className="newsletter-input"
+                placeholder={t('blog.emailPlaceholder')}
+                value={email}
+                onChange={e => { setEmail(e.target.value); setSubscribeState('idle') }}
+                maxLength={200}
+                autoComplete="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-label={t('blog.emailPlaceholder')}
+                required
+              />
+              <button
+                type="submit"
+                className="btn-primary btn-cta"
+                disabled={subscribeState === 'saving'}
+              >
+                {subscribeState === 'saving'
+                  ? <><span className="btn-spinner" />{t('blog.subscribing')}</>
+                  : t('blog.subscribe')}
+              </button>
+            </form>
+          )}
+          {subscribeState === 'invalid' && (
+            <p className="newsletter-error">{t('blog.newsletterInvalid')}</p>
+          )}
+          {subscribeState === 'error' && (
+            <p className="newsletter-error">{t('blog.newsletterError')}</p>
+          )}
         </div>
       </section>
 

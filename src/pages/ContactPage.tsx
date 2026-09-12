@@ -1,16 +1,21 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import Footer from '../components/Footer'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
-import { useAuthModal } from '../contexts/AuthModalContext'
+
+// Firestore caps a document at 1MB and the support inbox is read by a person.
+// Both fields are bounded here and in the API so a paste of a whole contract
+// fails as a form validation message rather than as an opaque write error.
+const MAX_MESSAGE_LENGTH = 4000
+const MAX_FIELD_LENGTH = 200
 
 export default function ContactPage() {
   const { t } = useTranslation()
-  const { user } = useAuth()
-  const { openLogin } = useAuthModal()
+  const { user, userData, displayName } = useAuth()
+  const [searchParams] = useSearchParams()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [subject, setSubject] = useState('')
@@ -21,6 +26,7 @@ export default function ContactPage() {
 
   const SUBJECTS = [
     t('contact.subjectGeneral'),
+    t('contact.subjectBusiness'),
     t('contact.subjectFeature'),
     t('contact.subjectFeedback'),
     t('contact.subjectBug'),
@@ -28,22 +34,48 @@ export default function ContactPage() {
     t('contact.subjectOther'),
   ]
 
-  const currentSubject = subject || SUBJECTS[0]
+  // The Business pricing card sends prospects here with ?plan=business. That
+  // parameter used to be ignored entirely, so someone arriving to ask about
+  // Enterprise pricing landed on a blank General Inquiry form.
+  const planParam = searchParams.get('plan')
+  const defaultSubject = planParam === 'business'
+    ? t('contact.subjectBusiness')
+    : SUBJECTS[0]
+  const currentSubject = subject || defaultSubject
 
+  // Prefill from the session when there is one. Signing in is not required —
+  // see handleSubmit — but there is no reason to make a customer retype what
+  // we already know.
+  const [syncedUid, setSyncedUid] = useState<string | null>(null)
+  if (user && syncedUid !== user.uid) {
+    setSyncedUid(user.uid)
+    if (!name) setName(displayName || userData?.name || '')
+    if (!email) setEmail(user.email ?? '')
+  }
+
+  /**
+   * Send the message.
+   *
+   * Deliberately open to signed-out visitors. This form used to bounce anyone
+   * without an account into the login modal, which meant the "Contact Sales"
+   * button on the Business plan — the one path for a prospect who by definition
+   * has no account yet — could never be completed. The Firestore rules have
+   * always allowed an unauthenticated submission; only the UI disagreed.
+   */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!user) {
-      openLogin()
-      return
-    }
     setIsSubmitting(true)
     setSubmitError(null)
     try {
       const payload = {
-        name: name.trim(),
-        email: email.trim(),
-        subject: currentSubject,
-        message: message.trim(),
+        name: name.trim().slice(0, MAX_FIELD_LENGTH),
+        email: email.trim().slice(0, MAX_FIELD_LENGTH),
+        subject: currentSubject.slice(0, MAX_FIELD_LENGTH),
+        message: message.trim().slice(0, MAX_MESSAGE_LENGTH),
+        // Recorded so sales can see which card the enquiry came from.
+        ...(planParam ? { plan: planParam.slice(0, 40) } : {}),
+        // Present only when the sender happened to be signed in.
+        ...(user ? { uid: user.uid } : {}),
       }
       await Promise.all([
         addDoc(collection(db, 'contacts'), { ...payload, createdAt: serverTimestamp() }),
@@ -105,7 +137,7 @@ export default function ContactPage() {
                 <span className="contact-success-icon">✓</span>
                 <h2 className="contact-success-title">{t('contact.successTitle')}</h2>
                 <p className="contact-success-sub">{t('contact.successSub')}</p>
-                <button className="btn-primary btn-cta" onClick={() => { setSent(false); setName(''); setEmail(''); setMessage(''); setSubject('') }}>
+                <button className="btn-primary btn-cta" onClick={() => { setSent(false); setSubmitError(null); setMessage(''); setSubject('') }}>
                   {t('contact.sendAnother')}
                 </button>
               </div>
@@ -122,6 +154,8 @@ export default function ContactPage() {
                     placeholder={t('contact.namePlaceholder')}
                     value={name}
                     onChange={e => setName(e.target.value)}
+                    maxLength={MAX_FIELD_LENGTH}
+                    autoComplete="name"
                     required
                   />
                 </div>
@@ -135,6 +169,12 @@ export default function ContactPage() {
                     placeholder={t('contact.emailPlaceholder')}
                     value={email}
                     onChange={e => setEmail(e.target.value)}
+                    maxLength={MAX_FIELD_LENGTH}
+                    autoComplete="email"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     required
                   />
                 </div>
@@ -160,8 +200,12 @@ export default function ContactPage() {
                     value={message}
                     onChange={e => setMessage(e.target.value)}
                     rows={6}
+                    maxLength={MAX_MESSAGE_LENGTH}
                     required
                   />
+                  <span className="contact-char-count">
+                    {message.length}/{MAX_MESSAGE_LENGTH}
+                  </span>
                 </div>
 
                 {submitError && <p className="error-banner">{submitError}</p>}
@@ -173,6 +217,10 @@ export default function ContactPage() {
                 >
                   {isSubmitting ? <><span className="btn-spinner" />{t('contact.sending')}</> : t('contact.sendMessage')}
                 </button>
+                <p className="contact-direct-note">
+                  {t('contact.directNote')}{' '}
+                  <a href="mailto:support@timecut.online">support@timecut.online</a>
+                </p>
               </form>
             )}
           </div>
