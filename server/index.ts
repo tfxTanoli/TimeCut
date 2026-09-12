@@ -422,7 +422,7 @@ app.post('/api/send-verification-email', express.json(), async (req, res) => {
 })
 
 // ── Send password reset email via Resend ──
-// Mirrors api/send-password-reset-email.ts: rate limited, and an address with
+// Mirrors the reset branch of api/send-email.ts (type=reset): rate limited, and an address with
 // no account returns the same success as one with an account so the route
 // cannot be used to discover who has registered.
 app.post('/api/send-password-reset-email', express.json(), async (req, res) => {
