@@ -107,6 +107,58 @@ export function perDocumentBudget(documentCount: number): number {
   return Math.min(MAX_DOC_CHARS, Math.max(MIN_DOC_CHARS, share))
 }
 
+/* ── PDF page markers ────────────────────────────────────────────────────────
+   pdf2json emits a trailing "----------------Page (N) Break----------------"
+   AFTER each page's text, and N is 0-indexed — so everything before
+   "Page (0) Break" is page 1.
+
+   Neither raw shape is something a model can cite. The Vercel route used to
+   strip the markers out entirely before building the prompt, which left the
+   model inventing the "page" field the report schema asks it for; the dev
+   server passed the raw 0-indexed trailing markers straight through, which is
+   off by one and reads like a header for the page that follows. Both paths now
+   convert to a leading, 1-indexed "[PAGE n]" header through this function,
+   which is the form PAGE_CITATION_RULES tells the model to cite.
+
+   Page citations are load-bearing: the report UI deep-links the reader's own
+   PDF to them, so they have to come from the document rather than from the
+   model's imagination.
+*/
+const PAGE_BREAK_PATTERN = String.raw`-+Page \(\d+\) Break-+`
+
+/** Marker the model is told to read page numbers from. */
+export const pageMarker = (n: number) => `[PAGE ${n}]`
+
+export interface PageMarkedText {
+  /** Document text with a leading, 1-indexed `[PAGE n]` header per page. */
+  text: string
+  /** Page count, taken from the number of breaks pdf2json emitted. */
+  pages: number
+  /** Text length excluding the markers, for "did anything extract?" checks. */
+  contentChars: number
+}
+
+/**
+ * Convert pdf2json's raw text dump into page-marked text the model can cite.
+ * Page numbering follows the break positions, so a blank page still advances
+ * the count and every later citation stays aligned with the real document.
+ */
+export function toPageMarkedText(rawPdfText: string): PageMarkedText {
+  const breaks = rawPdfText.match(new RegExp(PAGE_BREAK_PATTERN, 'g')) ?? []
+  const pages = Math.max(breaks.length, 1)
+
+  let contentChars = 0
+  const marked: string[] = []
+  rawPdfText.split(new RegExp(PAGE_BREAK_PATTERN, 'g')).forEach((chunk, i) => {
+    const body = chunk.trim()
+    if (!body) return
+    contentChars += body.length
+    marked.push(`${pageMarker(i + 1)}\n${body}`)
+  })
+
+  return { text: marked.join('\n\n'), pages, contentChars }
+}
+
 export interface DocsBlockResult {
   /** The prompt block to send to the model. */
   block: string

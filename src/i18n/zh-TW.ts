@@ -649,6 +649,10 @@ const zhTW: Record<string, string> = {
   // ── Decision Report (Phase 5) ──
   'report.title': '決策智能報告',
   'report.recommendation': '建議',
+  'report.overallDecision': '總體決策',
+  'report.decisionProceed': '可以推進',
+  'report.decisionCaution': '謹慎推進',
+  'report.decisionStop': '不建議推進',
   'report.recommendationDisclaimer': '僅基於現有證據。TimeCut不提供專業建議 — 使用者對所有最終決策負責。',
   'report.ranking': '文件排名',
   'report.confidenceScore': '信心評分',

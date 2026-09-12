@@ -120,12 +120,13 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
 {
   "document_type": "<cv|supplier_quotation|contract|business_proposal|general>",
   "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
+  "overall_decision": "<Proceed|Proceed with Caution|Do Not Proceed — judge the DEAL, not your certainty about it>",
   "ranking": [
     { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank>" }
   ],
   "confidence_score": <integer 0-100>,
   "confidence_rationale": "<1-2 sentences>",
-  "decision_strength": <integer 1-5>,
+  "decision_strength": <integer 1-5 — how strong the case for your recommendation is; must agree with overall_decision, NOT with confidence_score>,
   "decision_strength_reason": "<1-2 sentences>",
   "what_would_change": "<REQUIRED: 2-3 sentences — what new information or conditions would reverse this recommendation>",
   "if_i_were_you": "<REQUIRED: 3-5 sentences of direct personal advice starting with 'I would...'>",
@@ -177,6 +178,26 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
 
 EVIDENCE STATUS OPTIONS: "Not found" | "Unclear" | "Partially mentioned"
 SEVERITY: High = material harm; Medium = significant uncertainty; Low = minor concern.
+
+OVERALL DECISION — "overall_decision" rates the DEAL, not your confidence in the analysis:
+- "Proceed"              — no material risk; terms are sound and adequately evidenced.
+- "Proceed with Caution" — workable, but real risks or gaps must be resolved first.
+- "Do Not Proceed"       — material harm is likely on the terms as written.
+A well-documented but bad offer is still "Do Not Proceed". A thin but harmless one is
+not "Do Not Proceed" merely because you are unsure — say that in "confidence_score".
+"overall_decision" is an identifier, not prose: emit it in English exactly as written
+above even when the rest of the report is in another language. The UI translates it.
+
+PAGE CITATIONS — the "page" field must be verifiable, never guessed:
+- Document text is prefixed with "[PAGE n]" markers, numbered from 1. A line belongs
+  to the most recent "[PAGE n]" marker above it.
+- Set "page" to that n, as a string, ONLY for a fact you located under such a marker.
+- If a document has no "[PAGE n]" markers (plain-text uploads have none), or you are
+  not certain which page a fact came from, set "page" to null.
+- Never invent, estimate, or infer a page number. A wrong citation is worse than none:
+  the reader clicks it and is taken to that page of their own file.
+- "document" must be the exact document name given in its "--- Document N: ---" header.
+
 Generate ALL text fields in the user's selected language.`
 
 /* ── CV / Hiring Framework ── */
@@ -347,7 +368,7 @@ export interface DecisionDocument {
   content: string
 }
 
-function getFrameworkPrompt(documentType: string): string {
+export function getFrameworkPrompt(documentType: string): string {
   switch (documentType) {
     case 'cv': return CV_SYSTEM_PROMPT
     case 'supplier_quotation': return SUPPLIER_SYSTEM_PROMPT
@@ -396,5 +417,212 @@ export async function generateDecisionReport(
     data: JSON.parse(raw),
     usage: readUsage(completion),
     truncatedDocuments: truncated,
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   Report normalization
+   ─────────────────────────────────────────────────────────────────
+   GPT-4o returns snake_case variants and omits optional fields, so every field
+   below is read defensively and anything missing is derived from the rest of
+   the report. This lived in two near-identical copies — one in
+   api/analyze-decision.ts, one in server/index.ts — which had already drifted
+   apart: only the dev server guarded `reasoning` against a non-array, so a
+   string there reached the UI typed as `string[]` and broke rendering on
+   Vercel but not locally. One copy now serves both callers.
+   ───────────────────────────────────────────────────────────────── */
+
+/**
+ * One node of the JSON the model returned. Its shape is not guaranteed — every
+ * field below is read defensively — so `any` is the honest type here rather
+ * than a narrower one that would only be a lie. Declared once so the rule is
+ * suppressed in a single documented place instead of on every callback.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Raw = any
+
+/** The three verdicts the report UI renders. */
+export const OVERALL_DECISIONS = ['Proceed', 'Proceed with Caution', 'Do Not Proceed'] as const
+export type OverallDecision = typeof OVERALL_DECISIONS[number]
+
+/**
+ * Fall back to a verdict derived from the findings when the model omits one.
+ *
+ * Deliberately driven by risk severity and evidence gaps rather than
+ * `confidence_score`: confidence measures how sure the analysis is, not whether
+ * the deal is any good. Reading it as a verdict used to show a green "Proceed"
+ * for a thoroughly documented but thoroughly bad offer.
+ */
+export function deriveOverallDecision(
+  risks: { severity?: string }[],
+  missingInfo: unknown[],
+): OverallDecision {
+  const high = risks.filter(r => r.severity === 'High').length
+  const medium = risks.filter(r => r.severity === 'Medium').length
+  if (high >= 2) return 'Do Not Proceed'
+  if (high === 1) return 'Proceed with Caution'
+  if (medium >= 1 || missingInfo.length >= 1) return 'Proceed with Caution'
+  return 'Proceed'
+}
+
+/**
+ * Keep a cited page only when it is a usable page number.
+ *
+ * The model is told to return null when it cannot locate a fact under a
+ * `[PAGE n]` marker, but it still occasionally answers with prose such as
+ * "not specified". The report UI turns this value into a `#page=` deep link
+ * into the reader's own PDF, so anything that is not a positive integer is
+ * dropped rather than shipped as a citation.
+ */
+export function normalizeCitedPage(value: Raw): string | null {
+  if (value === null || value === undefined) return null
+  const n = Number(String(value).trim())
+  return Number.isInteger(n) && n > 0 ? String(n) : null
+}
+
+export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string, Raw> {
+  const hiddenRisks = (raw.hidden_risks ?? []).map((r: Raw) => {
+    const reasoning = r.reasoning ?? r.reasons ?? r.explanation
+    return {
+      description: r.description ?? r.risk ?? r.text ?? '',
+      severity: r.severity ?? 'Medium',
+      // Guarded: the model sometimes answers with a sentence here, and the UI
+      // maps over this field.
+      reasoning: Array.isArray(reasoning)
+        ? reasoning
+        : typeof reasoning === 'string' && reasoning.trim()
+          ? [reasoning.trim()]
+          : [],
+    }
+  })
+
+  const missingInfo = (raw.missing_information ?? []).map((m: Raw) => {
+    if (typeof m === 'string' && m.trim()) {
+      return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
+    }
+    return {
+      title: m.title ?? m.name ?? m.item ?? m.topic ?? '',
+      whyItMatters: m.whyItMatters ?? m.why_it_matters ?? m.why ?? m.importance ?? m.impact ?? '',
+      action: m.action ?? m.recommended_action ?? m.recommendation ?? m.next_step ?? m.steps ?? '',
+      evidence: m.evidence ?? m.evidence_status ?? m.status ?? m.availability ?? '',
+    }
+  })
+
+  const evidenceFound = (raw.evidence_found ?? []).map((e: Raw) => ({
+    section: e.section ?? e.area ?? e.topic ?? '',
+    page: normalizeCitedPage(e.page ?? e.page_number),
+    clause: e.clause ?? e.clause_reference ?? null,
+    confidence: e.confidence ?? e.confidence_score ?? null,
+    context: e.context ?? e.surrounding_text ?? e.excerpt ?? null,
+    document: e.document ?? e.document_name ?? e.source ?? null,
+  }))
+
+  const verificationQuestions = (raw.verification_questions ?? []).map((q: Raw) => ({
+    question: q.question ?? q.q ?? '',
+    strong_answer_should_include: Array.isArray(q.strong_answer_should_include)
+      ? q.strong_answer_should_include
+      : (Array.isArray(q.strong_answer) ? q.strong_answer : []),
+    red_flags: Array.isArray(q.red_flags) ? q.red_flags : [],
+    why_it_matters: q.why_it_matters ?? q.why ?? q.importance ?? '',
+  })).filter((q: Raw) => q.question)
+
+  const recommendedActions = (raw.recommended_actions ?? []).map((a: Raw) => ({
+    action: a.action ?? a.step ?? a.recommendation ?? '',
+    reason: a.reason ?? a.why ?? a.rationale ?? '',
+    priority: (['High', 'Medium', 'Low'].includes(a.priority)) ? a.priority : 'Medium',
+  })).filter((a: Raw) => a.action)
+
+  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: Raw) => ({
+    clause: n.clause ?? n.term ?? n.item ?? '',
+    issue: n.issue ?? n.problem ?? n.concern ?? '',
+    suggested_improvement: n.suggested_improvement ?? n.improvement ?? n.suggestion ?? n.recommended_change ?? '',
+    leverage: n.leverage ?? n.leverage_point ?? n.rationale ?? undefined,
+  })).filter((n: Raw) => n.clause)
+
+  const weakEvidence = (raw.weak_evidence ?? []).map((w: Raw) => ({
+    claim: w.claim ?? w.statement ?? '',
+    issue: w.issue ?? w.problem ?? w.why_weak ?? '',
+    recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
+  })).filter((w: Raw) => w.claim)
+
+  // The Playbook is a paid-plan feature, so it must not silently disappear when
+  // the model omits a field. Anything missing is derived from the rest of the
+  // report — the same approach already used for if_i_were_you and the
+  // before-signing checklist.
+  const dp = raw.decision_playbook ?? {}
+  const playbookReasons = Array.isArray(dp.key_reasons) && dp.key_reasons.length > 0
+    ? dp.key_reasons
+    : recommendedActions.slice(0, 3).map((a: { reason: string }) => a.reason).filter(Boolean)
+  const playbookRisks = Array.isArray(dp.remaining_risks) && dp.remaining_risks.length > 0
+    ? dp.remaining_risks
+    : hiddenRisks.slice(0, 3).map((r: { description: string }) => r.description).filter(Boolean)
+  const playbookChecklist = Array.isArray(dp.action_checklist) && dp.action_checklist.length > 0
+    ? dp.action_checklist
+    : recommendedActions.map((a: { action: string }) => a.action).filter(Boolean)
+  const decisionPlaybook = {
+    final_recommendation:
+      (dp.final_recommendation ?? dp.recommendation ?? '').trim()
+      || (raw.recommendation
+        ? (hiddenRisks.length > 0 || missingInfo.length > 0 ? 'Negotiate' : 'Proceed')
+        : ''),
+    key_reasons: playbookReasons,
+    remaining_risks: playbookRisks,
+    action_checklist: playbookChecklist,
+  }
+
+  // Derive fallbacks for fields GPT sometimes omits
+  const score = raw.confidence_score ?? 75
+
+  const claimed = String(raw.overall_decision ?? '').trim() as OverallDecision
+  const overallDecision: OverallDecision = OVERALL_DECISIONS.includes(claimed)
+    ? claimed
+    : deriveOverallDecision(hiddenRisks, missingInfo)
+
+  const ifIWereYou = raw.if_i_were_you?.trim() ||
+    (raw.recommendation
+      ? `I would ${raw.ranking?.[0]?.name ? `choose ${raw.ranking[0].name}` : 'proceed with the top-ranked option'} based on the evidence available. ${raw.decision_defense ?? raw.recommendation ?? ''}`.trim()
+      : '')
+
+  const whatWouldChange = raw.what_would_change?.trim() ||
+    (hiddenRisks.length > 0
+      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before proceeding.`
+      : 'This recommendation would change if new evidence emerges that contradicts the current findings or if significant risks are discovered in additional documentation.')
+
+  const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
+    ? raw.before_signing_checklist
+    : [
+        ...missingInfo.slice(0, 3).map((m: Raw) => `Obtain and verify: ${m.title}`),
+        'Confirm all key terms in writing before proceeding',
+        'Resolve all identified missing information before signing or deciding',
+      ].filter(Boolean)
+
+  const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
+    ? raw.compared_categories
+    : evidenceFound.map((e: Raw) => e.section).filter(Boolean).slice(0, 6)
+
+  const confidenceBreakdown = raw.confidence_breakdown ?? {
+    document_completeness: Math.min(100, score + 5),
+    evidence_consistency: Math.min(100, score),
+    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: Raw) => r.severity === 'High').length * 20)),
+    missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
+  }
+
+  return {
+    ...raw,
+    hidden_risks: hiddenRisks,
+    missing_information: missingInfo,
+    evidence_found: evidenceFound,
+    overall_decision: overallDecision,
+    if_i_were_you: ifIWereYou,
+    what_would_change: whatWouldChange,
+    before_signing_checklist: beforeSigningChecklist,
+    compared_categories: comparedCategories,
+    confidence_breakdown: confidenceBreakdown,
+    verification_questions: verificationQuestions,
+    recommended_actions: recommendedActions,
+    negotiation_suggestions: negotiationSuggestions,
+    weak_evidence: weakEvidence,
+    decision_playbook: decisionPlaybook,
+    interview_red_flags: Array.isArray(raw.interview_red_flags) ? raw.interview_red_flags : [],
   }
 }

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook } from '../types'
+import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook, OverallDecision } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -52,6 +52,26 @@ function normalizeEvidence(raw: any[]): EvidenceItem[] {
     document:   nm(e, 'document', 'document_name', 'source', 'file') || undefined,
   }))
 }
+/**
+ * Verdict to show when the report carries none.
+ *
+ * The server normalizes `overall_decision` onto every report, so this is a
+ * fallback rather than the usual path — but it must never reduce to
+ * `confidence_score`, which measures certainty about the analysis and not the
+ * quality of the deal. Mirrors deriveOverallDecision() in api/_lib/shared.ts,
+ * duplicated across the API/browser build boundary the same way planConfig is.
+ */
+function deriveOverallDecision(report: DecisionReport): OverallDecision {
+  const risks = report.hidden_risks ?? []
+  const high = risks.filter(r => r.severity === 'High').length
+  const medium = risks.filter(r => r.severity === 'Medium').length
+  const missing = (report.missing_information ?? []).length
+  if (high >= 2) return 'Do Not Proceed'
+  if (high === 1) return 'Proceed with Caution'
+  if (medium >= 1 || missing >= 1) return 'Proceed with Caution'
+  return 'Proceed'
+}
+
 function normalizeReport(report: DecisionReport): DecisionReport {
   return {
     ...report,
@@ -227,11 +247,28 @@ function TruncationNotice({ names }: { names?: string[] }) {
 }
 
 /* ── Executive Summary ── */
-function ExecutiveSummary({ report }: { report: DecisionReport }) {
+/** Star rating to show when the report carries no explicit decision_strength. */
+const DECISION_STARS: Record<OverallDecision, number> = {
+  'Proceed': 5,
+  'Proceed with Caution': 3,
+  'Do Not Proceed': 1,
+}
+
+/** The verdict is an English identifier on the wire; the UI localises it. */
+const DECISION_STYLE: Record<OverallDecision, { emoji: string; color: string; labelKey: string }> = {
+  'Proceed':              { emoji: '🟢', color: '#22C55E', labelKey: 'report.decisionProceed' },
+  'Proceed with Caution': { emoji: '🟡', color: '#F59E0B', labelKey: 'report.decisionCaution' },
+  'Do Not Proceed':       { emoji: '🔴', color: '#EF4444', labelKey: 'report.decisionStop' },
+}
+
+function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
   const score = report.confidence_score
-  const decisionLabel = score >= 70 ? 'Proceed' : score >= 40 ? 'Proceed with Caution' : 'Do Not Proceed'
-  const decisionEmoji = score >= 70 ? '🟢' : score >= 40 ? '🟡' : '🔴'
-  const decisionColor = score >= 70 ? '#22C55E' : score >= 40 ? '#F59E0B' : '#EF4444'
+  // The verdict rates the deal; `confidence_score` rates the analysis. Deriving
+  // it from the score, as this once did, turned a well-documented bad offer
+  // into a green "Proceed" — the two are shown side by side but never conflated.
+  const decision = report.overall_decision ?? deriveOverallDecision(report)
+  const { emoji: decisionEmoji, color: decisionColor, labelKey } = DECISION_STYLE[decision]
+  const decisionLabel = t(labelKey)
 
   const highCount = report.hidden_risks.filter(r => r.severity === 'High').length
   const medCount = report.hidden_risks.filter(r => r.severity === 'Medium').length
@@ -244,7 +281,7 @@ function ExecutiveSummary({ report }: { report: DecisionReport }) {
     <div className="dr-exec-summary">
       <div className="dr-exec-top">
         <div className="dr-exec-decision-block">
-          <p className="dr-exec-eyebrow">Overall Decision</p>
+          <p className="dr-exec-eyebrow">{t('report.overallDecision')}</p>
           <div className="dr-exec-verdict">
             <span className="dr-exec-emoji">{decisionEmoji}</span>
             <span className="dr-exec-verdict-text" style={{ color: decisionColor }}>{decisionLabel}</span>
@@ -376,12 +413,21 @@ function RankingSection({ ranking, t }: { ranking: RankedDocument[]; t: (k: stri
 }
 
 /* ── Decision Strength card ── */
-function DecisionStrengthCard({ report }: { report: DecisionReport }) {
+function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
   const pct = Math.min(Math.max(report.confidence_score, 0), 100)
+  // The gauge is a confidence gauge, so it stays keyed to the score.
   const color = pct >= 70 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#EF4444'
-  const stars = report.decision_strength ?? Math.round(pct / 20)
+  // The label underneath is the verdict on the deal, not a restatement of the
+  // gauge — it reads from the same field as the Executive Summary so the two
+  // cards cannot contradict each other.
+  const decision = report.overall_decision ?? deriveOverallDecision(report)
+  const decisionLabel = t(DECISION_STYLE[decision].labelKey)
+  const decisionColor = DECISION_STYLE[decision].color
+  // When the model gives no decision_strength, fall back to the verdict rather
+  // than to confidence/20 as this once did — that put five gold stars beside a
+  // red "Do Not Proceed" whenever the analysis was merely certain.
+  const stars = report.decision_strength ?? DECISION_STARS[decision]
   const clampedStars = Math.min(5, Math.max(1, stars))
-  const decisionLabel = pct >= 70 ? 'Proceed' : pct >= 40 ? 'Proceed with Caution' : 'Do Not Proceed'
 
   const breakdown = report.confidence_breakdown
 
@@ -409,7 +455,7 @@ function DecisionStrengthCard({ report }: { report: DecisionReport }) {
           </svg>
         </div>
         <div className="dr-strength-right">
-          <p className="dr-strength-decision" style={{ color }}>{decisionLabel}</p>
+          <p className="dr-strength-decision" style={{ color: decisionColor }}>{decisionLabel}</p>
           <div className="dr-strength-stars" style={{ color: '#F59E0B' }}>
             {[1, 2, 3, 4, 5].map(n => <IconStar key={n} filled={n <= clampedStars} />)}
           </div>
@@ -1621,6 +1667,8 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
     const text = [
       `${t('report.title')}`,
       '',
+      `${t('report.overallDecision')}: ${t(DECISION_STYLE[report.overall_decision ?? deriveOverallDecision(report)].labelKey)}`,
+      '',
       `${t('report.recommendation')}: ${report.recommendation}`,
       '',
       `${t('report.confidenceScore')}: ${report.confidence_score}/100`,
@@ -1715,7 +1763,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         <TruncationNotice names={report.truncated_documents} />
 
         {/* 1. Executive Summary */}
-        <ExecutiveSummary report={report} />
+        <ExecutiveSummary report={report} t={t} />
 
         {/* 2. Recommendation */}
         <RecommendationCard
@@ -1729,7 +1777,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         {/* Ranking + Decision Strength (2-col) */}
         <div className="dr-two-col">
           <RankingSection ranking={report.ranking} t={t} />
-          <DecisionStrengthCard report={report} />
+          <DecisionStrengthCard report={report} t={t} />
         </div>
 
         {/* What Was Compared (if available) */}

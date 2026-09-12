@@ -2,9 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
 import PDFParser from 'pdf2json'
-import { generateDecisionReport } from './_lib/shared.js'
+import { generateDecisionReport, normalizeDecisionReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE } from './_lib/aiConfig.js'
+import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE, toPageMarkedText } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 import {
   resolveEntitlement,
@@ -23,156 +23,6 @@ import {
 // form will let through a goal the server then rejects with a 400.
 const MIN_DECISION_GOAL_LENGTH = 2
 
-// v2 — updated prompt forces all required fields
-
-/* ── Normalize GPT response to match expected TypeScript types ── */
-// GPT-4o sometimes uses snake_case or slightly different key names.
-// Normalizing here prevents empty fields in the UI.
-
-/**
- * One node of the JSON the model returned. Its shape is not guaranteed — every
- * field below is read defensively — so `any` is the honest type here rather
- * than a narrower one that would only be a lie. Declared once so the rule is
- * suppressed in a single documented place instead of on every callback.
- */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Raw = any
-function normalizeReport(raw: Record<string, Raw>): Record<string, Raw> {
-  const hiddenRisks = (raw.hidden_risks ?? []).map((r: Raw) => ({
-    description: r.description ?? r.risk ?? r.text ?? '',
-    severity: r.severity ?? 'Medium',
-    reasoning: r.reasoning ?? r.reasons ?? r.explanation ?? [],
-  }))
-
-  const missingInfo = (raw.missing_information ?? []).map((m: Raw) => {
-    if (typeof m === 'string' && m.trim()) {
-      return { title: m.trim(), whyItMatters: '', action: '', evidence: 'Not found' }
-    }
-    return {
-      title: m.title ?? m.name ?? m.item ?? m.topic ?? '',
-      whyItMatters: m.whyItMatters ?? m.why_it_matters ?? m.why ?? m.importance ?? m.impact ?? '',
-      action: m.action ?? m.recommended_action ?? m.recommendation ?? m.next_step ?? m.steps ?? '',
-      evidence: m.evidence ?? m.evidence_status ?? m.status ?? m.availability ?? '',
-    }
-  })
-
-  const evidenceFound = (raw.evidence_found ?? []).map((e: Raw) => ({
-    section: e.section ?? e.area ?? e.topic ?? '',
-    page: e.page ?? e.page_number ?? null,
-    clause: e.clause ?? e.clause_reference ?? null,
-    confidence: e.confidence ?? e.confidence_score ?? null,
-    context: e.context ?? e.surrounding_text ?? e.excerpt ?? null,
-    document: e.document ?? e.document_name ?? e.source ?? null,
-  }))
-
-  // Normalize verification_questions
-  const verificationQuestions = (raw.verification_questions ?? []).map((q: Raw) => ({
-    question: q.question ?? q.q ?? '',
-    strong_answer_should_include: Array.isArray(q.strong_answer_should_include)
-      ? q.strong_answer_should_include
-      : (Array.isArray(q.strong_answer) ? q.strong_answer : []),
-    red_flags: Array.isArray(q.red_flags) ? q.red_flags : [],
-    why_it_matters: q.why_it_matters ?? q.why ?? q.importance ?? '',
-  })).filter((q: Raw) => q.question)
-
-  // Normalize recommended_actions
-  const recommendedActions = (raw.recommended_actions ?? []).map((a: Raw) => ({
-    action: a.action ?? a.step ?? a.recommendation ?? '',
-    reason: a.reason ?? a.why ?? a.rationale ?? '',
-    priority: (['High', 'Medium', 'Low'].includes(a.priority)) ? a.priority : 'Medium',
-  })).filter((a: Raw) => a.action)
-
-  // Normalize negotiation_suggestions
-  const negotiationSuggestions = (raw.negotiation_suggestions ?? []).map((n: Raw) => ({
-    clause: n.clause ?? n.term ?? n.item ?? '',
-    issue: n.issue ?? n.problem ?? n.concern ?? '',
-    suggested_improvement: n.suggested_improvement ?? n.improvement ?? n.suggestion ?? n.recommended_change ?? '',
-    leverage: n.leverage ?? n.leverage_point ?? n.rationale ?? undefined,
-  })).filter((n: Raw) => n.clause)
-
-  // Normalize weak_evidence
-  const weakEvidence = (raw.weak_evidence ?? []).map((w: Raw) => ({
-    claim: w.claim ?? w.statement ?? '',
-    issue: w.issue ?? w.problem ?? w.why_weak ?? '',
-    recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
-  })).filter((w: Raw) => w.claim)
-
-  // Normalize decision_playbook.
-  // The Playbook is a paid-plan feature, so it must not silently disappear when
-  // the model omits a field. Anything missing is derived from the rest of the
-  // report — the same approach already used for if_i_were_you and the
-  // before-signing checklist.
-  const dp = raw.decision_playbook ?? {}
-  const playbookReasons = Array.isArray(dp.key_reasons) && dp.key_reasons.length > 0
-    ? dp.key_reasons
-    : recommendedActions.slice(0, 3).map((a: { reason: string }) => a.reason).filter(Boolean)
-  const playbookRisks = Array.isArray(dp.remaining_risks) && dp.remaining_risks.length > 0
-    ? dp.remaining_risks
-    : hiddenRisks.slice(0, 3).map((r: { description: string }) => r.description).filter(Boolean)
-  const playbookChecklist = Array.isArray(dp.action_checklist) && dp.action_checklist.length > 0
-    ? dp.action_checklist
-    : recommendedActions.map((a: { action: string }) => a.action).filter(Boolean)
-  const decisionPlaybook = {
-    final_recommendation:
-      (dp.final_recommendation ?? dp.recommendation ?? '').trim()
-      || (raw.recommendation
-        ? (hiddenRisks.length > 0 || missingInfo.length > 0 ? 'Negotiate' : 'Proceed')
-        : ''),
-    key_reasons: playbookReasons,
-    remaining_risks: playbookRisks,
-    action_checklist: playbookChecklist,
-  }
-
-  // Derive fallbacks for fields GPT sometimes omits
-  const score = raw.confidence_score ?? 75
-
-  const ifIWereYou = raw.if_i_were_you?.trim() ||
-    (raw.recommendation
-      ? `I would ${raw.ranking?.[0]?.name ? `choose ${raw.ranking[0].name}` : 'proceed with the top-ranked option'} based on the evidence available. ${raw.decision_defense ?? raw.recommendation ?? ''}`.trim()
-      : '')
-
-  const whatWouldChange = raw.what_would_change?.trim() ||
-    (hiddenRisks.length > 0
-      ? `This recommendation would change if the identified risks are resolved — particularly: ${hiddenRisks[0]?.description ?? ''}. Provide additional documentation that addresses missing information items before proceeding.`
-      : 'This recommendation would change if new evidence emerges that contradicts the current findings or if significant risks are discovered in additional documentation.')
-
-  const beforeSigningChecklist: string[] = Array.isArray(raw.before_signing_checklist) && raw.before_signing_checklist.length > 0
-    ? raw.before_signing_checklist
-    : [
-        ...missingInfo.slice(0, 3).map((m: Raw) => `Obtain and verify: ${m.title}`),
-        'Confirm all key terms in writing before proceeding',
-        'Resolve all identified missing information before signing or deciding',
-      ].filter(Boolean)
-
-  const comparedCategories: string[] = Array.isArray(raw.compared_categories) && raw.compared_categories.length > 0
-    ? raw.compared_categories
-    : evidenceFound.map((e: Raw) => e.section).filter(Boolean).slice(0, 6)
-
-  const confidenceBreakdown = raw.confidence_breakdown ?? {
-    document_completeness: Math.min(100, score + 5),
-    evidence_consistency: Math.min(100, score),
-    risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: Raw) => r.severity === 'High').length * 20)),
-    missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
-  }
-
-  return {
-    ...raw,
-    hidden_risks: hiddenRisks,
-    missing_information: missingInfo,
-    evidence_found: evidenceFound,
-    if_i_were_you: ifIWereYou,
-    what_would_change: whatWouldChange,
-    before_signing_checklist: beforeSigningChecklist,
-    compared_categories: comparedCategories,
-    confidence_breakdown: confidenceBreakdown,
-    verification_questions: verificationQuestions,
-    recommended_actions: recommendedActions,
-    negotiation_suggestions: negotiationSuggestions,
-    weak_evidence: weakEvidence,
-    decision_playbook: decisionPlaybook,
-    interview_red_flags: Array.isArray(raw.interview_red_flags) ? raw.interview_red_flags : [],
-  }
-}
 
 // Hard ceiling on what the endpoint will ever accept, independent of plan.
 // The real, plan-specific document limit is enforced by
@@ -199,14 +49,21 @@ function applyPlanGating(
   return out
 }
 
-function extractPDFText(buffer: Buffer): Promise<{ text: string; pages: number }> {
+/**
+ * Extract a PDF as page-marked text.
+ *
+ * The page breaks pdf2json emits used to be counted for billing and then
+ * stripped, which left the model with no way to know where one page ended and
+ * the next began — while the report schema still asked it for a "page" per
+ * piece of evidence, so it supplied invented ones. toPageMarkedText keeps them
+ * as citable `[PAGE n]` headers; `pages` is still the break count, so what a
+ * report costs does not change.
+ */
+function extractPDFText(buffer: Buffer): Promise<{ text: string; pages: number; contentChars: number }> {
   return new Promise((resolve, reject) => {
     const parser = new PDFParser(null, true)
     parser.on('pdfParser_dataReady', () => {
-      const pdfData = parser.getRawTextContent()
-      const pageBreaks = (pdfData.match(/-+Page \(\d+\) Break-+/g) ?? []).length
-      const text = pdfData.replace(/-+Page \(\d+\) Break-+/g, '').trim()
-      resolve({ text, pages: Math.max(pageBreaks, 1) })
+      resolve(toPageMarkedText(parser.getRawTextContent()))
     })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     parser.on('pdfParser_dataError', (errData: any) => {
@@ -299,8 +156,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         if (mimeType === 'application/pdf' || originalName.toLowerCase().endsWith('.pdf')) {
           try {
-            const { text, pages } = await extractPDFText(buffer)
-            if (text.length < 50) {
+            const { text, pages, contentChars } = await extractPDFText(buffer)
+            // Measured without the [PAGE n] markers, so a scanned PDF whose
+            // only output is page headers is still recognised as empty.
+            if (contentChars < 50) {
               parseErrors.push(`"${originalName}" has no extractable text — it may be a scanned/image-based PDF.`)
               continue
             }
@@ -365,7 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         decisionGoal.trim(),
         documentType,
       )
-      const data = normalizeReport(raw)
+      const data = normalizeDecisionReport(raw)
       const gated = applyPlanGating(data, features)
 
       await recordAiUsage({

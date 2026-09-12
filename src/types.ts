@@ -57,6 +57,16 @@ export interface AnalyzeResponse {
 
 export type RiskSeverity = 'High' | 'Medium' | 'Low'
 
+/**
+ * The report's verdict on the deal itself.
+ *
+ * Distinct from `confidence_score`, which says how sure the analysis is. The
+ * Executive Summary used to derive its verdict from that score, which showed a
+ * green "Proceed" for any offer whose terms were merely well documented — a
+ * thoroughly evidenced bad deal read as a good one.
+ */
+export type OverallDecision = 'Proceed' | 'Proceed with Caution' | 'Do Not Proceed'
+
 export interface RiskItem {
   description: string
   severity: RiskSeverity
@@ -94,6 +104,9 @@ export interface ConfidenceBreakdown {
 
 export interface DecisionReport {
   recommendation: string
+  /** Verdict on the deal. Server-normalized, so always present on a fresh
+   *  report; optional because the UI also derives it defensively. */
+  overall_decision?: OverallDecision
   ranking: RankedDocument[]
   confidence_score: number
   confidence_rationale: string

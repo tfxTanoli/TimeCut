@@ -719,6 +719,10 @@ const en: Record<string, string> = {
   // ── Decision Report (Phase 5) ──
   'report.title': 'Decision Intelligence Report',
   'report.recommendation': 'Recommendation',
+  'report.overallDecision': 'Overall Decision',
+  'report.decisionProceed': 'Proceed',
+  'report.decisionCaution': 'Proceed with Caution',
+  'report.decisionStop': 'Do Not Proceed',
   'report.recommendationDisclaimer': 'Based on available evidence only. TimeCut does not provide professional advice — users are responsible for all final decisions.',
   'report.ranking': 'Document Ranking',
   'report.confidenceScore': 'Confidence Score',

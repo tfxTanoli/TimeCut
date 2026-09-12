@@ -649,6 +649,10 @@ const zhCN: Record<string, string> = {
   // ── Decision Report (Phase 5) ──
   'report.title': '决策智能报告',
   'report.recommendation': '建议',
+  'report.overallDecision': '总体决策',
+  'report.decisionProceed': '可以推进',
+  'report.decisionCaution': '谨慎推进',
+  'report.decisionStop': '不建议推进',
   'report.recommendationDisclaimer': '仅基于现有证据。TimeCut不提供专业建议 — 用户对所有最终决策负责。',
   'report.ranking': '文件排名',
   'report.confidenceScore': '置信度评分',
