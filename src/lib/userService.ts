@@ -172,15 +172,21 @@ export async function saveDecisionAnalysis(
   meta: { decisionGoal: string; language: string; documentType: string; documentNames: string[] },
 ): Promise<string | null> {
   try {
-    const ref = await addDoc(collection(db, 'users', uid, 'analyses'), stripUndefined({
+    // Only the report goes through stripUndefined. Running the whole payload
+    // through it destroyed `createdAt`: serverTimestamp() returns a sentinel
+    // object that a JSON round-trip flattens into a plain map, so Firestore
+    // stored a map instead of a timestamp. The profile row then had no date to
+    // show, and `orderBy('createdAt')` was ordering on a map — meaning the
+    // report history was not actually in chronological order.
+    const ref = await addDoc(collection(db, 'users', uid, 'analyses'), {
       kind: 'decision',
-      report,
+      report: stripUndefined(report),
       decisionGoal: meta.decisionGoal,
       language: meta.language,
       documentType: meta.documentType,
       documentNames: meta.documentNames,
       createdAt: serverTimestamp(),
-    }))
+    })
     return ref.id
   } catch (e) {
     console.warn('[analyses] could not save decision report:', e)
