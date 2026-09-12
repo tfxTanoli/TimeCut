@@ -312,7 +312,7 @@ export default function PricingPage() {
               <div className="pricing-divider" />
               <ul className="pricing-features">
                 {/* F1 is the credit line, now shown under the price above. */}
-                {(['proF2','proF4','proF5','proF6'] as const).map(k => (
+                {(['proF2','proF4','proF5','proF6','proF7'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span>
                     <span>{t(`pricing.${k}`)
@@ -347,7 +347,7 @@ export default function PricingPage() {
               <p className="pricing-free-note" aria-hidden="true" />
               <div className="pricing-divider" />
               <ul className="pricing-features">
-                {(['customF2','customF3','customF4','customF5'] as const).map(k => (
+                {(['customF2','customF3','customF4','customF5','customF6'] as const).map(k => (
                   <li key={k} className="pricing-feat pricing-feat--yes">
                     <span className="feat-icon feat-icon--yes">✓</span>
                     <span>{t(`pricing.${k}`)}</span>

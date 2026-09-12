@@ -446,6 +446,7 @@ const zhCN: Record<string, string> = {
   'pricing.proF4': '无限决策助手（在积分额度内）',
   'pricing.proF5': '决策辩护',
   'pricing.proF6': '「如果我是你」专属顾问建议',
+  'pricing.proF7': '打印／另存为PDF',
 
   // 商业版
   'pricing.custom': '商业版',
@@ -460,6 +461,7 @@ const zhCN: Record<string, string> = {
   'pricing.customF3': '包含专业版所有功能',
   'pricing.customF4': '用量仪表盘',
   'pricing.customF5': '优先支持',
+  'pricing.customF6': '打印／另存为PDF',
 
   'pricing.faqTitle': '定价常见问题',
   'pricing.faq1Q': '免费计划真的免费吗？',

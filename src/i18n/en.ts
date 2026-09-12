@@ -505,6 +505,7 @@ const en: Record<string, string> = {
   'pricing.proF4': 'Unlimited Decision Assistant (within credits)',
   'pricing.proF5': 'Decision Defense',
   'pricing.proF6': '"If I Were You" personal advisor',
+  'pricing.proF7': 'Print / Save as PDF',
 
   // BUSINESS (formerly CUSTOM)
   'pricing.custom': 'BUSINESS',
@@ -519,6 +520,7 @@ const en: Record<string, string> = {
   'pricing.customF3': 'Everything in Pro',
   'pricing.customF4': 'Usage Dashboard',
   'pricing.customF5': 'Priority Support',
+  'pricing.customF6': 'Print / Save as PDF',
 
   'pricing.faqTitle': 'Pricing FAQs',
   'pricing.faq1Q': 'Is the Free plan really free?',

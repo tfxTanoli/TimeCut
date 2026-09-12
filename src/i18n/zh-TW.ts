@@ -446,6 +446,7 @@ const zhTW: Record<string, string> = {
   'pricing.proF4': '無限決策助手（在點數額度內）',
   'pricing.proF5': '決策辯護',
   'pricing.proF6': '「如果我是你」專屬顧問建議',
+  'pricing.proF7': '列印／另存為PDF',
 
   // 商業版
   'pricing.custom': '商業版',
@@ -460,6 +461,7 @@ const zhTW: Record<string, string> = {
   'pricing.customF3': '包含專業版所有功能',
   'pricing.customF4': '用量儀表板',
   'pricing.customF5': '優先支援',
+  'pricing.customF6': '列印／另存為PDF',
 
   'pricing.faqTitle': '定價常見問題',
   'pricing.faq1Q': '免費方案真的免費嗎？',

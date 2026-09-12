@@ -47,6 +47,10 @@ const PLAN_META: Record<string, { label: string; tagline: string; features: stri
       'Unlimited Decision Assistant (within credits)',
       '"If I Were You" personal advisor',
       'Decision Defense',
+      // Pro inherits this through "Everything in Starter", but it is a feature
+      // people look for by name on the checkout screen, so it is listed here
+      // outright as well — matching the Starter list above and the pricing page.
+      'Print / Save as PDF',
     ],
   },
 }
