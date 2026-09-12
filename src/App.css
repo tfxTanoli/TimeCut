@@ -7840,3 +7840,274 @@
 .plan-badge--pro      { background: rgba(59,130,246,0.16); color: #60A5FA; border: 1px solid rgba(59,130,246,0.32); }
 .plan-badge--business { background: rgba(168,85,247,0.16); color: #C084FC; border: 1px solid rgba(168,85,247,0.32); }
 .plan-badge--custom   { background: rgba(245,158,11,0.16); color: #FBBF24; border: 1px solid rgba(245,158,11,0.32); }
+
+/* ── Saved reports list (profile) ────────────────────────────────────────────
+   Reports are persisted per account now, so the account area has a history to
+   show. Rows are links rather than buttons: a report has its own address, and
+   people expect to be able to open one in a new tab. */
+.profile-reports-empty {
+  color: #94A3B8;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+.profile-reports-empty-block {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+.profile-reports-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.profile-report-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #1F2937;
+  border-radius: 10px;
+  background: #0D1117;
+  text-decoration: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.profile-report-row:hover,
+.profile-report-row:focus-visible {
+  border-color: #2563EB;
+  background: #111827;
+}
+.profile-report-main {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.profile-report-goal {
+  color: #E5E7EB;
+  font-size: 14px;
+  font-weight: 600;
+  /* Goals run to 500 characters; the row shows the first line of one. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.profile-report-meta {
+  color: #6B7280;
+  font-size: 12px;
+}
+.profile-report-score {
+  flex-shrink: 0;
+  color: #93C5FD;
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 600px) {
+  .profile-report-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .profile-report-main { width: 100%; }
+  .profile-report-goal { white-space: normal; }
+}
+
+/* ── Contact form additions ─────────────────────────────────────────────────
+   The form is open to signed-out visitors (Contact Sales is the one path a
+   prospect without an account has), so it carries its own character counter
+   and a plain email fallback for anyone who would rather not use a form. */
+.contact-char-count {
+  display: block;
+  margin-top: 6px;
+  text-align: right;
+  color: #6B7280;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.contact-direct-note {
+  margin: 14px 0 0;
+  color: #94A3B8;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.contact-direct-note a { color: #60A5FA; }
+
+/* ── Blog: cards are links now ───────────────────────────────────────────────
+   Posts have their own addresses, so the cards are anchors rather than inert
+   divs. These rules only neutralise link styling and add the affordance; the
+   existing .blog-card / .blog-featured layout is untouched. */
+.blog-card--link,
+.blog-featured--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color .15s ease, transform .15s ease;
+}
+.blog-card--link:hover,
+.blog-featured--link:hover {
+  border-color: #2563EB;
+  transform: translateY(-2px);
+}
+.blog-read-link {
+  color: #60A5FA;
+  font-size: 13px;
+  font-weight: 600;
+}
+.blog-featured--link .blog-read-link {
+  display: inline-block;
+  margin-top: 12px;
+}
+
+/* ── Newsletter states ─────────────────────────────────────────────────────── */
+.newsletter-done {
+  margin: 0;
+  color: #22C55E;
+  font-size: 14px;
+  font-weight: 600;
+}
+.newsletter-error {
+  margin: 10px 0 0;
+  color: #F87171;
+  font-size: 13px;
+}
+
+/* ── Blog article page ──────────────────────────────────────────────────────
+   Measure is capped at ~68ch: long-form prose at full container width is the
+   single biggest readability problem on a wide screen. */
+.blog-article {
+  padding: 48px 0 72px;
+}
+.blog-article-inner {
+  max-width: 760px;
+}
+.blog-article-back {
+  display: inline-block;
+  margin-bottom: 28px;
+  color: #94A3B8;
+  font-size: 14px;
+  text-decoration: none;
+}
+.blog-article-back:hover { color: #60A5FA; }
+
+.blog-article-header {
+  padding-bottom: 28px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid #1F2937;
+}
+.blog-article-title {
+  margin: 14px 0 12px;
+  color: #F3F4F6;
+  font-size: clamp(28px, 5vw, 40px);
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.blog-article-meta {
+  margin: 0 0 18px;
+  color: #6B7280;
+  font-size: 13px;
+}
+.blog-article-lede {
+  margin: 0;
+  color: #94A3B8;
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+.blog-article-body {
+  color: #CBD5E1;
+  font-size: 16px;
+  line-height: 1.8;
+  max-width: 68ch;
+}
+.blog-article-h2 {
+  margin: 36px 0 14px;
+  color: #F3F4F6;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.blog-article-p { margin: 0 0 18px; }
+.blog-article-body strong { color: #F3F4F6; font-weight: 650; }
+.blog-article-list {
+  margin: 0 0 18px;
+  padding-left: 22px;
+}
+.blog-article-list li { margin-bottom: 10px; }
+
+.blog-article-cta {
+  margin: 48px 0 0;
+  padding: 28px;
+  border: 1px solid #1E3A8A;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #0F1A33 0%, #0B1220 100%);
+  text-align: center;
+}
+.blog-article-cta-title {
+  margin: 0 0 8px;
+  color: #F3F4F6;
+  font-size: 20px;
+  font-weight: 700;
+}
+.blog-article-cta-sub {
+  margin: 0 0 20px;
+  color: #94A3B8;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.blog-article-related { margin-top: 52px; }
+.blog-related-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.blog-related-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 14px;
+  border: 1px solid #1F2937;
+  border-radius: 10px;
+  background: #0D1117;
+  text-decoration: none;
+  transition: border-color .15s ease;
+}
+.blog-related-card:hover { border-color: #2563EB; }
+.blog-related-emoji { font-size: 20px; line-height: 1.2; }
+.blog-related-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.blog-related-title {
+  color: #E5E7EB;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+@media (max-width: 600px) {
+  .blog-article { padding: 28px 0 56px; }
+  .blog-article-body { font-size: 15.5px; }
+}
+
+/* ── Plan-change confirmation (checkout modal) ───────────────────────────────
+   Shown instead of a card form when the customer already pays for another
+   plan. Nothing is charged until the confirm button is pressed. */
+.pm-switch-note { margin-bottom: 18px; }
+.pm-switch-body {
+  margin: 0 0 10px;
+  color: #94A3B8;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.pm-switch-body strong { color: #E5E7EB; }
+.pm-cancel-btn {
+  width: 100%;
+  margin-top: 10px;
+}

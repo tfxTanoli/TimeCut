@@ -38,6 +38,11 @@ export default function PricingPage() {
   // no longer an offer to them — it is just a description of the entry tier.
   const isPaidSubscriber = !!user && currentPlan !== 'free'
 
+  // Accounts sales provisions by hand. They are not self-serve in either
+  // direction: the API refuses to sell them, and they must not be able to buy
+  // their way down to a smaller plan through a pricing card either.
+  const isManagedPlan = !!user && (currentPlan === 'business' || currentPlan === 'custom')
+
   /**
    * The Free allowance is a one-time grant, not a monthly one: the server keeps
    * `freeReportsUsed` on the user document and only ever increments it, so
@@ -62,9 +67,43 @@ export default function PricingPage() {
         : null
   const banner = bannerFromUrl && bannerFromUrl !== dismissedBanner ? bannerFromUrl : null
 
+  /**
+   * Open checkout for a paid plan.
+   *
+   * A subscriber pressing their own plan's card is not buying anything, and
+   * letting it through was how an account ended up with two active Stripe
+   * subscriptions and two monthly charges. The server refuses the duplicate
+   * too — this only saves the customer from opening a payment form that
+   * cannot succeed.
+   */
   function handlePaidPlan(plan: 'starter' | 'pro') {
     if (!user) { openAuthModal(); return }
+    if (currentPlan === plan) return
+    // Business and Custom accounts are provisioned by sales and often carry no
+    // self-serve Stripe subscription at all. Letting one buy Starter or Pro
+    // here would create a brand-new subscription and silently overwrite their
+    // plan with a smaller one — a downgrade they paid for. Sales owns those
+    // changes, so send them to the same place the Business card does.
+    if (isManagedPlan) { handleContactSales(); return }
     setPaymentPlan(plan)
+  }
+
+  /**
+   * What a paid card's button should say. A customer already on another paid
+   * plan is switching, not subscribing — Stripe moves their existing
+   * subscription across and prorates it, so the wording has to promise that
+   * rather than a second subscription.
+   */
+  function paidCtaLabel(plan: 'starter' | 'pro', defaultKey: string): string {
+    if (currentPlan === plan) return t('pricing.yourPlanCta')
+    if (isManagedPlan) return t('pricing.managedPlanCta')
+    if (isPaidSubscriber) {
+      const order: Record<string, number> = { free: 0, starter: 1, pro: 2, business: 3, custom: 3 }
+      return (order[plan] ?? 0) > (order[currentPlan] ?? 0)
+        ? t('pricing.upgradeCta')
+        : t('pricing.switchCta')
+    }
+    return t(defaultKey)
   }
 
   /**
@@ -176,13 +215,13 @@ export default function PricingPage() {
 
       {banner === 'success' && (
         <div className="pricing-banner pricing-banner--success">
-          <span>Payment successful! Welcome to TimeCut.</span>
+          <span>{t('pricing.bannerSuccess')}</span>
           <button className="pricing-banner-dismiss" onClick={() => setDismissedBanner(bannerFromUrl)}>✕</button>
         </div>
       )}
       {banner === 'canceled' && (
         <div className="pricing-banner pricing-banner--canceled">
-          <span>Payment was canceled. No charge was made.</span>
+          <span>{t('pricing.bannerCanceled')}</span>
           <button className="pricing-banner-dismiss" onClick={() => setDismissedBanner(bannerFromUrl)}>✕</button>
         </div>
       )}
@@ -246,7 +285,10 @@ export default function PricingPage() {
 
             {/* STARTER — flagged "Best Value" in green so it reads as a distinct
                 recommendation from Pro's blue "Most Popular". */}
-            <div className="pricing-card pricing-card--value" onClick={() => handlePaidPlan('starter')}>
+            <div
+              className={`pricing-card pricing-card--value${currentPlan === 'starter' && user ? ' pricing-card--inactive' : ''}`}
+              onClick={() => handlePaidPlan('starter')}
+            >
               {recommendBadge('starter', 'pricing.bestValue', ' pricing-badge--value')}
               {planBadge('starter')}
               <p className="pricing-plan-name">{t('pricing.starter')}</p>
@@ -261,9 +303,10 @@ export default function PricingPage() {
               </p>
               <button
                 className="pricing-cta btn-outline pricing-cta--value"
-                onClick={() => handlePaidPlan('starter')}
+                disabled={!!user && currentPlan === 'starter'}
+                onClick={e => { e.stopPropagation(); handlePaidPlan('starter') }}
               >
-                {t('pricing.starterCta')}
+                {paidCtaLabel('starter', 'pricing.starterCta')}
               </button>
               <p className="pricing-plan-subtitle">
                 {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.starter.maxDocs))}
@@ -286,7 +329,10 @@ export default function PricingPage() {
             </div>
 
             {/* PRO */}
-            <div className="pricing-card pricing-card--highlight" onClick={() => handlePaidPlan('pro')}>
+            <div
+              className={`pricing-card pricing-card--highlight${currentPlan === 'pro' && user ? ' pricing-card--inactive' : ''}`}
+              onClick={() => handlePaidPlan('pro')}
+            >
               {recommendBadge('pro', 'pricing.mostPopular')}
               {planBadge('pro')}
               <p className="pricing-plan-name">{t('pricing.pro')}</p>
@@ -301,9 +347,10 @@ export default function PricingPage() {
               </p>
               <button
                 className="pricing-cta btn-primary"
-                onClick={() => handlePaidPlan('pro')}
+                disabled={!!user && currentPlan === 'pro'}
+                onClick={e => { e.stopPropagation(); handlePaidPlan('pro') }}
               >
-                {t('pricing.proCta')}
+                {paidCtaLabel('pro', 'pricing.proCta')}
               </button>
               <p className="pricing-plan-subtitle">
                 {t('pricing.docsSubtitle').replace('{docs}', String(cfg.plans.pro.maxDocs))}
@@ -384,9 +431,12 @@ export default function PricingPage() {
               </p>
               <button
                 className="pricing-cta btn-primary plan-rec-cta"
+                disabled={!!user && currentPlan === recommended}
                 onClick={() => handlePaidPlan(recommended)}
               >
-                {t(recommended === 'starter' ? 'pricing.recCtaStarter' : 'pricing.recCtaPro')}
+                {!!user && currentPlan === recommended
+                  ? t('pricing.yourPlanCta')
+                  : t(recommended === 'starter' ? 'pricing.recCtaStarter' : 'pricing.recCtaPro')}
               </button>
             </div>
           )}

@@ -56,6 +56,7 @@ interface AuthContextValue {
   updateDisplayName: (name: string) => Promise<void>
   changePassword: (newPassword: string) => Promise<void>
   reauthAndChangePassword: (currentPassword: string, newPassword: string) => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 /**
@@ -67,6 +68,33 @@ interface AuthContextValue {
  * length is the only rule now.
  */
 export const MIN_PASSWORD_LENGTH = 8
+
+/**
+ * Ask the API to send the welcome email.
+ *
+ * The recipient is no longer in the request: the endpoint reads it from the
+ * verified ID token and refuses the call without one. So this is only ever
+ * useful while the browser is actually signed in — which it is at both call
+ * sites, immediately after the account is created.
+ *
+ * Awaited rather than fired and forgotten, because the signup path signs out a
+ * moment later and a pending request would lose its token. Failures are
+ * swallowed: the account exists either way, and a missing welcome email must
+ * never read back to the user as a failed signup.
+ */
+async function sendWelcomeEmail(name: string): Promise<void> {
+  try {
+    const token = await auth.currentUser?.getIdToken()
+    if (!token) return
+    await fetch('/api/send-welcome-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name }),
+    })
+  } catch (e) {
+    console.warn('[welcome-email] send failed:', e)
+  }
+}
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
@@ -240,17 +268,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .forEach(r => console.warn('[signup] non-fatal post-create step failed:', r.reason))
     })
 
-    const emailPayload = JSON.stringify({ email: cleanEmail, name: cleanName })
+    // The verification mail is the one that has to work for a signed-out
+    // caller too (the resend button on the verify screen), so it carries no
+    // token. The welcome mail now requires one and sends to the address on it
+    // — that is what stops the route being usable as an open relay — so it
+    // must be sent *before* the sign-out below, while a token still exists.
     fetch('/api/send-verification-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: emailPayload,
+      body: JSON.stringify({ email: cleanEmail, name: cleanName }),
     }).catch(e => console.warn('[verify-email] send failed:', e))
-    fetch('/api/send-welcome-email', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: emailPayload,
-    }).catch(e => console.warn('[welcome-email] send failed:', e))
+
+    await sendWelcomeEmail(cleanName)
 
     // Sign out immediately: user must verify email before accessing the app.
     // Best-effort too — the account exists either way, and a failure here must
@@ -274,11 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .forEach(r => console.warn('[google-login] non-fatal post-login step failed:', r.reason))
     })
     if (isNew) {
-      fetch('/api/send-welcome-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: cred.user.email, name: cred.user.displayName ?? '' }),
-      }).catch(e => console.warn('[welcome-email] send failed:', e))
+      await sendWelcomeEmail(cred.user.displayName ?? '')
     }
   }
 
@@ -311,6 +336,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await updatePassword(auth.currentUser, newPassword)
   }
 
+
+  /**
+   * Send a password-reset link.
+   *
+   * This is the only route back into an account whose password has been
+   * forgotten — the modal used to render a "Forgot password?" link with no
+   * handler at all, so there was no recovery path anywhere in the product.
+   *
+   * `auth/user-not-found` is deliberately swallowed by the caller rather than
+   * here: the modal reports the same "check your inbox" message either way, so
+   * the form cannot be used to discover which addresses have accounts.
+   */
+  async function resetPassword(email: string) {
+    const res = await fetch('/api/send-password-reset-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.trim() }),
+    })
+    if (!res.ok) {
+      // `fetch` resolves for a 4xx/5xx, so without this a failed send would
+      // read back as a sent email. 429 is surfaced separately because "wait and
+      // retry" is different advice from "try again now".
+      const body = await res.json().catch(() => ({}))
+      throw Object.assign(
+        new Error(body.error ?? 'Password reset failed'),
+        { code: res.status === 429 ? 'auth/too-many-requests' : 'reset/send-failed' },
+      )
+    }
+  }
+
   return (
     <AuthContext.Provider value={{
       user, userData, displayName, loading,
@@ -319,7 +374,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       freeReportsAllowed,
       refreshUsage,
       login, signup, loginWithGoogle, logout,
-      updateDisplayName, changePassword, reauthAndChangePassword,
+      updateDisplayName, changePassword, reauthAndChangePassword, resetPassword,
     }}>
       {children}
     </AuthContext.Provider>

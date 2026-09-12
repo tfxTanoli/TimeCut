@@ -14,9 +14,11 @@ const FeaturesPage = lazy(() => import('./pages/FeaturesPage'))
 const ExamplesPage = lazy(() => import('./pages/ExamplesPage'))
 const PricingPage = lazy(() => import('./pages/PricingPage'))
 const BlogPage = lazy(() => import('./pages/BlogPage'))
+const BlogPostPage = lazy(() => import('./pages/BlogPostPage'))
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const GetStartedPage = lazy(() => import('./pages/GetStartedPage'))
 const ProfilePage = lazy(() => import('./pages/ProfilePage'))
+const ReportPage = lazy(() => import('./pages/ReportPage'))
 const ContactPage = lazy(() => import('./pages/ContactPage'))
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'))
 const TermsPage   = lazy(() => import('./pages/TermsPage'))
@@ -63,9 +65,15 @@ export default function App() {
               <Route path="/examples" element={<ExamplesPage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/blog" element={<BlogPage />} />
+              {/* Each post has its own address — the listing used to render
+                  cards that opened nothing at all. */}
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/get-started" element={<GetStartedPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              {/* A saved report at its own address, so it survives a refresh,
+                  a Back press and a bookmark. */}
+              <Route path="/report/:id" element={<ReportPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms"   element={<TermsPage />} />

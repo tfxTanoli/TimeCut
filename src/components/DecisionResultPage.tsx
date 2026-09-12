@@ -103,6 +103,14 @@ interface Props {
   language?: string
   uploadedFiles?: File[]
   decisionGoal?: string
+  /**
+   * Firestore id of the saved copy. Present once the report has been persisted,
+   * which is what lets the page offer a permanent link to itself — a report used
+   * to exist only in memory and vanished on the next navigation.
+   */
+  reportId?: string | null
+  /** Label for the back button when this was opened from somewhere else. */
+  backLabelKey?: string
 }
 
 /* ── Inline icons ── */
@@ -1639,12 +1647,13 @@ function DecisionReadinessSection({ report, t }: { report: DecisionReport; t: (k
 // Plan entitlements come from AuthContext (config-driven) rather than a prop,
 // so the report and the rest of the app can never disagree about what the
 // account includes.
-export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal }: Props) {
+export default function DecisionResultPage({ report: rawReport, onBack, language, uploadedFiles, decisionGoal, reportId, backLabelKey }: Props) {
   const report = normalizeReport(rawReport)
   const { user, features } = useAuth()
   const { openSignup } = useAuthModal()
   const { t } = useTranslation()
   const [copied, setCopied] = useState(false)
+  const [linkCopied, setLinkCopied] = useState(false)
   const [authPrompt, setAuthPrompt] = useState<'download' | 'share' | 'upgrade' | null>(null)
   const [challengeQuestion, setChallengeQuestion] = useState<string | undefined>()
 
@@ -1677,11 +1686,32 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
       `${t('report.hiddenRisks')} (${report.hidden_risks.length}):`,
       ...report.hidden_risks.map(r => `- [${r.severity}] ${r.description}`),
     ].join('\n')
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-      logActivity(user.uid, 'report_shared', {})
-    })
+    copyText(text)
+      .then(() => {
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        logActivity(user.uid, 'report_shared', {}).catch(() => {})
+      })
+      .catch(e => {
+        // Clipboard access is refused on insecure origins and in some mobile
+        // browsers. The button used to reject silently and look broken.
+        console.warn('[report] clipboard copy failed:', e)
+        window.alert(t('result.copyFailed'))
+      })
+  }
+
+  /** Copy the permanent link to this saved report. */
+  function handleCopyLink() {
+    if (!reportId) return
+    copyText(`${window.location.origin}/report/${reportId}`)
+      .then(() => {
+        setLinkCopied(true)
+        setTimeout(() => setLinkCopied(false), 2000)
+      })
+      .catch(e => {
+        console.warn('[report] link copy failed:', e)
+        window.alert(t('result.copyFailed'))
+      })
   }
 
   function handleChallenge(q: string) {
@@ -1710,7 +1740,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
       {/* Nav */}
       <div className="result-nav">
         <div className="container result-nav-inner">
-          <button className="back-btn" onClick={onBack}>{t('result.backToHome')}</button>
+          <button className="back-btn" onClick={onBack}>{t(backLabelKey ?? 'result.backToHome')}</button>
           <h2 className="result-nav-title">{t('report.title')}</h2>
           <div className="result-nav-actions">
             <button
@@ -1729,6 +1759,16 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
                 : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> {t('result.share')}</>
               }
             </button>
+            {/* Only once the report has actually been saved — a link to a
+                report that was never persisted would 404. */}
+            {reportId && (
+              <button className="icon-btn" onClick={handleCopyLink} title={t('result.copyLinkTitle')}>
+                {linkCopied
+                  ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> {t('result.copied')}</>
+                  : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> {t('result.copyLink')}</>
+                }
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -1902,4 +1942,33 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
       </div>
     </div>
   )
+}
+
+/**
+ * Copy text to the clipboard, with a fallback for browsers and contexts where
+ * the async Clipboard API is unavailable or blocked (insecure origins, some
+ * mobile browsers, denied permissions). Rejects when neither route works, so
+ * the caller can tell the user rather than appearing to do nothing.
+ */
+function copyText(text: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    return navigator.clipboard.writeText(text)
+  }
+  return new Promise<void>((resolve, reject) => {
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.setAttribute('readonly', '')
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      if (ok) resolve()
+      else reject(new Error('copy command rejected'))
+    } catch (e) {
+      reject(e instanceof Error ? e : new Error(String(e)))
+    }
+  })
 }

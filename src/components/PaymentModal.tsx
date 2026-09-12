@@ -83,9 +83,11 @@ interface FormProps {
   onSuccess: () => void
   /** Paid, but activation has not been confirmed yet — the webhook will finish it. */
   onPending: (pending: boolean) => void
+  /** Reports whether a charge is in flight, so the modal can refuse to close. */
+  onBusyChange: (busy: boolean) => void
 }
 
-function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPending }: FormProps) {
+function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPending, onBusyChange }: FormProps) {
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -99,6 +101,7 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
     e.preventDefault()
     if (!stripe || !elements) return
     setLoading(true)
+    onBusyChange(true)
     setError(null)
 
     // Confirm the payment:get paymentIntent back (redirect:'if_required' keeps us in-app)
@@ -111,6 +114,7 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
     if (stripeError) {
       setError(stripeError.message ?? 'Payment failed. Please try again.')
       setLoading(false)
+      onBusyChange(false)
       return
     }
 
@@ -142,6 +146,7 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
       setPending(true)
     }
     setLoading(false)
+    onBusyChange(false)
   }
 
   return (
@@ -189,8 +194,99 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
   )
 }
 
+/* -- Plan-change confirmation -------------------------------------------------
+   A customer who already pays for another plan is not making a purchase, so
+   there is no card form. What they need is a plain statement of what is about
+   to happen to their billing, and a button that has to be pressed for it to
+   happen at all. Opening this modal changes nothing on its own. */
+const PLAN_LABEL: Record<string, string> = {
+  free: 'Free', starter: 'Starter', pro: 'Pro', business: 'Business', custom: 'Custom',
+}
+
+function SwitchConfirmScreen({ fromPlan, toPlan, cfg, amountCents, busy, error, onConfirm, onCancel }: {
+  fromPlan: string
+  toPlan: 'starter' | 'pro'
+  cfg: PlanConfig
+  amountCents: number | null
+  busy: boolean
+  error: string | null
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  const details = planDetails(toPlan, cfg, amountCents)
+  const from = PLAN_LABEL[fromPlan] ?? fromPlan
+  const order: Record<string, number> = { free: 0, starter: 1, pro: 2, business: 3, custom: 3 }
+  const isUpgrade = (order[toPlan] ?? 0) > (order[fromPlan] ?? 0)
+
+  return (
+    <div className="pm-form">
+      <div className="pm-plan-summary">
+        <div className="pm-plan-header">
+          <span className="pm-plan-label">{details.label}</span>
+          <span className="pm-plan-price">{details.price}</span>
+        </div>
+        <p className="pm-plan-tagline">{details.tagline}</p>
+        <ul className="pm-plan-features">
+          {details.features.map(f => (
+            <li key={f}><span className="pm-feat-check">✓</span>{f}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="pm-divider" />
+
+      <div className="pm-switch-note">
+        <p className="pm-card-label">
+          {isUpgrade ? 'Upgrade' : 'Change'} from {from} to {details.label}
+        </p>
+        <p className="pm-switch-body">
+          You are already subscribed to <strong>{from}</strong>. This changes that
+          subscription rather than starting a second one, so you will never be billed
+          for two plans at once.
+        </p>
+        <p className="pm-switch-body">
+          {isUpgrade
+            ? <>Stripe charges the prorated difference for the rest of your current billing period today, then {details.price} from your next renewal. Your existing payment method is used.</>
+            : <>Stripe credits the unused part of your current period against your account, then bills {details.price} from your next renewal.</>}
+        </p>
+      </div>
+
+      {error && <p className="pm-error">{error}</p>}
+
+      <button
+        type="button"
+        className="btn-primary pm-pay-btn"
+        onClick={onConfirm}
+        disabled={busy}
+      >
+        {busy
+          ? <><span className="btn-spinner" /> Changing your plan…</>
+          : `Confirm change to ${details.label}`}
+      </button>
+      <button
+        type="button"
+        className="btn-outline pm-cancel-btn"
+        onClick={onCancel}
+        disabled={busy}
+      >
+        Keep my {from} plan
+      </button>
+
+      <p className="pm-secure-note">
+        <IconLock /> Secured by Stripe · Cancel anytime
+      </p>
+    </div>
+  )
+}
+
 /* ─── Success screen ─── */
-function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; onClose: () => void }) {
+function SuccessScreen({ plan, cfg, onClose, switchedFrom }: {
+  plan: string
+  cfg: PlanConfig
+  onClose: () => void
+  /** Set when this was a plan change rather than a first subscription. */
+  switchedFrom?: string | null
+}) {
   const details = planDetails(plan, cfg)
   const navigate = useNavigate()
 
@@ -208,7 +304,9 @@ function SuccessScreen({ plan, cfg, onClose }: { plan: string; cfg: PlanConfig; 
       <div className="pm-success-icon">✓</div>
       <h2 className="pm-success-title">You're on {details?.label}!</h2>
       <p className="pm-success-sub">
-        Your subscription is active. Enjoy {details?.features[0]} and all {details?.label} features.
+        {switchedFrom
+          ? <>Your plan has been changed to {details?.label}. Stripe has prorated the difference against your current billing period — you have not been charged for a second subscription. Enjoy {details?.features[0]}.</>
+          : <>Your subscription is active. Enjoy {details?.features[0]} and all {details?.label} features.</>}
       </p>
       <button className="btn-primary btn-cta pm-pay-btn" onClick={goToUpload}>
         Start Analyzing →
@@ -252,21 +350,51 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
   const [pending,         setPending]         = useState(false)
   const [cfg,             setCfg]             = useState<PlanConfig>(getCachedPlanConfig())
   const [amountCents,     setAmountCents]     = useState<number | null>(null)
+  // Set when the server moved an existing subscription onto this plan instead
+  // of starting a new one. There is no card form in that case — the change has
+  // already happened on the subscription the customer is already paying.
+  const [switchedFrom,    setSwitchedFrom]    = useState<string | null>(null)
+  // True when the customer already pays for exactly this plan. Nothing to buy.
+  const [alreadyOnPlan,   setAlreadyOnPlan]   = useState(false)
+  const [charging,        setCharging]        = useState(false)
+  // Set when the customer already pays for a *different* plan. Moving them is a
+  // billing event, so it waits behind an explicit confirmation rather than
+  // happening because the modal opened.
+  const [pendingSwitch,   setPendingSwitch]   = useState<string | null>(null)
+  const [switchError,     setSwitchError]     = useState<string | null>(null)
 
   // Same admin-editable config the pricing page renders from.
   useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
 
+  /**
+   * Ask the server what this plan means for this account.
+   *
+   * Called once on mount without `confirmSwitch`, which is strictly read-only
+   * for an existing subscriber: it reports that a switch would be needed and
+   * changes nothing. Called a second time with `confirmSwitch: true` only after
+   * the customer presses the confirm button below.
+   */
+  async function requestPlan(confirm: boolean) {
+    const headers = await authHeaders()
+    const res = await fetch('/api/create-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...headers },
+      body: JSON.stringify({ plan, email, name, ...(confirm ? { confirmSwitch: true } : {}) }),
+    })
+    return res.json()
+  }
+
   useEffect(() => {
     // uid is not sent: the endpoint derives the account from the ID token.
-    authHeaders()
-      .then(headers => fetch('/api/create-subscription', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...headers },
-        body: JSON.stringify({ plan, email, name }),
-      }))
-      .then(r => r.json())
+    requestPlan(false)
       .then(data => {
-        if (data.clientSecret) {
+        if (data.code === 'ALREADY_SUBSCRIBED') {
+          setAlreadyOnPlan(true)
+        } else if (data.requiresConfirmation) {
+          // They pay for a different plan. Nothing has changed yet.
+          setPendingSwitch(data.currentPlan ?? null)
+          if (typeof data.amountCents === 'number') setAmountCents(data.amountCents)
+        } else if (data.clientSecret) {
           setClientSecret(data.clientSecret)
           setSubscriptionId(data.subscriptionId)
           if (typeof data.amountCents === 'number') setAmountCents(data.amountCents)
@@ -281,6 +409,27 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** The customer pressed "Confirm plan change". This is the billing event. */
+  async function handleConfirmSwitch() {
+    setSwitchError(null)
+    setCharging(true)
+    try {
+      const data = await requestPlan(true)
+      if (data.switched) {
+        setSwitchedFrom(data.previousPlan ?? pendingSwitch)
+        setPendingSwitch(null)
+        if (data.activated) setPaid(true)
+        else setPending(true)
+      } else {
+        setSwitchError(data.error ?? 'Could not change your plan. Please try again.')
+      }
+    } catch {
+      setSwitchError('Network error. Please try again.')
+    } finally {
+      setCharging(false)
+    }
+  }
+
   const stripeAppearance = {
     theme: 'stripe' as const,
     variables: {
@@ -294,14 +443,19 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
     },
   }
 
+  // Closing the modal while Stripe is confirming the card left the customer
+  // charged with `activate-plan` never called, so the backdrop is inert until
+  // the charge settles. The X button is disabled for the same window.
+  const busy = charging
+
   return (
-    <div className="pm-backdrop" onClick={onClose}>
+    <div className="pm-backdrop" onClick={busy ? undefined : onClose}>
       <div className="pm-card" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
         <div className="pm-header">
           <span className="pm-header-title">⏱ TIMECUT</span>
-          <button className="pm-close-btn" onClick={onClose} aria-label="Close">
+          <button className="pm-close-btn" onClick={onClose} aria-label="Close" disabled={busy}>
             <IconX />
           </button>
         </div>
@@ -321,10 +475,33 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
           </div>
         )}
 
-        {paid && <SuccessScreen plan={plan} cfg={cfg} onClose={onClose} />}
+        {alreadyOnPlan && (
+          <div className="pm-fetch-error">
+            <p>
+              You are already subscribed to this plan. You can change or cancel it
+              from your account page.
+            </p>
+            <button className="btn-outline" onClick={onClose}>Close</button>
+          </div>
+        )}
+
+        {pendingSwitch && !paid && !pending && (
+          <SwitchConfirmScreen
+            fromPlan={pendingSwitch}
+            toPlan={plan}
+            cfg={cfg}
+            amountCents={amountCents}
+            busy={charging}
+            error={switchError}
+            onConfirm={handleConfirmSwitch}
+            onCancel={onClose}
+          />
+        )}
+
+        {paid && <SuccessScreen plan={plan} cfg={cfg} onClose={onClose} switchedFrom={switchedFrom} />}
         {pending && !paid && <PendingScreen onClose={onClose} />}
 
-        {clientSecret && !paid && !pending && (
+        {clientSecret && !paid && !pending && !alreadyOnPlan && !pendingSwitch && (
           <Elements
             key={clientSecret}
             stripe={stripePromise}
@@ -337,6 +514,7 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
               amountCents={amountCents}
               onSuccess={() => setPaid(true)}
               onPending={setPending}
+              onBusyChange={setCharging}
             />
           </Elements>
         )}
