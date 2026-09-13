@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from 'react-ro
 import './App.css'
 import Navbar from './components/Navbar'
 import ScrollToTop from './components/ScrollToTop'
+import RouteMeta from './components/RouteMeta'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
 import AuthModal from './components/AuthModal'
@@ -55,6 +56,7 @@ export default function App() {
       <AuthProvider>
         <AuthModalProvider>
           <ScrollToTop />
+          <RouteMeta />
           <AdminRouteGuard />
           <Navbar />
           <Suspense fallback={<div className="page-loading" />}>

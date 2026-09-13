@@ -6,7 +6,39 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TimeCut</title>
+    <meta name="theme-color" content="#09090B" />
+    <!-- Defaults for the first paint and for link-preview crawlers, which do not
+         run JavaScript. RouteMeta replaces title/description per route and adds
+         the canonical; no canonical here, or every URL would claim the homepage. -->
+    <title>TimeCut: AI Risk Discovery for Contracts, Quotes &amp; CVs</title>
+    <meta name="description" content="Upload contracts, supplier quotations, CVs and proposals. TimeCut's AI finds hidden risks, missing information and weak evidence before you decide." />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="TimeCut" />
+    <meta property="og:title" content="TimeCut: AI Risk Discovery for Contracts, Quotes &amp; CVs" />
+    <meta property="og:description" content="Upload contracts, supplier quotations, CVs and proposals. TimeCut's AI finds hidden risks, missing information and weak evidence before you decide." />
+    <meta property="og:image" content="https://www.timecut.online/icon-512.png" />
+    <meta name="twitter:card" content="summary" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.timecut.online/#organization",
+            "name": "TimeCut",
+            "url": "https://www.timecut.online/",
+            "logo": "https://www.timecut.online/icon-512.png"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.timecut.online/#website",
+            "name": "TimeCut",
+            "url": "https://www.timecut.online/",
+            "publisher": { "@id": "https://www.timecut.online/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
