@@ -224,7 +224,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         decisionGoal,
         documentType,
       )
-      const data = normalizeDecisionReport(raw)
+      const data = normalizeDecisionReport(raw, documents.map(d => d.name))
       const gated = applyPlanGating(data, features)
 
       await recordAiUsage({

@@ -121,8 +121,17 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
   "document_type": "<cv|supplier_quotation|contract|business_proposal|general>",
   "recommendation": "<1-3 sentences, cautious tone, references best-fit document(s) with rationale>",
   "overall_decision": "<Proceed|Proceed with Caution|Do Not Proceed — judge the DEAL, not your certainty about it>",
+  "headline_reason": "<ONE short sentence, in your own words, giving the reason for overall_decision — see HEADLINE REASON below>",
+  "why_points": ["<concrete, document-based reason 1>", "<reason 2>", "<reason 3>"],
+  "next_action": "<ONE sentence: the single most important thing the user should do next>",
   "ranking": [
-    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank>" }
+    { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, from document content only>" }
+  ],
+  "option_tradeoffs": [
+    { "name": "<document name>", "advantage": "<its main strength vs the other options>", "drawback": "<its main weakness vs the other options>" }
+  ],
+  "choose_if": [
+    { "priority": "<a user priority, e.g. Lowest cost>", "option": "<document name that best fits it>", "reason": "<one short clause>" }
   ],
   "confidence_score": <integer 0-100>,
   "confidence_rationale": "<1-2 sentences>",
@@ -138,6 +147,10 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
     "risk_severity": <integer 0-100>,
     "missing_information": <integer 0-100>
   },
+  "readiness_factors": [
+    { "label": "<factor name, in the user's language>", "score": <integer 0-100> }
+  ],
+  "data_quality_note": "<one sentence ONLY if the documents look like samples, templates, test or fictional material; otherwise an empty string>",
   "hidden_risks": [
     { "description": "<1-2 sentences>", "severity": "High|Medium|Low", "reasoning": ["<specific reason 1>", "<specific reason 2>"] }
   ],
@@ -187,6 +200,74 @@ A well-documented but bad offer is still "Do Not Proceed". A thin but harmless o
 not "Do Not Proceed" merely because you are unsure — say that in "confidence_score".
 "overall_decision" is an identifier, not prose: emit it in English exactly as written
 above even when the rest of the report is in another language. The UI translates it.
+
+ONE PRIMARY RECOMMENDATION — the report must never contradict itself:
+- "overall_decision" is THE recommendation. Every other field supports it.
+- "headline_reason", "recommendation", "decision_defense", "if_i_were_you" and
+  "decision_playbook.final_recommendation" must all agree with "overall_decision":
+  - "Proceed"              → approve / hire / sign / choose.
+  - "Proceed with Caution" → do NOT approve yet; approve only once the listed items are resolved.
+  - "Do Not Proceed"       → reject / do not sign / do not hire.
+- Never say "proceed" in one field and "do not approve" in another.
+
+HEADLINE REASON — "headline_reason" explains the verdict, it does not praise an option:
+- "Proceed": why it is safe to go ahead now.
+- "Proceed with Caution": what must still be verified or fixed before approving
+  (e.g. "Supplier B's delivery references have not been verified yet.").
+- "Do Not Proceed": the main reason to reject.
+- Write it fresh for these documents; do not reuse wording from these instructions.
+
+SCORES — two different questions; keep them distinct:
+- "confidence_score" = how confident you are in THIS ANALYSIS given the evidence available.
+  Clear, consistent documents give high confidence even when the deal itself is bad.
+- "readiness_factors" = whether the user currently has enough reliable information to
+  make the decision. Give 4-5 factors suited to the document type, each scored 0-100 for
+  how complete and verified that area is:
+  - supplier_quotation / business_proposal: Commercial Terms, Scope Completeness, Evidence Quality, Pricing Validation, Risk Clarity
+  - contract: Key Terms Clarity, Clause Completeness, Liability & Risk Clarity, Commercial Terms, Evidence Quality
+  - cv: Role Fit Evidence, Experience Verification, Skills Evidence, Employment History Clarity, Risk Clarity
+  - general: Information Completeness, Evidence Quality, Options Comparability, Risk Clarity
+  Decision readiness is the average of these scores, so score honestly: an area with a
+  critical unverified item scores below 50.
+- When critical information is still missing, "overall_decision" must not be "Proceed".
+
+RANKING — rank on document evidence only:
+- "ranking" lists EVERY uploaded document exactly once, ranked 1 to N, each with its own
+  summary. Never rank only the winner.
+- Rank and compare using what the documents actually contain: price, scope, commercial
+  terms, timeline, warranty / SLA, risks, completeness, supporting evidence, and fit with
+  the user's Decision Goal.
+- A document's file name, its upload order, and any label in its name ("final",
+  "preferred", "v2", "Proposal A") are identifiers only. They are NEVER evidence: they must
+  not influence the ranking and must never be given as a reason.
+
+COMPARE THE OPTIONS — this is the core value of the report:
+- With 2 or more documents, "option_tradeoffs" has one entry per document giving its
+  concrete advantage and drawback relative to the others (e.g. "Lowest total price" /
+  "Weaker warranty and slower response commitment").
+- "choose_if" gives 2-3 priorities and which option wins for each (e.g. lowest cost → A;
+  lowest operational risk → B). The recommendation should say which priority it assumed.
+- Include the priority where a DIFFERENT option wins whenever one exists: if an option
+  that is not recommended has the lowest price, fastest timeline or similar, say so.
+  "choose_if" must not name the same option for every priority unless it truly wins all.
+- For "Proceed with Caution", "decision_playbook.final_recommendation" must not be a bare
+  "Approve", "Hire" or "Sign" — say what must be verified first.
+- With only 1 document, "option_tradeoffs" and "choose_if" are [].
+
+SAMPLE OR FICTIONAL DOCUMENTS:
+- If the documents look like samples, templates, test or fictional material, say so ONCE
+  in "data_quality_note" and nowhere else.
+- Do not repeat it in risks, missing information, questions, actions or the
+  recommendation. Still analyse and compare the content exactly as if it were real.
+
+NO REPETITION — each finding belongs in ONE place:
+- "hidden_risks": problems in what the documents DO say.
+- "missing_information": things the documents do NOT say.
+- "weak_evidence": claims made without support.
+- "recommended_actions": what the user should do next — do not restate the risk text.
+- "before_signing_checklist": short verification items not already in "recommended_actions".
+- "decision_playbook" lists: short summaries, not copies of other fields.
+Keep every item short and specific. Three strong items beat six overlapping ones.
 
 PAGE CITATIONS — the "page" field must be verifiable, never guessed:
 - Document text is prefixed with "[PAGE n]" markers, numbered from 1. A line belongs
@@ -464,6 +545,88 @@ export function deriveOverallDecision(
   return 'Proceed'
 }
 
+/** Below this, the reader is missing information they need to act on. */
+export const READINESS_PROCEED_FLOOR = 50
+
+/**
+ * Keep the verdict consistent with the readiness score. "Proceed" means the
+ * reader can act now; it cannot sit beside a readiness score saying critical
+ * information is still missing, so that pairing reads as "not yet" instead.
+ */
+export function reconcileDecision(decision: OverallDecision, readiness: number | undefined): OverallDecision {
+  if (decision === 'Proceed' && readiness !== undefined && readiness < READINESS_PROCEED_FLOOR) {
+    return 'Proceed with Caution'
+  }
+  return decision
+}
+
+const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
+
+function text(value: Raw): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+/** File name without extension, lower-cased, for loose name matching. */
+function docKey(name: string): string {
+  return name.trim().toLowerCase().replace(/\.[a-z0-9]{2,5}$/, '')
+}
+
+export interface RankedEntry {
+  rank: number
+  name: string
+  summary: string
+}
+
+/**
+ * The ranking with every analysed document in it, numbered 1 to N.
+ *
+ * The model sometimes ranks only the winner, which reads as though the other
+ * uploads were ignored. Any document it left out is added below the ranked
+ * ones and described from its trade-offs. Without `documentNames` the model's
+ * ranking is only tidied, as before.
+ */
+export function completeRanking(
+  ranking: Raw,
+  tradeoffs: { name: string; advantage: string; drawback: string }[],
+  documentNames: string[] = [],
+): RankedEntry[] {
+  const ranked: RankedEntry[] = (Array.isArray(ranking) ? ranking : [])
+    .map((r: Raw, i: number) => {
+      const rank = Number(r?.rank)
+      return {
+        rank: Number.isFinite(rank) && rank > 0 ? rank : i + 1,
+        name: text(r?.name ?? r?.document),
+        summary: text(r?.summary ?? r?.reason),
+      }
+    })
+    .filter((r: RankedEntry) => r.name)
+    .sort((a: RankedEntry, b: RankedEntry) => a.rank - b.rank)
+
+  const seen = new Set(ranked.map(r => docKey(r.name)))
+  for (const name of documentNames) {
+    if (ranked.length >= documentNames.length) break
+    const key = docKey(name)
+    if (!key || seen.has(key)) continue
+    const t = tradeoffs.find(o => docKey(o.name) === key)
+    ranked.push({ rank: 0, name, summary: t ? [t.advantage, t.drawback].filter(Boolean).join(' · ') : '' })
+    seen.add(key)
+  }
+  return ranked.map((r, i) => ({ ...r, rank: i + 1 }))
+}
+
+/** Readiness factors as `{ label, score }` with the score clamped to 0-100. */
+export function normalizeReadinessFactors(value: Raw): { label: string; score: number }[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((f: Raw) => ({
+      label: text(f?.label ?? f?.name ?? f?.factor),
+      score: Number(f?.score ?? f?.value),
+    }))
+    .filter(f => f.label && Number.isFinite(f.score))
+    .map(f => ({ label: f.label, score: Math.round(Math.min(100, Math.max(0, f.score))) }))
+    .slice(0, 6)
+}
+
 /**
  * Keep a cited page only when it is a usable page number.
  *
@@ -479,7 +642,11 @@ export function normalizeCitedPage(value: Raw): string | null {
   return Number.isInteger(n) && n > 0 ? String(n) : null
 }
 
-export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string, Raw> {
+/**
+ * @param documentNames Names of the documents that were analysed, used to make
+ * sure each one appears in the ranking. Optional; omitted, ranking is only tidied.
+ */
+export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames: string[] = []): Record<string, Raw> {
   const hiddenRisks = (raw.hidden_risks ?? []).map((r: Raw) => {
     const reasoning = r.reasoning ?? r.reasons ?? r.explanation
     return {
@@ -544,6 +711,20 @@ export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string
     recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
   })).filter((w: Raw) => w.claim)
 
+  const readinessFactors = normalizeReadinessFactors(raw.readiness_factors)
+  const decisionReadiness = readinessFactors.length > 0
+    ? Math.round(readinessFactors.reduce((sum, f) => sum + f.score, 0) / readinessFactors.length)
+    : undefined
+
+  // One verdict drives the whole report. A "Proceed" beside a readiness score
+  // saying key information is still missing is the contradiction readers
+  // flagged, so the verdict gives way to the evidence gap.
+  const claimed = String(raw.overall_decision ?? '').trim() as OverallDecision
+  const overallDecision = reconcileDecision(
+    OVERALL_DECISIONS.includes(claimed) ? claimed : deriveOverallDecision(hiddenRisks, missingInfo),
+    decisionReadiness,
+  )
+
   // The Playbook is a paid-plan feature, so it must not silently disappear when
   // the model omits a field. Anything missing is derived from the rest of the
   // report — the same approach already used for if_i_were_you and the
@@ -561,9 +742,9 @@ export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string
   const decisionPlaybook = {
     final_recommendation:
       (dp.final_recommendation ?? dp.recommendation ?? '').trim()
-      || (raw.recommendation
-        ? (hiddenRisks.length > 0 || missingInfo.length > 0 ? 'Negotiate' : 'Proceed')
-        : ''),
+      // Derived from the verdict, never from a separate rule of its own that
+      // could disagree with the headline.
+      || (raw.recommendation ? overallDecision : ''),
     key_reasons: playbookReasons,
     remaining_risks: playbookRisks,
     action_checklist: playbookChecklist,
@@ -571,11 +752,6 @@ export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string
 
   // Derive fallbacks for fields GPT sometimes omits
   const score = raw.confidence_score ?? 75
-
-  const claimed = String(raw.overall_decision ?? '').trim() as OverallDecision
-  const overallDecision: OverallDecision = OVERALL_DECISIONS.includes(claimed)
-    ? claimed
-    : deriveOverallDecision(hiddenRisks, missingInfo)
 
   const ifIWereYou = raw.if_i_were_you?.trim() ||
     (raw.recommendation
@@ -606,8 +782,42 @@ export function normalizeDecisionReport(raw: Record<string, Raw>): Record<string
     missing_information: Math.max(0, 100 - (missingInfo.length * 15)),
   }
 
+  const optionTradeoffs = (Array.isArray(raw.option_tradeoffs) ? raw.option_tradeoffs : [])
+    .map((o: Raw) => ({
+      name: text(o?.name ?? o?.document ?? o?.option),
+      advantage: text(o?.advantage ?? o?.strength ?? o?.pros),
+      drawback: text(o?.drawback ?? o?.weakness ?? o?.cons),
+    }))
+    .filter((o: { name: string; advantage: string; drawback: string }) => o.name && (o.advantage || o.drawback))
+
+  const chooseIf = (Array.isArray(raw.choose_if) ? raw.choose_if : [])
+    .map((c: Raw) => ({
+      priority: text(c?.priority ?? c?.if),
+      option: text(c?.option ?? c?.choose ?? c?.document),
+      reason: text(c?.reason ?? c?.why),
+    }))
+    .filter((c: { priority: string; option: string }) => c.priority && c.option)
+
+  const whyPoints = (Array.isArray(raw.why_points) ? raw.why_points : [])
+    .map(text).filter(Boolean).slice(0, 3)
+
+  const nextAction = text(raw.next_action) || (
+    [...recommendedActions].sort(
+      (a: { priority: string }, b: { priority: string }) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority],
+    )[0]?.action ?? ''
+  )
+
   return {
     ...raw,
+    ranking: completeRanking(raw.ranking, optionTradeoffs, documentNames),
+    headline_reason: text(raw.headline_reason),
+    why_points: whyPoints,
+    next_action: nextAction,
+    option_tradeoffs: optionTradeoffs,
+    choose_if: chooseIf,
+    readiness_factors: readinessFactors,
+    decision_readiness: decisionReadiness,
+    data_quality_note: text(raw.data_quality_note),
     hidden_risks: hiddenRisks,
     missing_information: missingInfo,
     evidence_found: evidenceFound,

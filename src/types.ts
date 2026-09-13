@@ -102,11 +102,46 @@ export interface ConfidenceBreakdown {
   missing_information: number
 }
 
+/** One area of decision readiness, e.g. "Pricing Validation: 20". */
+export interface ReadinessFactor {
+  label: string
+  score: number
+}
+
+/** How one option compares with the others. */
+export interface OptionTradeoff {
+  name: string
+  advantage: string
+  drawback: string
+}
+
+/** Which option wins for a given priority ("Lowest cost → Proposal A"). */
+export interface ChooseIfItem {
+  priority: string
+  option: string
+  reason?: string
+}
+
 export interface DecisionReport {
   recommendation: string
   /** Verdict on the deal. Server-normalized, so always present on a fresh
    *  report; optional because the UI also derives it defensively. */
   overall_decision?: OverallDecision
+  /** One sentence giving the main reason for the verdict. */
+  headline_reason?: string
+  /** Up to three short reasons behind the verdict. */
+  why_points?: string[]
+  /** The single most important next step. */
+  next_action?: string
+  option_tradeoffs?: OptionTradeoff[]
+  choose_if?: ChooseIfItem[]
+  /** What the readiness score is made of. Absent on reports saved before it existed. */
+  readiness_factors?: ReadinessFactor[]
+  /** Average of `readiness_factors`: whether the reader has enough reliable
+   *  information to decide. Distinct from `confidence_score`. */
+  decision_readiness?: number
+  /** Stated once when the documents look like samples or test material. */
+  data_quality_note?: string
   ranking: RankedDocument[]
   confidence_score: number
   confidence_rationale: string

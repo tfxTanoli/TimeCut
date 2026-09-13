@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook, OverallDecision, SkippedDocument } from '../types'
+import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook, OverallDecision, SkippedDocument, ReadinessFactor } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -94,6 +94,11 @@ function normalizeReport(report: DecisionReport): DecisionReport {
       (w: WeakEvidenceItem) => w.claim
     ),
     interview_red_flags: Array.isArray(report.interview_red_flags) ? report.interview_red_flags : [],
+    ranking: Array.isArray(report.ranking) ? report.ranking : [],
+    why_points: Array.isArray(report.why_points) ? report.why_points.filter(p => typeof p === 'string' && p.trim()) : [],
+    option_tradeoffs: Array.isArray(report.option_tradeoffs) ? report.option_tradeoffs : [],
+    choose_if: Array.isArray(report.choose_if) ? report.choose_if : [],
+    readiness_factors: Array.isArray(report.readiness_factors) ? report.readiness_factors : [],
   }
 }
 
@@ -171,13 +176,6 @@ function IconCheckGrid() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
-    </svg>
-  )
-}
-function IconStar({ filled }: { filled: boolean }) {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
     </svg>
   )
 }
@@ -293,14 +291,7 @@ function skipReason(s: SkippedDocument, t: (k: string) => string): string {
   return s.reason
 }
 
-/* ── Executive Summary ── */
-/** Star rating to show when the report carries no explicit decision_strength. */
-const DECISION_STARS: Record<OverallDecision, number> = {
-  'Proceed': 5,
-  'Proceed with Caution': 3,
-  'Do Not Proceed': 1,
-}
-
+/* ── Verdict, readiness and shared helpers ── */
 /** The verdict is an English identifier on the wire; the UI localises it. */
 const DECISION_STYLE: Record<OverallDecision, { emoji: string; color: string; labelKey: string }> = {
   'Proceed':              { emoji: '🟢', color: '#22C55E', labelKey: 'report.decisionProceed' },
@@ -308,68 +299,311 @@ const DECISION_STYLE: Record<OverallDecision, { emoji: string; color: string; la
   'Do Not Proceed':       { emoji: '🔴', color: '#EF4444', labelKey: 'report.decisionStop' },
 }
 
-function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
-  const score = report.confidence_score
-  // The verdict rates the deal; `confidence_score` rates the analysis. Deriving
-  // it from the score, as this once did, turned a well-documented bad offer
-  // into a green "Proceed" — the two are shown side by side but never conflated.
-  const decision = report.overall_decision ?? deriveOverallDecision(report)
-  const { emoji: decisionEmoji, color: decisionColor, labelKey } = DECISION_STYLE[decision]
-  const decisionLabel = t(labelKey)
+const SEV_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
+const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
 
-  const highCount = report.hidden_risks.filter(r => r.severity === 'High').length
-  const medCount = report.hidden_risks.filter(r => r.severity === 'Medium').length
-  const lowCount = report.hidden_risks.filter(r => r.severity === 'Low').length
-  const bestOption = report.ranking[0]?.name ?? '—'
+/** Mirrors READINESS_PROCEED_FLOOR in api/_lib/shared.ts. */
+const READINESS_PROCEED_FLOOR = 50
+
+function clampPct(value: number): number {
+  return Number.isFinite(value) ? Math.round(Math.min(100, Math.max(0, value))) : 0
+}
+
+function average(factors: ReadinessFactor[]): number {
+  return clampPct(factors.reduce((sum, f) => sum + clampPct(f.score), 0) / factors.length)
+}
+
+/** Colour for a 0-100 bar or gauge. */
+function scoreColor(value: number): string {
+  return value >= 70 ? '#22C55E' : value >= 40 ? '#F59E0B' : '#EF4444'
+}
+
+interface Readiness {
+  score: number
+  factors: ReadinessFactor[]
+}
+
+/**
+ * Decision readiness and what it is made of.
+ *
+ * It used to be `(confidence + decision_strength × 20) / 2` — a figure with no
+ * visible parts, which readers took for an arbitrary AI number. It is now
+ * always the average of the factors shown beside it: model-scored factors on
+ * new reports, or the confidence breakdown that older saved reports already
+ * carry.
+ */
+function readinessOf(report: DecisionReport, t: (k: string) => string): Readiness {
+  const given = (report.readiness_factors ?? []).filter(f => f && f.label && Number.isFinite(f.score))
+  if (given.length > 0) {
+    return { score: clampPct(report.decision_readiness ?? average(given)), factors: given }
+  }
+  const b = report.confidence_breakdown
+  if (b) {
+    const factors = [
+      { label: t('report.cbDocumentCompleteness'), score: b.document_completeness },
+      { label: t('report.cbEvidenceConsistency'), score: b.evidence_consistency },
+      { label: t('report.rfRiskClarity'), score: b.risk_severity },
+      { label: t('report.rfInformation'), score: b.missing_information },
+    ].filter(f => Number.isFinite(f.score))
+    if (factors.length > 0) return { score: average(factors), factors }
+  }
+  return { score: clampPct(report.confidence_score ?? 0), factors: [] }
+}
+
+function readinessLabel(score: number, decision: OverallDecision, t: (k: string) => string): string {
+  if (score >= 70) {
+    // "Enough information to decide" beside "Not Yet — Verify First" reads as
+    // a contradiction, so a high score under that verdict says what is left.
+    return decision === 'Proceed with Caution' ? t('report.edpReadyAlmost') : t('report.edpReadyHigh')
+  }
+  return score >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
+}
+
+/**
+ * The one verdict the whole page shows. Mirrors reconcileDecision() in
+ * api/_lib/shared.ts, so reports saved before that rule read the same way:
+ * "Proceed" cannot sit beside a readiness score saying key information is
+ * still missing.
+ */
+function decisionOf(report: DecisionReport, readiness: number): OverallDecision {
+  const claimed = report.overall_decision
+  const decision = claimed && DECISION_STYLE[claimed] ? claimed : deriveOverallDecision(report)
+  return decision === 'Proceed' && readiness < READINESS_PROCEED_FLOOR ? 'Proceed with Caution' : decision
+}
+
+function firstSentence(text: string | undefined): string {
+  const s = text?.trim() ?? ''
+  const m = s.match(/^.*?[.!?。！？](\s|$)/)
+  return m ? m[0].trim() : s
+}
+
+function comparable(s: string): string {
+  return s.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim()
+}
+
+/**
+ * `items` without anything that repeats an entry of `against` — or an earlier
+ * item — word for word, or wholly contains / is contained by one. Keeps the
+ * same step from being listed in two cards.
+ */
+function withoutDuplicates(items: string[], against: string[]): string[] {
+  const seen = against.map(comparable).filter(Boolean)
+  const out: string[] = []
+  for (const item of items) {
+    if (typeof item !== 'string') continue
+    const c = comparable(item)
+    if (!c) continue
+    const repeated = seen.some(s => s === c || (s.length > 20 && c.includes(s)) || (c.length > 20 && s.includes(c)))
+    if (repeated) continue
+    seen.push(c)
+    out.push(item)
+  }
+  return out
+}
+
+/* ── Sample / test document note ──
+   Stated once, here, instead of being repeated through every section. */
+function DataQualityNote({ note }: { note?: string }) {
+  const { t } = useTranslation()
+  if (!note) return null
+  return (
+    <div className="dr-truncation-notice" role="note">
+      <span className="dr-truncation-icon" aria-hidden="true">ℹ</span>
+      <div>
+        <p className="dr-truncation-title">{t('report.dataQualityTitle')}</p>
+        <p className="dr-truncation-body">{note}</p>
+      </div>
+    </div>
+  )
+}
+
+/* ── 30-Second Decision View ──
+   Recommendation → Best Option → Why → Biggest Risks → Missing Information →
+   Decision Readiness → Next Action. Everything else is in the full analysis
+   below, collapsed until the reader asks for it. */
+function DecisionView({ report, decision, readiness, detailsOpen, onToggleDetails, t }: {
+  report: DecisionReport
+  decision: OverallDecision
+  readiness: Readiness
+  detailsOpen: boolean
+  onToggleDetails: () => void
+  t: (k: string) => string
+}) {
+  const style = DECISION_STYLE[decision]
+  const headline = report.headline_reason?.trim() || firstSentence(report.recommendation)
+
+  const best = report.ranking?.[0]
+  const tradeoffs = (report.option_tradeoffs ?? []).filter(o => o && o.name)
+  const chooseIf = (report.choose_if ?? []).filter(c => c && c.priority && c.option)
+
+  const whyPoints = (report.why_points ?? []).filter(Boolean).slice(0, 3)
+  const whyText = whyPoints.length > 0 ? '' : (report.decision_defense?.trim() || report.confidence_rationale?.trim() || '')
+
+  const risks = [...report.hidden_risks].sort((a, b) => (SEV_RANK[a.severity] ?? 3) - (SEV_RANK[b.severity] ?? 3))
+  const topRisks = risks.slice(0, 3)
+  const missing = report.missing_information
+  const topMissing = missing.slice(0, 3)
+
+  const nextAction =
+    report.next_action?.trim()
+    || [...(report.recommended_actions ?? [])].sort((a, b) => (PRIORITY_RANK[a.priority] ?? 3) - (PRIORITY_RANK[b.priority] ?? 3))[0]?.action
+    || report.before_signing_checklist?.[0]
+    || ''
+
+  const confidence = clampPct(report.confidence_score ?? 0)
+  const readyColor = readiness.score >= 70 ? '#22C55E' : readiness.score >= 45 ? '#F59E0B' : '#EF4444'
+
   const pages = report.pages_analyzed ?? 0
   const timeSaved = pages > 0
     ? t('report.hoursValue').replace('{n}', (Math.round(pages * 4 / 60 * 10) / 10).toFixed(1))
-    : '—'
+    : ''
 
   return (
-    <div className="dr-exec-summary">
-      <div className="dr-exec-top">
-        <div className="dr-exec-decision-block">
-          <p className="dr-exec-eyebrow">{t('report.overallDecision')}</p>
-          <div className="dr-exec-verdict">
-            <span className="dr-exec-emoji">{decisionEmoji}</span>
-            <span className="dr-exec-verdict-text" style={{ color: decisionColor }}>{decisionLabel}</span>
-          </div>
+    <section className="dv-card" aria-labelledby="dv-title">
+      <span className="dv-eyebrow" id="dv-title">⏱ {t('report.dvEyebrow')}</span>
+
+      {/* Recommendation */}
+      <div className="dv-verdict-block" style={{ background: `${style.color}14`, borderColor: `${style.color}55` }}>
+        <p className="dv-label">{t('report.dvRecommendation')}</p>
+        <div className="dv-verdict">
+          <span className="dv-verdict-emoji" aria-hidden="true">{style.emoji}</span>
+          <span className="dv-verdict-text" style={{ color: style.color }}>{t(style.labelKey)}</span>
         </div>
-        <div className="dr-exec-quick-stats">
-          <div className="dr-exec-qs-item">
-            <span className="dr-exec-qs-val">{score}%</span>
-            <span className="dr-exec-qs-label">{t('report.statConfidence')}</span>
-          </div>
-          <div className="dr-exec-qs-item dr-exec-qs-item--wide">
-            <span className="dr-exec-qs-val dr-exec-qs-val--sm">{bestOption}</span>
-            <span className="dr-exec-qs-label">{t('report.statBestOption')}</span>
-          </div>
-        </div>
+        {headline && <p className="dv-headline">{headline}</p>}
       </div>
 
-      {/* Risk breakdown dashboard */}
-      <div className="dr-exec-risk-dashboard">
-        <span className="dr-exec-risk-pill dr-exec-risk-pill--high">
-          🔴 {t('report.pillHighRisk')} <strong>{highCount}</strong>
-        </span>
-        <span className="dr-exec-risk-pill dr-exec-risk-pill--medium">
-          🟠 {t('report.pillMediumRisk')} <strong>{medCount}</strong>
-        </span>
-        <span className="dr-exec-risk-pill dr-exec-risk-pill--low">
-          🟢 {t('report.pillLowRisk')} <strong>{lowCount}</strong>
-        </span>
-        <span className="dr-exec-risk-pill dr-exec-risk-pill--missing">
-          ⚠ {t('report.pillMissingInfo')} <strong>{report.missing_information.length}</strong>
-        </span>
-        <span className="dr-exec-risk-pill dr-exec-risk-pill--evidence">
-          📄 {t('report.pillEvidence')} <strong>{report.evidence_found.length}</strong>
-        </span>
+      <div className="dv-grid">
+        {/* Best option, and how the options differ */}
+        {best && (
+          <div className="dv-block dv-block--wide">
+            <div className="dv-block-head"><p className="dv-label">🏆 {t('report.dvBestOption')}</p></div>
+            <p className="dv-best-name">{best.name}</p>
+            {best.summary && <p className="dv-text">{best.summary}</p>}
+
+            {tradeoffs.length > 1 && (
+              <div className="dv-tradeoffs">
+                {tradeoffs.map((o, i) => (
+                  <div key={i} className={`dv-tradeoff${o.name === best.name ? ' dv-tradeoff--best' : ''}`}>
+                    <p className="dv-tradeoff-name">{o.name}</p>
+                    {o.advantage && <p className="dv-plus"><span aria-hidden="true">+</span>{o.advantage}</p>}
+                    {o.drawback && <p className="dv-minus"><span aria-hidden="true">−</span>{o.drawback}</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {chooseIf.length > 0 && (
+              <div className="dv-choose">
+                <p className="dv-label">{t('report.dvChooseIf')}</p>
+                <ul className="dv-choose-list">
+                  {chooseIf.map((c, i) => (
+                    <li key={i} className="dv-choose-item">
+                      {c.priority}<span className="dv-choose-arrow" aria-hidden="true">→</span><strong>{c.option}</strong>
+                      {c.reason && <> — {c.reason}</>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Why */}
+        <div className="dv-block dv-block--wide">
+          <div className="dv-block-head"><p className="dv-label">💡 {t('report.dvWhy')}</p></div>
+          {whyPoints.length > 0
+            ? <Bullets items={whyPoints} fallback="" />
+            : <p className="dv-text">{whyText || t('report.edpNoneGeneric')}</p>}
+        </div>
+
+        {/* Biggest risks */}
+        <div className="dv-block">
+          <div className="dv-block-head">
+            <p className="dv-label">⚠️ {t('report.dvBiggestRisks')}</p>
+            {risks.length > 0 && <span className="dv-count">{risks.length}</span>}
+          </div>
+          {topRisks.length === 0
+            ? <p className="dv-muted">{t('report.dvNoRisks')}</p>
+            : (
+              <ul className="dv-risk-list">
+                {topRisks.map((r, i) => (
+                  <li key={i} className="dv-risk-item">
+                    <span className={`dr-severity-badge ${SEVERITY_CLASS[r.severity] ?? ''}`}>{t(`report.severity${r.severity}`)}</span>
+                    <span>{r.description}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          {risks.length > topRisks.length && (
+            <p className="dv-more">{t('report.dvMore').replace('{n}', String(risks.length - topRisks.length))}</p>
+          )}
+        </div>
+
+        {/* Missing information */}
+        <div className="dv-block">
+          <div className="dv-block-head">
+            <p className="dv-label">🔍 {t('report.dvMissingInfo')}</p>
+            {missing.length > 0 && <span className="dv-count">{missing.length}</span>}
+          </div>
+          {topMissing.length === 0
+            ? <p className="dv-muted">{t('report.dvNoMissing')}</p>
+            : <Bullets items={topMissing.map(m => m.title)} fallback="" />}
+          {missing.length > topMissing.length && (
+            <p className="dv-more">{t('report.dvMore').replace('{n}', String(missing.length - topMissing.length))}</p>
+          )}
+        </div>
+
+        {/* Decision readiness, with AI confidence beside it and both defined */}
+        <div className="dv-block dv-block--wide">
+          <div className="dv-scores">
+            <div>
+              <p className="dv-label">📊 {t('report.dvReadiness')}</p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
+                <span className="dv-confidence-val" style={{ color: readyColor }}>{readiness.score}%</span>
+                <span style={{ color: readyColor, fontSize: 14, fontWeight: 700 }}>{readinessLabel(readiness.score, decision, t)}</span>
+              </div>
+              <p className="dv-def">{t('report.dvReadinessDef')}</p>
+              {readiness.factors.length > 0 && (
+                <div className="dv-factors">
+                  <p className="dr-breakdown-label">{t('report.dvReadinessBasedOn')}</p>
+                  {readiness.factors.map((f, i) => {
+                    const value = clampPct(f.score)
+                    const barColor = scoreColor(value)
+                    return (
+                      <div key={i} className="dr-breakdown-row">
+                        <span className="dr-breakdown-name">{f.label}</span>
+                        <div className="dr-breakdown-bar-track">
+                          <div className="dr-breakdown-bar-fill" style={{ width: `${value}%`, background: barColor }} />
+                        </div>
+                        <span className="dr-breakdown-pct" style={{ color: barColor }}>{value}%</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            <div className="dv-confidence">
+              <p className="dv-label">🎯 {t('report.dvConfidence')}</p>
+              <span className="dv-confidence-val" style={{ color: scoreColor(confidence) }}>{confidence}%</span>
+              <p className="dv-def">{t('report.dvConfidenceDef')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Next action */}
+        {nextAction && (
+          <div className="dv-block dv-block--wide dv-next">
+            <span className="dv-next-icon" aria-hidden="true">👉</span>
+            <div>
+              <p className="dv-label">{t('report.dvNextAction')}</p>
+              <p className="dv-text">{nextAction}</p>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="dr-exec-divider" />
-      <div className="dr-exec-stats-row">
-        {timeSaved !== '—' && (
+      <div className="dr-exec-stats-row dv-stats">
+        {timeSaved && (
           <div className="dr-exec-stat">
             <span className="dr-exec-stat-val">{timeSaved}</span>
             <span className="dr-exec-stat-label">{t('report.statTimeSaved')}</span>
@@ -385,14 +619,25 @@ function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string
             <span className="dr-exec-stat-label">{t('report.statPagesAnalyzed')}</span>
           </div>
         )}
-        {report.compared_categories && (
+        {report.compared_categories && report.compared_categories.length > 0 && (
           <div className="dr-exec-stat">
             <span className="dr-exec-stat-val">{report.compared_categories.length}</span>
             <span className="dr-exec-stat-label">{t('report.statCategoriesCompared')}</span>
           </div>
         )}
       </div>
-    </div>
+
+      <button
+        className="dv-toggle"
+        onClick={onToggleDetails}
+        aria-expanded={detailsOpen}
+        aria-controls="dr-details"
+      >
+        {detailsOpen ? t('report.dvHideDetails') : t('report.dvShowDetails')}
+        <IconChevronDown open={detailsOpen} />
+      </button>
+      {!detailsOpen && <p className="dv-toggle-hint">{t('report.dvDetailsHint')}</p>}
+    </section>
   )
 }
 
@@ -461,23 +706,13 @@ function RankingSection({ ranking, t }: { ranking: RankedDocument[]; t: (k: stri
   )
 }
 
-/* ── Decision Strength card ── */
-function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
-  const pct = Math.min(Math.max(report.confidence_score, 0), 100)
-  // The gauge is a confidence gauge, so it stays keyed to the score.
-  const color = pct >= 70 ? '#22C55E' : pct >= 40 ? '#F59E0B' : '#EF4444'
-  // The label underneath is the verdict on the deal, not a restatement of the
-  // gauge — it reads from the same field as the Executive Summary so the two
-  // cards cannot contradict each other.
-  const decision = report.overall_decision ?? deriveOverallDecision(report)
-  const decisionLabel = t(DECISION_STYLE[decision].labelKey)
-  const decisionColor = DECISION_STYLE[decision].color
-  // When the model gives no decision_strength, fall back to the verdict rather
-  // than to confidence/20 as this once did — that put five gold stars beside a
-  // red "Do Not Proceed" whenever the analysis was merely certain.
-  const stars = report.decision_strength ?? DECISION_STARS[decision]
-  const clampedStars = Math.min(5, Math.max(1, stars))
-
+/* ── AI Confidence card ──
+   This card was titled "Decision Strength" while its gauge showed the
+   confidence score, and it carried a star rating as a third number. It now
+   shows one thing — confidence in the analysis — and says what that means. */
+function ConfidenceCard({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
+  const pct = clampPct(report.confidence_score ?? 0)
+  const color = scoreColor(pct)
   const breakdown = report.confidence_breakdown
 
   const radius = 38
@@ -485,7 +720,7 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
   const dashOffset = circumference - (pct / 100) * circumference
 
   return (
-    <SectionCard icon={<IconTarget />} title={t('report.decisionStrength')}>
+    <SectionCard icon={<IconTarget />} title={t('report.dvConfidence')}>
       <div className="dr-strength-top">
         <div className="dr-strength-gauge">
           <svg width="96" height="96" viewBox="0 0 96 96">
@@ -499,18 +734,12 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
               transform="rotate(-90 48 48)"
               style={{ transition: 'stroke-dashoffset 0.8s ease' }}
             />
-            <text x="48" y="44" textAnchor="middle" fill="#FFFFFF" fontSize="18" fontWeight="700">{pct}</text>
-            <text x="48" y="58" textAnchor="middle" fill="#6B7280" fontSize="10">/ 100</text>
+            <text x="48" y="54" textAnchor="middle" fill="#FFFFFF" fontSize="20" fontWeight="700">{pct}%</text>
           </svg>
         </div>
         <div className="dr-strength-right">
-          <p className="dr-strength-decision" style={{ color: decisionColor }}>{decisionLabel}</p>
-          <div className="dr-strength-stars" style={{ color: '#F59E0B' }}>
-            {[1, 2, 3, 4, 5].map(n => <IconStar key={n} filled={n <= clampedStars} />)}
-          </div>
-          <p className="dr-strength-reason">
-            {report.decision_strength_reason ?? report.confidence_rationale}
-          </p>
+          <p className="dv-def">{t('report.dvConfidenceDef')}</p>
+          {report.confidence_rationale && <p className="dr-strength-reason">{report.confidence_rationale}</p>}
         </div>
       </div>
 
@@ -523,7 +752,7 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
             { label: t('report.cbRiskSeverity'), value: breakdown.risk_severity },
             { label: t('report.cbMissingInformation'), value: breakdown.missing_information },
           ].map(({ label, value }) => {
-            const barColor = value >= 70 ? '#22C55E' : value >= 40 ? '#F59E0B' : '#EF4444'
+            const barColor = scoreColor(value)
             return (
               <div key={label} className="dr-breakdown-row">
                 <span className="dr-breakdown-name">{label}</span>
@@ -872,46 +1101,6 @@ function IfIWereYou({ text, isPro }: { text?: string; isPro: boolean }) {
   )
 }
 
-/* ── Before You Sign Checklist ── */
-function BeforeSigningChecklist({ items }: { items: string[] }) {
-  const { t } = useTranslation()
-  const [checked, setChecked] = useState<Record<number, boolean>>({})
-
-  function toggle(i: number) {
-    setChecked(prev => ({ ...prev, [i]: !prev[i] }))
-  }
-
-  const doneCount = Object.values(checked).filter(Boolean).length
-
-  return (
-    <div className="dr-section-card">
-      <div className="dr-section-header">
-        <span className="dr-section-icon">✅</span>
-        <h3 className="dr-section-title">{t('report.beforeYouSign')}</h3>
-        {items.length > 0 && (
-          <span className="dr-section-badge">
-            {t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(items.length))}
-          </span>
-        )}
-      </div>
-      <div className="dr-checklist">
-        {items.map((item, i) => (
-          <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
-            <input
-              type="checkbox"
-              className="dr-checklist-checkbox"
-              checked={!!checked[i]}
-              onChange={() => toggle(i)}
-            />
-            <span className="dr-checklist-text">{item}</span>
-          </label>
-        ))}
-        {items.length === 0 && <p className="dr-empty">{t('report.noChecklist')}</p>}
-      </div>
-    </div>
-  )
-}
-
 /* ── Challenge AI Panel ── */
 interface ChatMessage {
   role: 'user' | 'ai'
@@ -959,7 +1148,9 @@ function clip(text: string | undefined | null, max = ASSISTANT_CONTEXT_MAX_FIELD
 function buildAssistantContext(report: DecisionReport): string {
   const context = {
     recommendation: clip(report.recommendation, 600),
+    overall_decision: report.overall_decision,
     confidence_score: report.confidence_score,
+    decision_readiness: report.decision_readiness,
     confidence_rationale: clip(report.confidence_rationale),
     ranking: (report.ranking ?? []).slice(0, ASSISTANT_CONTEXT_MAX_ITEMS).map(r => ({
       rank: r.rank,
@@ -1283,44 +1474,77 @@ function InterviewRedFlagsSection({ flags }: { flags: string[] }) {
   )
 }
 
-/* ── Stage 3: Recommended Actions ── */
-function RecommendedActionsSection({ actions }: { actions: RecommendedAction[] }) {
+/* ── Stage 3: Action Plan ──
+   Recommended actions and the before-you-sign checklist were separate cards
+   that often said the same thing. They share one card now, and a checklist
+   item that repeats an action is listed once. */
+function ActionPlanSection({ actions, checklist }: { actions: RecommendedAction[]; checklist: string[] }) {
   const { t } = useTranslation()
-  if (!actions || actions.length === 0) return null
+  const [checked, setChecked] = useState<Record<number, boolean>>({})
+
+  const verifyItems = withoutDuplicates(checklist, actions.map(a => a.action))
+  if (actions.length === 0 && verifyItems.length === 0) return null
 
   const priorityConfig = {
     High: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: t('report.priorityHigh') },
     Medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: t('report.priorityMedium') },
     Low: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', label: t('report.priorityLow') },
   }
+  const doneCount = Object.values(checked).filter(Boolean).length
 
   return (
     <div className="dr-section-card dr-actions-section">
       <div className="dr-section-header">
         <span className="dr-section-icon">⚡</span>
-        <h3 className="dr-section-title">{t('report.recommendedActions')}</h3>
-        <span className="dr-section-badge">{t('report.stepsCount').replace('{n}', String(actions.length))}</span>
+        <h3 className="dr-section-title">{t('report.actionPlan')}</h3>
+        {actions.length > 0 && (
+          <span className="dr-section-badge">{t('report.stepsCount').replace('{n}', String(actions.length))}</span>
+        )}
       </div>
       <div className="dr-section-body">
-        <div className="dr-actions-list">
-          {actions.map((action, i) => {
-            const cfg = priorityConfig[action.priority] ?? priorityConfig.Medium
-            return (
-              <div key={i} className="dr-action-item">
-                <div className="dr-action-top">
-                  <span className="dr-action-num">{i + 1}</span>
-                  <p className="dr-action-text">{action.action}</p>
-                  <span className="dr-action-priority" style={{ color: cfg.color, background: cfg.bg }}>
-                    {cfg.label}
-                  </span>
+        {actions.length > 0 && (
+          <div className="dr-actions-list">
+            {actions.map((action, i) => {
+              const cfg = priorityConfig[action.priority] ?? priorityConfig.Medium
+              return (
+                <div key={i} className="dr-action-item">
+                  <div className="dr-action-top">
+                    <span className="dr-action-num">{i + 1}</span>
+                    <p className="dr-action-text">{action.action}</p>
+                    <span className="dr-action-priority" style={{ color: cfg.color, background: cfg.bg }}>
+                      {cfg.label}
+                    </span>
+                  </div>
+                  {action.reason && (
+                    <p className="dr-action-reason">{action.reason}</p>
+                  )}
                 </div>
-                {action.reason && (
-                  <p className="dr-action-reason">{action.reason}</p>
-                )}
-              </div>
-            )
-          })}
-        </div>
+              )
+            })}
+          </div>
+        )}
+
+        {verifyItems.length > 0 && (
+          <>
+            <p className="dr-action-subhead">
+              ✅ {t('report.beforeYouSign')}
+              {' — '}{t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(verifyItems.length))}
+            </p>
+            <div className="dr-checklist">
+              {verifyItems.map((item, i) => (
+                <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
+                  <input
+                    type="checkbox"
+                    className="dr-checklist-checkbox"
+                    checked={!!checked[i]}
+                    onChange={() => setChecked(prev => ({ ...prev, [i]: !prev[i] }))}
+                  />
+                  <span className="dr-checklist-text">{item}</span>
+                </label>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
@@ -1429,30 +1653,31 @@ function WeakEvidenceSection({ items }: { items: WeakEvidenceItem[] }) {
 }
 
 /* ── Stage 5: Decision Playbook ── */
-function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlaybook; docType?: string }) {
+function DecisionPlaybookSection({ playbook, docType, decision, coveredSteps }: {
+  playbook: DecisionPlaybook
+  docType?: string
+  /** The page's one verdict; the playbook's final recommendation takes its colour. */
+  decision: OverallDecision
+  /** Steps already listed in the Action Plan, so they are not repeated here. */
+  coveredSteps: string[]
+}) {
   const { t } = useTranslation()
   const [checked, setChecked] = useState<Record<number, boolean>>({})
   if (!playbook || !playbook.final_recommendation) return null
 
+  // Coloured by the headline verdict. It used to be coloured by matching words
+  // in its own text, so the same report could show a red headline and an amber
+  // or green "final recommendation" beneath it.
+  const { color } = DECISION_STYLE[decision]
+  const decisionStyle = { color, bg: `${color}1F` }
+  // The text is the headline verdict too. The model's own sentence here could
+  // still say "Approve" under a "Not Yet — Verify First" headline, which a real
+  // supplier comparison did.
+  const finalText = t(DECISION_STYLE[decision].labelKey)
+
+  const checklist = withoutDuplicates(playbook.action_checklist ?? [], coveredSteps)
   const doneCount = Object.values(checked).filter(Boolean).length
-  const total = playbook.action_checklist?.length ?? 0
-
-  const decisionLabels: Record<string, { color: string; bg: string }> = {
-    hire: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-    approve: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-    sign: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-    award: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)' },
-    conditional: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-    negotiate: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-    caution: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
-    reject: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-    'do not': { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-    not: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-  }
-
-  const finalRecLower = playbook.final_recommendation.toLowerCase()
-  const matchedKey = Object.keys(decisionLabels).find(k => finalRecLower.includes(k))
-  const decisionStyle = matchedKey ? decisionLabels[matchedKey] : { color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' }
+  const total = checklist.length
 
   const sectionTitle = t(docType === 'cv'
     ? 'report.playbookCv'
@@ -1475,7 +1700,7 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
         <div className="dr-playbook-final" style={{ background: decisionStyle.bg, borderColor: `${decisionStyle.color}40` }}>
           <p className="dr-playbook-final-label">{t('report.finalRecommendation')}</p>
           <p className="dr-playbook-final-text" style={{ color: decisionStyle.color }}>
-            {playbook.final_recommendation}
+            {finalText}
           </p>
         </div>
 
@@ -1505,8 +1730,8 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
           )}
         </div>
 
-        {/* Action Checklist */}
-        {playbook.action_checklist && playbook.action_checklist.length > 0 && (
+        {/* Action Checklist — only the steps not already in the Action Plan */}
+        {checklist.length > 0 && (
           <div className="dr-playbook-checklist">
             <p className="dr-playbook-block-label">
               {t('report.actionChecklist')}
@@ -1514,7 +1739,7 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
                 {' — '}{t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(total))}
               </span>
             </p>
-            {playbook.action_checklist.map((item, i) => (
+            {checklist.map((item, i) => (
               <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
                 <input
                   type="checkbox"
@@ -1549,206 +1774,6 @@ function Bullets({ items, fallback }: { items: string[]; fallback: string }) {
   )
 }
 
-/* ── Executive Decision Package (closing summary of the 8 decision questions) ── */
-function ExecutiveDecisionPackage({
-  report,
-  t,
-  onContinue,
-}: {
-  report: DecisionReport
-  t: (k: string) => string
-  onContinue: () => void
-}) {
-  const SEV_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
-
-  // 2 — Why this recommendation
-  const why = report.decision_defense?.trim() || report.confidence_rationale?.trim() || ''
-
-  // 3 — Biggest remaining concerns (highest-severity risks first)
-  const concerns = [...report.hidden_risks]
-    .sort((a, b) => (SEV_RANK[a.severity] ?? 3) - (SEV_RANK[b.severity] ?? 3))
-    .slice(0, 3)
-    .map(r => r.description)
-
-  // 4 — Verify before deciding
-  const verify = (
-    report.before_signing_checklist?.length
-      ? report.before_signing_checklist
-      : report.verification_questions?.length
-        ? report.verification_questions.map(q => q.question)
-        : report.missing_information.map(m => m.title)
-  ).slice(0, 4)
-
-  // 5 — Next actions
-  const actions = (
-    report.recommended_actions?.length
-      ? report.recommended_actions.map(a => a.action)
-      : report.before_signing_checklist ?? []
-  ).slice(0, 4)
-
-  // 6 — Questions to ask
-  const questions = (
-    report.smart_skeptic_questions?.length
-      ? report.smart_skeptic_questions
-      : report.verification_questions?.map(q => q.question) ?? []
-  ).slice(0, 4)
-
-  // 7 — What could change the recommendation
-  const whatChanges = report.what_would_change?.trim() || ''
-
-  // 8 — Decision readiness
-  const conf = report.confidence_score ?? 0
-  const strength = report.decision_strength
-  const readiness = strength ? Math.round((conf + strength * 20) / 2) : conf
-  const readyLabel =
-    readiness >= 70 ? t('report.edpReadyHigh') : readiness >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
-  const readyColor = readiness >= 70 ? '#22C55E' : readiness >= 45 ? '#F59E0B' : '#EF4444'
-
-  return (
-    <section className="edp-card">
-      <div className="edp-header">
-        <span className="edp-eyebrow">{t('report.edpEyebrow')}</span>
-        <h2 className="edp-title">{t('report.edpTitle')}</h2>
-        <p className="edp-subtitle">{t('report.edpSubtitle')}</p>
-      </div>
-
-      <div className="edp-grid">
-        {/* 1 — The recommendation */}
-        <div className="edp-item edp-item--highlight">
-          <div className="edp-item-head"><span className="edp-num">1</span><span className="edp-icon">✅</span><h3 className="edp-q">{t('report.edpQ1')}</h3></div>
-          <p className="edp-answer edp-answer--rec">{report.recommendation}</p>
-        </div>
-
-        {/* 2 — Why */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">2</span><span className="edp-icon">💡</span><h3 className="edp-q">{t('report.edpQ2')}</h3></div>
-          <p className="edp-answer">{why || t('report.edpNoneGeneric')}</p>
-        </div>
-
-        {/* 3 — Concerns */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">3</span><span className="edp-icon">⚠️</span><h3 className="edp-q">{t('report.edpQ3')}</h3></div>
-          <Bullets items={concerns} fallback={t('report.edpNoneConcerns')} />
-        </div>
-
-        {/* 4 — Verify */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">4</span><span className="edp-icon">🔍</span><h3 className="edp-q">{t('report.edpQ4')}</h3></div>
-          <Bullets items={verify} fallback={t('report.edpNoneVerify')} />
-        </div>
-
-        {/* 5 — Next actions */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">5</span><span className="edp-icon">🎯</span><h3 className="edp-q">{t('report.edpQ5')}</h3></div>
-          <Bullets items={actions} fallback={t('report.edpNoneGeneric')} />
-        </div>
-
-        {/* 6 — Questions to ask */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">6</span><span className="edp-icon">❓</span><h3 className="edp-q">{t('report.edpQ6')}</h3></div>
-          <Bullets items={questions} fallback={t('report.edpNoneGeneric')} />
-        </div>
-
-        {/* 7 — What could change this */}
-        <div className="edp-item">
-          <div className="edp-item-head"><span className="edp-num">7</span><span className="edp-icon">🔄</span><h3 className="edp-q">{t('report.edpQ7')}</h3></div>
-          <p className="edp-answer">{whatChanges || t('report.edpNoneGeneric')}</p>
-        </div>
-
-        {/* 8 — Readiness */}
-        <div className="edp-item edp-item--readiness">
-          <div className="edp-item-head"><span className="edp-num">8</span><span className="edp-icon">📊</span><h3 className="edp-q">{t('report.edpQ8')}</h3></div>
-          <div className="edp-readiness">
-            <div className="edp-readiness-top">
-              <span className="edp-readiness-pct" style={{ color: readyColor }}>{readiness}%</span>
-              <span className="edp-readiness-label" style={{ color: readyColor }}>{readyLabel}</span>
-            </div>
-            <div className="edp-readiness-track">
-              <div className="edp-readiness-fill" style={{ width: `${readiness}%`, background: readyColor }} />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Continue this decision → Decision Advisor */}
-      <div className="edp-continue">
-        <div className="edp-continue-text">
-          <p className="edp-continue-title">{t('report.edpContinueTitle')}</p>
-          <p className="edp-continue-sub">{t('report.edpContinueSub')}</p>
-        </div>
-        <button className="edp-continue-btn" onClick={onContinue}>
-          {t('report.edpContinueCta')}
-        </button>
-      </div>
-    </section>
-  )
-}
-
-/* ── Decision Readiness (standalone, end-of-report) ── */
-function DecisionReadinessSection({ report, t }: { report: DecisionReport; t: (k: string) => string }) {
-  const [checked, setChecked] = useState<Record<number, boolean>>({})
-
-  function toggle(i: number) {
-    setChecked(prev => ({ ...prev, [i]: !prev[i] }))
-  }
-
-  const conf = report.confidence_score ?? 0
-  const strength = report.decision_strength
-  const readiness = strength ? Math.round((conf + strength * 20) / 2) : conf
-  const readyLabel =
-    readiness >= 70 ? t('report.edpReadyHigh') : readiness >= 45 ? t('report.edpReadyMid') : t('report.edpReadyLow')
-  const readyColor = readiness >= 70 ? '#22C55E' : readiness >= 45 ? '#F59E0B' : '#EF4444'
-
-  const verifyItems =
-    report.before_signing_checklist?.length
-      ? report.before_signing_checklist
-      : report.verification_questions?.length
-        ? report.verification_questions.map(q => q.question)
-        : report.missing_information.map(m => m.title)
-
-  const doneCount = Object.values(checked).filter(Boolean).length
-
-  return (
-    <div className="dr-section-card">
-      <div className="dr-section-header">
-        <span className="dr-section-icon">📊</span>
-        <h3 className="dr-section-title">{t('report.readinessTitle')}</h3>
-        {verifyItems.length > 0 && (
-          <span className="dr-section-badge">
-            {t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(verifyItems.length))}
-          </span>
-        )}
-      </div>
-      <div className="dr-section-body">
-        <p className="dr-readiness-sub">{t('report.readinessSub')}</p>
-        <div className="edp-readiness">
-          <div className="edp-readiness-top">
-            <span className="edp-readiness-pct" style={{ color: readyColor }}>{readiness}%</span>
-            <span className="edp-readiness-label" style={{ color: readyColor }}>{readyLabel}</span>
-          </div>
-          <div className="edp-readiness-track">
-            <div className="edp-readiness-fill" style={{ width: `${readiness}%`, background: readyColor }} />
-          </div>
-        </div>
-        <div className="dr-checklist">
-          {verifyItems.map((item, i) => (
-            <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
-              <input
-                type="checkbox"
-                className="dr-checklist-checkbox"
-                checked={!!checked[i]}
-                onChange={() => toggle(i)}
-              />
-              <span className="dr-checklist-text">{item}</span>
-            </label>
-          ))}
-          {verifyItems.length === 0 && <p className="dr-empty">{t('report.readinessEmpty')}</p>}
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /* ── Main component ── */
 // Plan entitlements come from AuthContext (config-driven) rather than a prop,
 // so the report and the rest of the app can never disagree about what the
@@ -1758,6 +1783,11 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
   const { user, features } = useAuth()
   const { openSignup } = useAuthModal()
   const { t } = useTranslation()
+  // One verdict and one readiness figure, worked out once and handed to every
+  // section that shows them, so no two cards on the page can disagree.
+  const readiness = readinessOf(report, t)
+  const decision = decisionOf(report, readiness.score)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   // Share is switched off for now — see the commented-out handleShare below.
   // const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
@@ -1833,10 +1863,6 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
     setTimeout(() => {
       document.getElementById('dr-challenge-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
-  }
-
-  function handleContinueDecision() {
-    document.getElementById('dr-challenge-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const hasComparedCategories = report.compared_categories && report.compared_categories.length > 0
@@ -1919,106 +1945,116 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         <SkippedNotice items={report.skipped_documents} />
         <TruncationNotice names={report.truncated_documents} />
 
-        {/* 1. Executive Summary */}
-        <ExecutiveSummary report={report} t={t} />
+        {/* Stated once here rather than repeated through the findings */}
+        <DataQualityNote note={report.data_quality_note} />
 
-        {/* 2. Recommendation */}
-        <RecommendationCard
-          recommendation={report.recommendation}
-          defense={report.decision_defense}
-          whatWouldChange={report.what_would_change}
+        {/* 30-second Decision View */}
+        <DecisionView
+          report={report}
+          decision={decision}
+          readiness={readiness}
+          detailsOpen={detailsOpen}
+          onToggleDetails={() => setDetailsOpen(open => !open)}
           t={t}
-          onChallenge={handleChallenge}
         />
 
-        {/* Ranking + Decision Strength (2-col) */}
-        <div className="dr-two-col">
-          <RankingSection ranking={report.ranking} t={t} />
-          <DecisionStrengthCard report={report} t={t} />
+        {/* Full analysis — collapsed on screen until asked for, always printed */}
+        <div id="dr-details" className={`dr-details${detailsOpen ? '' : ' dr-details--collapsed'}`}>
+          {/* Recommendation reasoning */}
+          <RecommendationCard
+            recommendation={report.recommendation}
+            defense={report.decision_defense}
+            whatWouldChange={report.what_would_change}
+            t={t}
+            onChallenge={handleChallenge}
+          />
+
+          {/* Ranking + AI Confidence (2-col) */}
+          <div className="dr-two-col">
+            <RankingSection ranking={report.ranking} t={t} />
+            <ConfidenceCard report={report} t={t} />
+          </div>
+
+          {/* What Was Compared (if available) */}
+          {hasComparedCategories && (
+            <WhatWasCompared categories={report.compared_categories!} />
+          )}
+
+          {/* Hidden Risks */}
+          <HiddenRisks risks={report.hidden_risks} t={t} onChallenge={handleChallenge} />
+
+          {/* Missing Information */}
+          <MissingInformation items={report.missing_information} t={t} />
+
+          {/* Evidence Found */}
+          <EvidenceFound evidence={report.evidence_found} uploadedFiles={uploadedFiles} t={t} />
+
+          {/* If I Were You (Pro) */}
+          <IfIWereYou text={report.if_i_were_you} isPro={canSeeAdvisor} />
+
+          {/* ── STAGE 2: VERIFICATION (Smart Skeptic Questions) ── */}
+          {features.skepticQuestions ? (
+            hasVerificationQuestions && (
+              <VerificationQuestionsSection
+                questions={report.verification_questions!}
+                docType={docType}
+              />
+            )
+          ) : (
+            <LockedSection
+              icon="🕵️"
+              title={t('report.skepticQuestions')}
+              blurb={t('report.lockedSkepticBlurb')}
+            />
+          )}
+
+          {/* Interview Red Flags (CV only) */}
+          {hasInterviewFlags && (
+            <InterviewRedFlagsSection flags={report.interview_red_flags!} />
+          )}
+
+          {/* ── STAGE 4: NEGOTIATION ── */}
+          {hasNegotiationSuggestions && (
+            <NegotiationSuggestionsSection
+              suggestions={report.negotiation_suggestions!}
+              docType={docType}
+            />
+          )}
+
+          {/* Weak Evidence (Proposal only) */}
+          {hasWeakEvidence && (
+            <WeakEvidenceSection items={report.weak_evidence!} />
+          )}
+
+          {/* ── STAGE 3: ACTION PLAN (recommended actions + before you sign) ── */}
+          {(hasRecommendedActions || hasChecklist) && (
+            <ActionPlanSection
+              actions={report.recommended_actions ?? []}
+              checklist={report.before_signing_checklist ?? []}
+            />
+          )}
+
+          {/* ── STAGE 5: DECISION PLAYBOOK ── */}
+          {features.playbook ? (
+            hasPlaybook && (
+              <DecisionPlaybookSection
+                playbook={report.decision_playbook!}
+                docType={docType}
+                decision={decision}
+                coveredSteps={[
+                  ...(report.recommended_actions ?? []).map(a => a.action),
+                  ...(report.before_signing_checklist ?? []),
+                ]}
+              />
+            )
+          ) : (
+            <LockedSection
+              icon="📘"
+              title={t('report.playbookGeneric')}
+              blurb={t('report.lockedPlaybookBlurb')}
+            />
+          )}
         </div>
-
-        {/* What Was Compared (if available) */}
-        {hasComparedCategories && (
-          <WhatWasCompared categories={report.compared_categories!} />
-        )}
-
-        {/* 3. Hidden Risks */}
-        <HiddenRisks risks={report.hidden_risks} t={t} onChallenge={handleChallenge} />
-
-        {/* 4. Missing Information */}
-        <MissingInformation items={report.missing_information} t={t} />
-
-        {/* 5. Evidence Found */}
-        <EvidenceFound evidence={report.evidence_found} uploadedFiles={uploadedFiles} t={t} />
-
-        {/* If I Were You (Pro) */}
-        <IfIWereYou text={report.if_i_were_you} isPro={canSeeAdvisor} />
-
-        {/* ── STAGE 2: VERIFICATION (Smart Skeptic Questions) ── */}
-        {features.skepticQuestions ? (
-          hasVerificationQuestions && (
-            <VerificationQuestionsSection
-              questions={report.verification_questions!}
-              docType={docType}
-            />
-          )
-        ) : (
-          <LockedSection
-            icon="🕵️"
-            title={t('report.skepticQuestions')}
-            blurb={t('report.lockedSkepticBlurb')}
-          />
-        )}
-
-        {/* Interview Red Flags (CV only) */}
-        {hasInterviewFlags && (
-          <InterviewRedFlagsSection flags={report.interview_red_flags!} />
-        )}
-
-        {/* ── STAGE 3: RECOMMENDED ACTIONS ── */}
-        {hasRecommendedActions && (
-          <RecommendedActionsSection actions={report.recommended_actions!} />
-        )}
-
-        {/* ── STAGE 4: NEGOTIATION ── */}
-        {hasNegotiationSuggestions && (
-          <NegotiationSuggestionsSection
-            suggestions={report.negotiation_suggestions!}
-            docType={docType}
-          />
-        )}
-
-        {/* Weak Evidence (Proposal only) */}
-        {hasWeakEvidence && (
-          <WeakEvidenceSection items={report.weak_evidence!} />
-        )}
-
-        {/* Before You Sign Checklist */}
-        {hasChecklist && (
-          <BeforeSigningChecklist items={report.before_signing_checklist!} />
-        )}
-
-        {/* ── STAGE 5: DECISION PLAYBOOK ── */}
-        {features.playbook ? (
-          hasPlaybook && (
-            <DecisionPlaybookSection
-              playbook={report.decision_playbook!}
-              docType={docType}
-            />
-          )
-        ) : (
-          <LockedSection
-            icon="📘"
-            title={t('report.playbookGeneric')}
-            blurb={t('report.lockedPlaybookBlurb')}
-          />
-        )}
-
-        {/* ── EXECUTIVE DECISION PACKAGE (closing summary) ── */}
-        <ExecutiveDecisionPackage report={report} t={t} onContinue={handleContinueDecision} />
-
-        {/* Decision Readiness */}
-        <DecisionReadinessSection report={report} t={t} />
 
         {/* Decision Advisor (Challenge AI) */}
         <div id="dr-challenge-panel">

@@ -51,7 +51,9 @@ function list(value: unknown): Raw[] {
 export function buildAssistantContext(report: Raw): string {
   const context = {
     recommendation: clip(report?.recommendation, 600),
+    overall_decision: clip(report?.overall_decision, 30) || undefined,
     confidence_score: num(report?.confidence_score),
+    decision_readiness: num(report?.decision_readiness),
     confidence_rationale: clip(report?.confidence_rationale),
     ranking: list(report?.ranking).map((r: Raw) => ({
       rank: num(r?.rank),
