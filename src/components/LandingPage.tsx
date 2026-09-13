@@ -1,25 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import type { InputTab } from '../types'
-import type { PlanType } from '../lib/userService'
 import Footer from './Footer'
 import { useTranslation } from '../hooks/useTranslation'
 import { DEMO_TABS, type DemoTab, buildDemoData, LEVEL_LABEL_KEY, LEVEL_COLOR, LEVEL_BG } from '../lib/demoData'
 
 interface Props {
-  onSubmit: (tab: InputTab, value: string | File, language: string) => void
-  isLoading: boolean
-  error: string | null
-  plan?: PlanType
-  planLimit?: number
-  monthlyUsage?: number
-  remaining?: number
-  isLoggedIn?: boolean
-  onOpenAuth?: () => void
-  isAtLimit?: boolean
   uploadSection?: React.ReactNode
 }
 
-export default function LandingPage({ uploadSection, ...props }: Props) {
+export default function LandingPage({ uploadSection }: Props) {
   const { t } = useTranslation()
   const seenFadeEls = useRef<Set<Element>>(new Set())
   const uploadRef = useRef<HTMLDivElement>(null)
@@ -46,9 +34,6 @@ export default function LandingPage({ uploadSection, ...props }: Props) {
   useEffect(() => {
     seenFadeEls.current.forEach(el => el.classList.add('is-visible'))
   })
-
-  // keep TypeScript happy — props passed from HomePage are not used by LandingPage directly
-  void props
 
   /**
    * The upload box is now in the hero, so this scrolls back up to it. The

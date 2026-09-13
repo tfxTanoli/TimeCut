@@ -1,23 +1,17 @@
 import { lazy, Suspense, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { analyzeText, analyzePdf, analyzeDecision } from '../api'
-import type { TimeCutReport, InputTab, DecisionReport, DocumentType } from '../types'
+import { analyzeDecision } from '../api'
+import type { DecisionReport, DocumentType } from '../types'
 import LandingPage from '../components/LandingPage'
 import DecisionUpload from '../components/DecisionUpload'
 import AnalysisLoader from '../components/AnalysisLoader'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
-import {
-  logActivity,
-  incrementAnalysisStats,
-  saveAnalysis,
-  saveDecisionAnalysis,
-} from '../lib/userService'
+import { logActivity, saveDecisionAnalysis } from '../lib/userService'
 import { isUnlimited } from '../lib/planConfig'
 import { trackEvent } from '../lib/analytics'
 
-const ResultPage = lazy(() => import('../components/ResultPage'))
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
 
 // Signed-out visitors are shown the free allowance so the value is visible
@@ -82,7 +76,6 @@ export default function HomePage() {
   } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const { t } = useTranslation()
-  const [report, setReport] = useState<TimeCutReport | null>(null)
   const [decisionReport, setDecisionReport] = useState<DecisionReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showDecisionLoader, setShowDecisionLoader] = useState(false)
@@ -140,51 +133,6 @@ export default function HomePage() {
       return
     }
     setError(message ?? t('home.errorGeneral'))
-  }
-
-  async function handleSubmit(tab: InputTab, value: string | File, language: string) {
-    setError(null)
-
-    // Analysis requires an account — the API meters every report against a
-    // verified user, so there is nothing to run for a signed-out visitor.
-    if (!user) { openAuthModal(); return }
-    if (isAtLimit) { openUpgradeModal('at_limit'); return }
-
-    setIsLoading(true)
-    setAnalysisLanguage(language)
-
-    if (user) {
-      await logActivity(user.uid, 'analysis_submitted', { inputType: tab, language })
-    }
-
-    try {
-      const result =
-        tab === 'text'
-          ? await analyzeText(value as string, language)
-          : await analyzePdf(value as File, language)
-
-      if (result.data) {
-        setReport(result.data)
-        // Credits were already charged server-side before the analysis ran; the
-        // ledger listener updates the usage bar on its own.
-        await Promise.all([
-          saveAnalysis(user.uid, result.data, tab, language),
-          logActivity(user.uid, 'analysis_completed', {
-            verdict: result.data.verdict,
-            valueScore: result.data.value_score,
-            timeSavedMinutes: result.data.time_saved_minutes,
-            attentionQuality: result.data.attention_quality,
-            language,
-          }),
-          incrementAnalysisStats(user.uid, result.data.time_saved_minutes),
-        ])
-      } else {
-        handleApiFailure(result.code, result.error)
-      }
-    } catch {
-      setError(t('home.errorNetwork'))
-    }
-    setIsLoading(false)
   }
 
   async function handleDecisionSubmit(files: File[], goal: string, language: string, documentType: DocumentType = 'auto') {
@@ -245,7 +193,6 @@ export default function HomePage() {
   }
 
   function handleBack() {
-    setReport(null)
     setDecisionReport(null)
     setError(null)
     setShowUpgradeModal(false)
@@ -272,14 +219,6 @@ export default function HomePage() {
 
   if (showDecisionLoader) {
     return <AnalysisLoader isComplete={!isLoading} />
-  }
-
-  if (report) {
-    return (
-      <Suspense fallback={<div className="page-loading" />}>
-        <ResultPage report={report} onBack={handleBack} language={analysisLanguage} />
-      </Suspense>
-    )
   }
 
   const uploadForm = (
@@ -313,19 +252,7 @@ export default function HomePage() {
           t={t}
         />
       )}
-      <LandingPage
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-        error={error}
-        plan={plan}
-        planLimit={displayLimit}
-        monthlyUsage={displayUsed}
-        isLoggedIn={!!user}
-        onOpenAuth={openAuthModal}
-        remaining={remaining}
-        isAtLimit={isAtLimit}
-        uploadSection={uploadForm}
-      />
+      <LandingPage uploadSection={uploadForm} />
     </>
   )
 }
