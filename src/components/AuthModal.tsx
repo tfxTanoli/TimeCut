@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth, MIN_PASSWORD_LENGTH } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
@@ -66,6 +66,51 @@ export default function AuthModal() {
     document.body.style.overflow = mode ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [mode])
+
+  const cardRef = useRef<HTMLDivElement>(null)
+  const backdropPressRef = useRef(false)
+  // While a request is in flight the dialog stays open, however it is dismissed.
+  const busy = loading || googleLoading || resetLoading || resendLoading
+
+  // Focus moves into the dialog when it opens and back to whatever opened it
+  // when it closes. Without this, keyboard and screen-reader users were left
+  // on the page behind the modal.
+  useEffect(() => {
+    if (!mode) return
+    const previouslyFocused = document.activeElement as HTMLElement | null
+    const card = cardRef.current
+    const firstInput = card?.querySelector<HTMLElement>('input:not([disabled])')
+    ;(firstInput ?? card)?.focus()
+    return () => { previouslyFocused?.focus?.() }
+  }, [mode])
+
+  // Escape closes the dialog; Tab and Shift+Tab stay inside it.
+  useEffect(() => {
+    if (!mode) return
+    function onKeyDown(e: KeyboardEvent) {
+      const card = cardRef.current
+      if (!card) return
+      if (e.key === 'Escape') {
+        if (!busy) { e.preventDefault(); handleClose() }
+        return
+      }
+      if (e.key !== 'Tab') return
+      const items = Array.from(card.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ))
+      if (items.length === 0) { e.preventDefault(); card.focus(); return }
+      const first = items[0]
+      const last = items[items.length - 1]
+      const active = document.activeElement
+      if (e.shiftKey && (active === first || !card.contains(active))) {
+        e.preventDefault(); last.focus()
+      } else if (!e.shiftKey && (active === last || !card.contains(active))) {
+        e.preventDefault(); first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [mode, busy]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!mode && !closing) return null
 
@@ -227,10 +272,24 @@ export default function AuthModal() {
   }
 
   return (
-    <div className={`auth-modal-backdrop ${closing ? 'auth-modal-backdrop--out' : ''}`}>
+    <div
+      className={`auth-modal-backdrop ${closing ? 'auth-modal-backdrop--out' : ''}`}
+      onMouseDown={e => { backdropPressRef.current = e.target === e.currentTarget }}
+      onClick={e => {
+        // Only a click that starts and ends on the backdrop closes the dialog,
+        // so dragging a text selection out of an input does not.
+        if (backdropPressRef.current && e.target === e.currentTarget && !busy) handleClose()
+        backdropPressRef.current = false
+      }}
+    >
       <div
+        ref={cardRef}
         className={`auth-modal-card ${closing ? 'auth-modal-card--out' : ''}`}
         onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t('auth.dialogLabel')}
+        tabIndex={-1}
       >
         <div className="auth-modal-glow" />
 
@@ -470,12 +529,18 @@ export default function AuthModal() {
                       onChange={e => setTermsAccepted(e.target.checked)}
                       disabled={loading}
                     />
+                    {/* Consent covers the Terms and the Privacy Policy only. It
+                        used to add "and agree to receive email communication",
+                        which read as marketing consent — contradicting the
+                        Privacy Policy's promise of no marketing mail without an
+                        explicit opt-in. */}
                     <span className="auth-terms-text">
-                      I accept the{' '}
-                      <a href="/terms" className="auth-terms-link" target="_blank" rel="noopener noreferrer">terms and conditions</a>
-                      {', '}
-                      <a href="/privacy" className="auth-terms-link" target="_blank" rel="noopener noreferrer">privacy policy</a>
-                      {' '}and agree to receive email communication.
+                      {t('auth.acceptPrefix')}{' '}
+                      <a href="/terms" className="auth-terms-link" target="_blank" rel="noopener noreferrer">{t('auth.termsLink')}</a>
+                      {' '}{t('auth.acceptAnd')}{' '}
+                      <a href="/privacy" className="auth-terms-link" target="_blank" rel="noopener noreferrer">{t('auth.privacyLink')}</a>
+                      {t('auth.acceptSuffix')}{' '}
+                      {t('auth.acceptEmailNote')}
                     </span>
                   </label>
                 )}

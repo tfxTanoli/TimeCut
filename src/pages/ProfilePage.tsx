@@ -15,6 +15,7 @@ export default function ProfilePage() {
     user, userData, displayName, updateDisplayName, reauthAndChangePassword,
     plan, planExpiresAt, loading, planConfig,
     creditsAllocated, creditsRemaining, creditsUsage, freeReportsRemaining, freeReportsAllowed,
+    hasPasswordLogin,
   } = useAuth()
   const { t } = useTranslation()
   const isFreePlan = plan === 'free'
@@ -227,7 +228,10 @@ export default function ProfilePage() {
                   </span>
                 </div>
                 <div className="usage-bar">
-                  <div className="usage-bar-fill" style={{ width: `${creditsPct}%` }} />
+                  <div
+                    className={`usage-bar-fill${creditsPct <= 10 ? ' usage-bar-fill--low' : ''}`}
+                    style={{ width: `${creditsPct}%` }}
+                  />
                 </div>
                 <p className="usage-credits-estimate">
                   {t('usage.typicalAnalyses').replace('{n}', String(typicalAnalysesRemaining))}
@@ -444,6 +448,22 @@ export default function ProfilePage() {
                 <h2 className="profile-card-title">{t('profile.changePassword')}</h2>
               </div>
 
+              {!hasPasswordLogin ? (
+                // A Google account has no TimeCut password. Re-authenticating
+                // with one always failed, so every attempt here used to read
+                // "Current password is incorrect".
+                <div className="profile-form">
+                  <p className="profile-subscription-note">{t('profile.pwManagedByGoogle')}</p>
+                  <a
+                    className="btn-outline profile-btn"
+                    href="https://myaccount.google.com/security"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {t('profile.pwManageGoogle')}
+                  </a>
+                </div>
+              ) : (
               <form onSubmit={handleChangePassword} className="profile-form">
                 <div className="form-group">
                   <label className="form-label">{t('profile.currentPassword')}</label>
@@ -499,6 +519,7 @@ export default function ProfilePage() {
                   {pwSaving ? <><span className="btn-spinner" />{t('profile.updating')}</> : t('profile.updatePassword')}
                 </button>
               </form>
+              )}
             </div>
           </div>
         </div>

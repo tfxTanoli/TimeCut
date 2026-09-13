@@ -8,7 +8,7 @@ import {
   listEntitlingSubscriptions,
   planFromSubscription,
 } from './stripe-admin.js'
-import { getStripeAmount } from './planConfig.js'
+import { getStripeAmount, InvalidPlanPriceError } from './planConfig.js'
 
 // ── Self-serve checkout, in one place ────────────────────────────────────────
 // This logic used to exist twice: once in api/create-subscription.ts for Vercel
@@ -73,7 +73,22 @@ export async function resolveSubscriptionRequest(
     }
   }
 
-  const amountCents = await getStripeAmount(plan)
+  let amountCents: number
+  try {
+    amountCents = await getStripeAmount(plan)
+  } catch (e) {
+    // A mistyped price in the admin dashboard. Refuse the checkout rather than
+    // charge it, and keep the configuration detail out of the customer's view.
+    if (!(e instanceof InvalidPlanPriceError)) throw e
+    console.error('[subscriptions]', e.message)
+    return {
+      status: 400,
+      body: {
+        code: 'PRICE_UNAVAILABLE',
+        error: 'This plan is temporarily unavailable. Please contact support.',
+      },
+    }
+  }
   if (!amountCents || amountCents <= 0) {
     return {
       status: 400,

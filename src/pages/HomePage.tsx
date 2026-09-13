@@ -15,6 +15,7 @@ import {
   saveDecisionAnalysis,
 } from '../lib/userService'
 import { isUnlimited } from '../lib/planConfig'
+import { trackEvent } from '../lib/analytics'
 
 const ResultPage = lazy(() => import('../components/ResultPage'))
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
@@ -124,9 +125,14 @@ export default function HomePage() {
    * upgrade modal; everything else shows the server's message, which is now
    * specific (which limit, how many credits are left).
    */
+  function openUpgradeModal(reason: string) {
+    setShowUpgradeModal(true)
+    trackEvent('upgrade_modal_shown', { reason, plan })
+  }
+
   function handleApiFailure(code: string | undefined, message: string | undefined) {
     if (code === 'INSUFFICIENT_CREDITS' || code === 'FREE_REPORTS_EXHAUSTED') {
-      setShowUpgradeModal(true)
+      openUpgradeModal(code)
       return
     }
     if (code === 'UNAUTHENTICATED') {
@@ -142,7 +148,7 @@ export default function HomePage() {
     // Analysis requires an account — the API meters every report against a
     // verified user, so there is nothing to run for a signed-out visitor.
     if (!user) { openAuthModal(); return }
-    if (isAtLimit) { setShowUpgradeModal(true); return }
+    if (isAtLimit) { openUpgradeModal('at_limit'); return }
 
     setIsLoading(true)
     setAnalysisLanguage(language)
@@ -185,7 +191,7 @@ export default function HomePage() {
     setError(null)
 
     if (!user) { openAuthModal(); return }
-    if (isAtLimit) { setShowUpgradeModal(true); return }
+    if (isAtLimit) { openUpgradeModal('at_limit'); return }
 
     // Fail fast on the plan's document limit so the user isn't made to wait for
     // an upload the server will refuse. The server enforces it regardless.
@@ -210,6 +216,7 @@ export default function HomePage() {
       const result = await analyzeDecision(files, goal, language, documentType)
       if (result.data) {
         setDecisionReport(result.data)
+        trackEvent('analysis_completed', { plan, documentType, documents: files.length })
         // Persist it before anything else can navigate away. The report is the
         // thing the customer paid for, so it has to outlive this component —
         // it is listed on the profile and reachable at /report/:id from here on.

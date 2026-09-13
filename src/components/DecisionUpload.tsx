@@ -3,6 +3,7 @@ import type { PlanType } from '../lib/userService'
 import type { DocumentType } from '../types'
 import { useTranslation } from '../hooks/useTranslation'
 import { useLanguage } from '../contexts/LanguageContext'
+import { UPLOAD_ACCEPT, MAX_UPLOAD_TOTAL_BYTES, uploadRejection, formatMegabytes } from '../lib/uploads'
 
 const LANGUAGES = [
   'English', 'Spanish', 'French', 'German', 'Arabic',
@@ -13,7 +14,6 @@ const LANGUAGES = [
 // document allowance comes from their plan (config/plans) and is passed in as
 // `maxDocs`; this constant only bounds the file picker.
 const MAX_FILES_ABSOLUTE = 10
-const ACCEPT = '.pdf,.txt,application/pdf,text/plain'
 
 // Shortest decision goal we accept. This was 5, which silently disabled the
 // Analyze button for real answers like "CV" or "Hire?" with nothing on screen
@@ -87,7 +87,6 @@ export default function DecisionUpload({
   error,
   plan = 'free',
   planLimit = 1,
-  monthlyUsage = 0,
   maxDocs = 3,
   maxPages = 20,
   remaining = 1,
@@ -112,14 +111,28 @@ export default function DecisionUpload({
   // let every plan queue 10 files and only failed after the upload.
   const fileLimit = Math.min(MAX_FILES_ABSOLUTE, Math.max(1, maxDocs))
   const pageLimit = maxPages
-  const usagePct = planLimit > 0 ? Math.min(100, Math.round((monthlyUsage / planLimit) * 100)) : 100
+  // Every usage bar in the product shows what is LEFT: it shrinks as it is used
+  // and turns red when little remains. This one used to show what was used —
+  // growing, and red near the top — right beside a profile bar that meant the
+  // opposite while looking identical.
+  const remainingPct = planLimit > 0
+    ? Math.max(0, Math.min(100, Math.round((remaining / planLimit) * 100)))
+    : 0
   const [limitNotice, setLimitNotice] = useState<string | null>(null)
+  const [typeNotice, setTypeNotice] = useState<string | null>(null)
 
   const addFiles = useCallback((incoming: FileList | null) => {
     if (!incoming) return
     const next = [...files]
     let rejected = 0
+    const wrongType: string[] = []
+    const legacyDoc: string[] = []
     for (const f of Array.from(incoming)) {
+      // The picker's `accept` filter does not apply to drag-and-drop, so every
+      // file is checked here. The server re-checks each file's actual bytes.
+      const rejection = uploadRejection(f)
+      if (rejection === 'legacyDoc') { legacyDoc.push(f.name); continue }
+      if (rejection) { wrongType.push(f.name); continue }
       if (next.length >= fileLimit) { rejected++; continue }
       // Deduplicate by name+size
       if (!next.find(x => x.name === f.name && x.size === f.size)) next.push(f)
@@ -129,6 +142,10 @@ export default function DecisionUpload({
         ? t('decision.docLimitNotice').replace('{max}', String(fileLimit))
         : null,
     )
+    setTypeNotice([
+      wrongType.length ? t('decision.fileTypeRejected').replace('{names}', wrongType.join(', ')) : '',
+      legacyDoc.length ? t('decision.legacyDocRejected').replace('{names}', legacyDoc.join(', ')) : '',
+    ].filter(Boolean).join(' ') || null)
     setFiles(next)
   }, [files, fileLimit, t])
 
@@ -147,7 +164,7 @@ export default function DecisionUpload({
   const pendingSubmitRef = useRef(false)
 
   function runAnalysis() {
-    if (!formComplete) return
+    if (!formComplete || overSizeLimit) return
     onDecisionSubmit(files, decisionGoal.trim(), language, documentType)
   }
 
@@ -172,7 +189,12 @@ export default function DecisionUpload({
   // than just greying the button out.
   const formComplete =
     files.length > 0 && decisionGoal.trim().length >= MIN_DECISION_GOAL_LENGTH
-  const canSubmit = !isLoading && !isAtLimit && formComplete
+  // Vercel refuses a request body over 4.5 MB before our API runs, which the
+  // customer used to see only as a generic network error after waiting for
+  // the upload. Checked here, before anything is sent.
+  const totalBytes = files.reduce((sum, f) => sum + f.size, 0)
+  const overSizeLimit = totalBytes > MAX_UPLOAD_TOTAL_BYTES
+  const canSubmit = !isLoading && !isAtLimit && formComplete && !overSizeLimit
 
   const incompleteHint = isLoading || isAtLimit || formComplete
     ? null
@@ -222,7 +244,7 @@ export default function DecisionUpload({
               <div className="du-dropzone-empty">
                 <span className="du-upload-icon"><UploadIcon /></span>
                 <p className="du-drop-title">{t('decision.dropTitle')}</p>
-                <p className="du-drop-hint">{t('decision.dropHint')}</p>
+                <p className="du-drop-hint">{t('decision.dropHint').replace('{size}', formatMegabytes(MAX_UPLOAD_TOTAL_BYTES))}</p>
               </div>
             ) : (
               <div className="du-file-list">
@@ -249,10 +271,15 @@ export default function DecisionUpload({
             <input
               ref={fileRef}
               type="file"
-              accept={ACCEPT}
+              accept={UPLOAD_ACCEPT}
               multiple
               className="du-hidden-input"
-              onChange={e => addFiles(e.target.files)}
+              onChange={e => {
+                addFiles(e.target.files)
+                // Reset so choosing the same file again (after removing it)
+                // still fires onChange.
+                e.target.value = ''
+              }}
             />
           </div>
 
@@ -260,6 +287,14 @@ export default function DecisionUpload({
             <p className="du-limit-notice">
               {limitNotice}{' '}
               <a href="/pricing" onClick={e => e.stopPropagation()}>{t('decision.docLimitUpgrade')}</a>
+            </p>
+          )}
+          {typeNotice && <p className="du-limit-notice" role="alert">{typeNotice}</p>}
+          {overSizeLimit && (
+            <p className="du-limit-notice" role="alert">
+              {t('decision.uploadTooLarge')
+                .replace('{total}', formatMegabytes(totalBytes))
+                .replace('{max}', formatMegabytes(MAX_UPLOAD_TOTAL_BYTES))}
             </p>
           )}
         </div>
@@ -371,7 +406,7 @@ export default function DecisionUpload({
             <div className="plan-usage-bar-track">
               <div
                 className="plan-usage-bar-fill"
-                style={{ width: `${usagePct}%`, background: usagePct >= 90 ? '#EF4444' : '#3B82F6' }}
+                style={{ width: `${remainingPct}%`, background: remainingPct <= 10 ? '#EF4444' : '#3B82F6' }}
               />
             </div>
           )}

@@ -7,6 +7,7 @@ import {
   OPENAI_MAX_RETRIES,
   buildDocsBlock,
   readUsage,
+  parseModelJson,
   type TokenUsage,
 } from './aiConfig.js'
 
@@ -107,8 +108,7 @@ export async function generateReport(content: string, language: string): Promise
       { role: 'user', content: `Language: ${language}\n\nContent to analyze:\n${truncated}` },
     ],
   }, { timeout: CONTENT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
-  const raw = completion.choices[0]?.message?.content ?? '{}'
-  return { data: JSON.parse(raw), usage: readUsage(completion), truncated: wasTruncated }
+  return { data: parseModelJson(completion), usage: readUsage(completion), truncated: wasTruncated }
 }
 
 /* ─────────────────────────────────────────────────────────────────
@@ -412,9 +412,8 @@ export async function generateDecisionReport(
     ],
   }, { timeout: REPORT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
 
-  const raw = completion.choices[0]?.message?.content ?? '{}'
   return {
-    data: JSON.parse(raw),
+    data: parseModelJson(completion),
     usage: readUsage(completion),
     truncatedDocuments: truncated,
   }

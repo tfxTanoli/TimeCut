@@ -100,6 +100,45 @@ export const TIMEOUT_MESSAGE =
   'The analysis took too long and was stopped. Your AI Credits have been refunded — '
   + 'please try again, or split very large documents into smaller files.'
 
+/**
+ * The model's reply could not be used as a report — cut off at the token
+ * ceiling, refused, empty, or not valid JSON. The message is safe to show the
+ * customer; callers refund before returning it.
+ */
+export class ModelOutputError extends Error {}
+
+/**
+ * Parse a JSON-mode chat completion, checking why generation stopped first.
+ *
+ * `JSON.parse` used to run on the raw content unguarded. When a report hit the
+ * max_tokens ceiling the JSON was simply truncated, the parse threw, and the
+ * customer was shown a raw "Unexpected end of JSON input" parser error.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function parseModelJson(completion: any): Record<string, unknown> {
+  const choice = completion?.choices?.[0]
+  if (choice?.finish_reason === 'length') {
+    throw new ModelOutputError(
+      'The analysis was too long for the AI to finish in one pass. Your AI Credits have been refunded — '
+      + 'please try again with fewer or shorter documents.',
+    )
+  }
+  if (choice?.finish_reason === 'content_filter' || choice?.message?.refusal) {
+    throw new ModelOutputError('The AI could not analyse this content. Your AI Credits have been refunded.')
+  }
+  const raw = choice?.message?.content
+  if (typeof raw !== 'string' || !raw.trim()) {
+    throw new ModelOutputError('The AI returned an empty response. Your AI Credits have been refunded — please try again.')
+  }
+  try {
+    const parsed = JSON.parse(raw)
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, unknown>
+  } catch {
+    // fall through to the shared message below
+  }
+  throw new ModelOutputError('The AI returned an incomplete report. Your AI Credits have been refunded — please try again.')
+}
+
 /** How many characters each document may use, given how many were uploaded. */
 export function perDocumentBudget(documentCount: number): number {
   if (documentCount <= 0) return MAX_DOC_CHARS

@@ -1,4 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import admin from 'firebase-admin'
+import { getAdminDb } from './_lib/stripe-admin.js'
 import {
   sendContactEmail,
   sendVerificationEmail,
@@ -62,18 +64,49 @@ async function handleContact(req: VercelRequest, res: VercelResponse) {
     return res.status(429).json({ code: 'RATE_LIMITED', error: 'Too many requests. Please try again later.' })
   }
 
+  const record = {
+    name: name.trim().slice(0, MAX_FIELD_LENGTH),
+    email: cleanEmail.slice(0, MAX_FIELD_LENGTH),
+    subject: (typeof subject === 'string' ? subject : '').slice(0, MAX_FIELD_LENGTH),
+    message: message.trim().slice(0, MAX_MESSAGE_LENGTH),
+  }
+  const plan = typeof req.body?.plan === 'string' ? req.body.plan.slice(0, 40) : null
+  // Signing in is not required to send a message; the uid is recorded only
+  // when a verified session happens to be present.
+  const authed = await verifyAuth(req)
+
+  // The Firestore copy used to be written by the browser, which meant the
+  // collection had to accept unauthenticated creates — so anyone could script
+  // unlimited documents into it, bypassing the rate limits above entirely.
+  // The copy is written here now, behind those limits, and the rules refuse
+  // client writes. Either delivery path succeeding is enough: the stored copy
+  // is what the admin dashboard reads if the mail bounces.
+  let stored = false
+  const adb = getAdminDb()
+  if (adb) {
+    try {
+      await adb.collection('contacts').add({
+        ...record,
+        ...(plan ? { plan } : {}),
+        ...(authed ? { uid: authed.uid } : {}),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      })
+      stored = true
+    } catch (err) {
+      console.error('[send-email:contact] Firestore copy failed:', err)
+    }
+  }
+
+  let emailed = false
   try {
-    await sendContactEmail(
-      name.trim().slice(0, MAX_FIELD_LENGTH),
-      cleanEmail,
-      (typeof subject === 'string' ? subject : '').slice(0, MAX_FIELD_LENGTH),
-      message.trim().slice(0, MAX_MESSAGE_LENGTH),
-    )
-    return res.json({ success: true })
+    await sendContactEmail(record.name, record.email, record.subject, record.message)
+    emailed = true
   } catch (err) {
     console.error('[send-email:contact] Error:', err)
-    return res.status(500).json({ error: 'Failed to send your message. Please email support@timecut.online directly.' })
   }
+
+  if (stored || emailed) return res.json({ success: true })
+  return res.status(500).json({ error: 'Failed to send your message. Please email support@timecut.online directly.' })
 }
 
 /** Was api/send-verification-email.ts. Necessarily open to signed-out callers

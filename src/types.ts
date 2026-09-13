@@ -120,6 +120,9 @@ export interface DecisionReport {
   /** Documents too long to analyse in full. Surfaced to the reader — a report
    *  that only saw part of a contract must say so. */
   truncated_documents?: string[]
+  /** Uploaded files that were not analysed at all (wrong type, unreadable,
+   *  scanned without text), with the reason. Shown before the findings. */
+  skipped_documents?: SkippedDocument[]
   what_would_change?: string
   decision_strength?: number
   decision_strength_reason?: string
@@ -134,6 +137,14 @@ export interface DecisionReport {
   negotiation_suggestions?: NegotiationSuggestion[]
   weak_evidence?: WeakEvidenceItem[]
   decision_playbook?: DecisionPlaybook
+}
+
+export interface SkippedDocument {
+  name: string
+  /** English explanation from the server; the fallback when `code` has no translation. */
+  reason: string
+  /** Machine-readable reason, e.g. `scanned_pdf`. Absent on older saved reports. */
+  code?: string
 }
 
 export type DocumentType = 'auto' | 'cv' | 'supplier_quotation' | 'contract' | 'business_proposal' | 'general'

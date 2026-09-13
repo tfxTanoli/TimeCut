@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
-import { db } from '../lib/firebase'
+import { authHeaders } from '../lib/firebase'
 import Footer from '../components/Footer'
 import { useTranslation } from '../hooks/useTranslation'
 import { useAuth } from '../contexts/AuthContext'
@@ -59,8 +58,11 @@ export default function ContactPage() {
    * Deliberately open to signed-out visitors. This form used to bounce anyone
    * without an account into the login modal, which meant the "Contact Sales"
    * button on the Business plan — the one path for a prospect who by definition
-   * has no account yet — could never be completed. The Firestore rules have
-   * always allowed an unauthenticated submission; only the UI disagreed.
+   * has no account yet — could never be completed.
+   *
+   * The API stores the Firestore copy and sends the email. The browser used to
+   * write the copy itself, which forced the `contacts` collection to accept
+   * unauthenticated writes that no rate limit could reach.
    */
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -74,17 +76,15 @@ export default function ContactPage() {
         message: message.trim().slice(0, MAX_MESSAGE_LENGTH),
         // Recorded so sales can see which card the enquiry came from.
         ...(planParam ? { plan: planParam.slice(0, 40) } : {}),
-        // Present only when the sender happened to be signed in.
-        ...(user ? { uid: user.uid } : {}),
       }
-      await Promise.all([
-        addDoc(collection(db, 'contacts'), { ...payload, createdAt: serverTimestamp() }),
-        fetch('/api/send-contact-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }).then(r => { if (!r.ok) throw new Error('Email send failed') }),
-      ])
+      // A signed-in sender's token lets the server attribute the message to
+      // their account; it is optional and never required to send.
+      const res = await fetch('/api/send-contact-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(user ? await authHeaders() : {}) },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) throw new Error('Contact send failed')
       setSent(true)
     } catch {
       setSubmitError(t('contact.sendError'))

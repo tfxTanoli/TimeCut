@@ -56,8 +56,8 @@ service cloud.firestore {
 
       // Owners may edit profile fields (name, email, lastLoginAt, referralCode,
       // lifetime stats) but never their plan or usage counters.
-      // Admins may edit anything, which is how a Business account's
-      // `creditsOverride` custom allocation is provisioned.
+      // Admins may edit anything: the Admin Dashboard's Accounts tab uses this
+      // to provision Business/Custom plans and `creditsOverride` allocations.
       allow update: if (isOwner() && protectedFieldsUnchanged()) || isAdmin();
 
       allow delete: if false;
@@ -87,20 +87,19 @@ service cloud.firestore {
       }
     }
 
-    // Admin allowlist — bootstrap-safe:
-    //  • readable by everyone (the client gate reads it)
-    //  • writable when no admins doc exists yet (first admin self-registers) OR
-    //    by an existing admin, and the writer must keep their own email in the
-    //    list (prevents lock-out / hijack after bootstrap).
+    // Admin allowlist.
+    //  • Readable only by admins. It used to be world-readable, which published
+    //    every administrator's email address to anyone who asked. A non-admin's
+    //    client-side check simply gets "denied" and treats that as "not admin".
+    //  • Writable only by an existing admin, who must keep their own email in
+    //    the list (prevents lock-out). The old bootstrap branch let ANY
+    //    signed-in user create this document if it was ever missing and make
+    //    themselves an admin. The first admin is now added in the Firebase
+    //    console (Firestore → config/admins → emails array), never by a client.
     match /config/admins {
-      allow read: if true;
-      allow write: if request.auth != null
-        && request.auth.token.email is string
-        && request.auth.token.email in request.resource.data.emails
-        && (
-          !exists(/databases/$(database)/documents/config/admins)
-          || isAdmin()
-        );
+      allow read: if isAdmin();
+      allow write: if isAdmin()
+        && request.auth.token.email in request.resource.data.emails;
     }
 
     // Other config (plan limits, credit costs, feature flags):
@@ -135,11 +134,21 @@ service cloud.firestore {
     }
 
     match /feedback/{feedbackId} {
-      allow create: if request.auth != null && feedbackFieldsValid();
+      // A submitted uid must be the submitter's own, so feedback cannot be
+      // attributed to someone else's account.
+      allow create: if request.auth != null
+        && feedbackFieldsValid()
+        && (!('uid' in request.resource.data)
+            || request.resource.data.uid == null
+            || request.resource.data.uid == request.auth.uid);
       allow read, update, delete: if isAdmin();
     }
 
-    // Anyone can submit a contact message (no auth required).
+    // Contact messages. Written ONLY by the server (api/send-email.ts, which
+    // the Admin SDK lets bypass these rules) after its per-address and per-IP
+    // rate limits. Client creates used to be allowed without a session, so a
+    // script could write unlimited documents straight into this collection —
+    // the API's rate limits never applied to a direct Firestore write.
     //
     // Admins may read them. Every submission is also emailed to the support
     // address, but that is a single point of failure the app does not control —
@@ -155,21 +164,8 @@ service cloud.firestore {
     // with no UI involved. The API's own rate limits do not apply to a client
     // writing straight to Firestore, so the ceiling has to live in the rules.
     match /contacts/{contactId} {
-      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'subject', 'message'])
-        && request.resource.data.keys().size() <= 8
-        && request.resource.data.name is string
-        && request.resource.data.name.size() > 0
-        && request.resource.data.name.size() <= 200
-        && request.resource.data.email is string
-        && request.resource.data.email.size() > 0
-        && request.resource.data.email.size() <= 200
-        && request.resource.data.subject is string
-        && request.resource.data.subject.size() <= 200
-        && request.resource.data.message is string
-        && request.resource.data.message.size() > 0
-        && request.resource.data.message.size() <= 4000;
       allow read: if isAdmin();
-      allow update, delete: if false;
+      allow create, update, delete: if false;
     }
 
     // Newsletter signups from the blog. Same shape of protection as contacts:

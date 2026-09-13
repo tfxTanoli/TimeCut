@@ -97,7 +97,7 @@ export default function ReportPage() {
                 {t('report.notFoundLogIn')}
               </button>
             ) : (
-              <Link to="/profile" className="btn-primary btn-cta">{t('report.backToReports')}</Link>
+              <Link to="/profile" className="btn-primary btn-cta">{t('result.backToReports')}</Link>
             )}
             <Link to="/" className="btn-outline btn-cta">{t('nf.home')}</Link>
           </div>

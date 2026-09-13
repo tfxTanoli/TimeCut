@@ -46,7 +46,11 @@ export interface CreditCosts {
   reportBase: number
   /** Credits per analyzed page. */
   perPage: number
-  /** Surcharge per scanned/OCR document. */
+  /**
+   * Reserved. OCR is not implemented — scanned PDFs are rejected with a
+   * message — so nothing is ever charged at this rate, and it is not offered
+   * in the admin editor. Kept so stored configs keep their shape.
+   */
   ocrSurcharge: number
   /** Credits per Decision Assistant follow-up question. */
   assistantQuestion: number

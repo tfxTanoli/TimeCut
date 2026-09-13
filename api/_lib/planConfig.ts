@@ -36,6 +36,10 @@ export interface PlanLimits {
 export interface CreditCosts {
   reportBase: number
   perPage: number
+  /**
+   * Reserved. OCR is not implemented (scanned PDFs are rejected in
+   * _lib/documents.ts), so no route passes `ocrDocs` and this is never charged.
+   */
   ocrSurcharge: number
   assistantQuestion: number
   multiDocMultiplier: number
@@ -144,16 +148,30 @@ const FALLBACK_AMOUNT_CENTS: Record<string, number> = {
   pro: 2900,
 }
 
+/** Stripe's minimum charge for USD. Anything lower is a typo, not a price. */
+export const MIN_STRIPE_AMOUNT_CENTS = 50
+
+/** The configured price is unusable, so no subscription may be created at it. */
+export class InvalidPlanPriceError extends Error {}
+
 /**
  * The amount (in cents) to actually charge for a paid plan. Single source of
  * truth for Stripe: reads `config/plans` (admin-editable) and only falls back
- * to FALLBACK_AMOUNT_CENTS when the plan has no price configured.
+ * to FALLBACK_AMOUNT_CENTS when the plan has no price configured at all.
+ *
+ * A configured price that is not a whole number of cents at or above Stripe's
+ * minimum is refused outright. It used to be passed straight to Stripe, so
+ * typing 9 instead of 900 in the admin dashboard would have started charging
+ * every new subscriber $0.09 a month.
  */
 export async function getStripeAmount(plan: string): Promise<number> {
   const cfg = await getPlanConfig()
   const cents = cfg.plans[plan as PlanType]?.priceCents
-  if (typeof cents === 'number' && cents > 0) return cents
-  return FALLBACK_AMOUNT_CENTS[plan] ?? 0
+  if (cents === null || cents === undefined) return FALLBACK_AMOUNT_CENTS[plan] ?? 0
+  if (!Number.isInteger(cents) || cents < MIN_STRIPE_AMOUNT_CENTS) {
+    throw new InvalidPlanPriceError(`Configured price for "${plan}" is invalid (${cents} cents).`)
+  }
+  return cents
 }
 
 /**

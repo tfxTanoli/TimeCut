@@ -9,54 +9,63 @@ import {
 } from '@stripe/react-stripe-js'
 import { getCachedPlanConfig, getPlanConfig, formatPrice, type PlanConfig } from '../lib/planConfig'
 import { authHeaders } from '../lib/firebase'
+import { useTranslation } from '../hooks/useTranslation'
+import { renderRich } from '../lib/richText'
+import { trackEvent } from '../lib/analytics'
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as string)
 
 const UNLIMITED = 9999
 
+type Translate = (key: string) => string
+
 /**
  * Plan copy only. Every number (price, credits, document limits) is read from
  * the shared plan config (config/plans in Firestore, editable from the Admin
  * Dashboard) so this modal can never disagree with the pricing page.
+ *
+ * Self-serve plans only, and every line here must match the pricing page. The
+ * previous version listed Priority Processing and a PDF export that the product
+ * did not implement, and a Business tier that this modal could charge for.
+ *
+ * Copy is held as translation keys: the checkout is where a customer decides to
+ * pay, and it was entirely English regardless of the site language.
  */
-// Self-serve plans only, and every line here must match the pricing page. The
-// previous version listed Priority Processing and a PDF export that the product
-// did not implement, and a Business tier that this modal could charge for.
-const PLAN_META: Record<string, { label: string; tagline: string; features: string[] }> = {
+const PLAN_META: Record<string, { label: string; taglineKey: string; featureKeys: string[] }> = {
   starter: {
     label: 'STARTER',
-    tagline: 'Full analysis depth for individuals',
-    features: [
-      '{credits} AI Credits/month',
-      'Up to {docs} documents per analysis',
-      'Full AI Decision Report',
-      'Hidden Risks & Missing Information',
-      'Evidence Found & Document Ranking',
-      'Decision Playbook',
-      'Smart Skeptic Questions',
-      'Print / Save as PDF',
+    taglineKey: 'pm.starterTagline',
+    featureKeys: [
+      'pm.featCredits',
+      'pm.featDocs',
+      'pm.featFullReport',
+      'pm.featRisks',
+      'pm.featEvidence',
+      'pm.featPlaybook',
+      'pm.featSkeptic',
+      'pm.featExport',
     ],
   },
   pro: {
     label: 'PRO',
-    tagline: 'Deeper intelligence and stronger decisions',
-    features: [
-      '{credits} AI Credits/month',
-      'Up to {docs} documents per analysis',
-      'Everything in Starter',
-      'Unlimited Decision Assistant (within credits)',
-      '"If I Were You" personal advisor',
-      'Decision Defense',
+    taglineKey: 'pm.proTagline',
+    featureKeys: [
+      'pm.featCredits',
+      'pm.featDocs',
+      'pm.featEverythingStarter',
+      'pm.featAssistant',
+      'pm.featAdvisor',
+      'pm.featDefense',
       // Pro inherits this through "Everything in Starter", but it is a feature
       // people look for by name on the checkout screen, so it is listed here
       // outright as well — matching the Starter list above and the pricing page.
-      'Print / Save as PDF',
+      'pm.featExport',
     ],
   },
 }
 
 /** Resolve a plan's display copy against the live config. */
-function planDetails(plan: string, cfg: PlanConfig, amountCents?: number | null) {
+function planDetails(plan: string, cfg: PlanConfig, t: Translate, amountCents?: number | null) {
   const meta = PLAN_META[plan]
   const limits = cfg.plans[plan as keyof PlanConfig['plans']]
   // Prefer the amount the server is actually charging; fall back to the config.
@@ -66,11 +75,11 @@ function planDetails(plan: string, cfg: PlanConfig, amountCents?: number | null)
 
   return {
     label: meta.label,
-    tagline: meta.tagline,
-    price: cents == null ? 'Custom' : `${formatPrice(cents)}/month`,
-    features: meta.features.map(f => f
-      .replace('{credits}', credits == null ? 'Custom' : credits.toLocaleString())
-      .replace('{docs}', docs == null || docs >= UNLIMITED ? 'unlimited' : String(docs))),
+    tagline: t(meta.taglineKey),
+    price: cents == null ? t('pm.custom') : t('pm.perMonth').replace('{price}', formatPrice(cents)),
+    features: meta.featureKeys.map(key => t(key)
+      .replace('{credits}', credits == null ? t('pm.custom') : credits.toLocaleString())
+      .replace('{docs}', docs == null || docs >= UNLIMITED ? t('pm.unlimited') : String(docs))),
   }
 }
 
@@ -88,6 +97,7 @@ interface FormProps {
 }
 
 function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPending, onBusyChange }: FormProps) {
+  const { t } = useTranslation()
   const stripe   = useStripe()
   const elements = useElements()
   const [loading, setLoading] = useState(false)
@@ -95,7 +105,7 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
 
   const setPending = onPending
 
-  const details = planDetails(plan, cfg, amountCents)
+  const details = planDetails(plan, cfg, t, amountCents)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -112,11 +122,13 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
     })
 
     if (stripeError) {
-      setError(stripeError.message ?? 'Payment failed. Please try again.')
+      setError(stripeError.message ?? t('pm.paymentFailed'))
       setLoading(false)
       onBusyChange(false)
       return
     }
+
+    trackEvent('payment_success', { plan, switched: false })
 
     // The payment succeeded. Ask the server to activate now for an instant
     // upgrade — it reads the account from the ID token and the plan from the
@@ -169,7 +181,7 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
 
       {/* Stripe PaymentElement */}
       <div className="pm-card-section">
-        <p className="pm-card-label">Payment details</p>
+        <p className="pm-card-label">{t('pm.paymentDetails')}</p>
         <div className="pm-card-element-wrap">
           <PaymentElement options={{ layout: 'tabs' }} />
         </div>
@@ -183,12 +195,12 @@ function CheckoutForm({ plan, subscriptionId, cfg, amountCents, onSuccess, onPen
         disabled={!stripe || !elements || loading}
       >
         {loading
-          ? <><span className="btn-spinner" /> Processing…</>
-          : `Subscribe ${details.price}`}
+          ? <><span className="btn-spinner" /> {t('pm.processing')}</>
+          : t('pm.subscribe').replace('{price}', details.price)}
       </button>
 
       <p className="pm-secure-note">
-        <IconLock /> Secured by Stripe · Cancel anytime
+        <IconLock /> {t('pm.secureNote')}
       </p>
     </form>
   )
@@ -213,7 +225,8 @@ function SwitchConfirmScreen({ fromPlan, toPlan, cfg, amountCents, busy, error, 
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const details = planDetails(toPlan, cfg, amountCents)
+  const { t } = useTranslation()
+  const details = planDetails(toPlan, cfg, t, amountCents)
   const from = PLAN_LABEL[fromPlan] ?? fromPlan
   const order: Record<string, number> = { free: 0, starter: 1, pro: 2, business: 3, custom: 3 }
   const isUpgrade = (order[toPlan] ?? 0) > (order[fromPlan] ?? 0)
@@ -237,17 +250,15 @@ function SwitchConfirmScreen({ fromPlan, toPlan, cfg, amountCents, busy, error, 
 
       <div className="pm-switch-note">
         <p className="pm-card-label">
-          {isUpgrade ? 'Upgrade' : 'Change'} from {from} to {details.label}
+          {t(isUpgrade ? 'pm.upgradeFromTo' : 'pm.changeFromTo')
+            .replace('{from}', from)
+            .replace('{to}', details.label)}
         </p>
         <p className="pm-switch-body">
-          You are already subscribed to <strong>{from}</strong>. This changes that
-          subscription rather than starting a second one, so you will never be billed
-          for two plans at once.
+          {renderRich(t('pm.switchBody').replace('{from}', from))}
         </p>
         <p className="pm-switch-body">
-          {isUpgrade
-            ? <>Stripe charges the prorated difference for the rest of your current billing period today, then {details.price} from your next renewal. Your existing payment method is used.</>
-            : <>Stripe credits the unused part of your current period against your account, then bills {details.price} from your next renewal.</>}
+          {t(isUpgrade ? 'pm.switchUpgradeBody' : 'pm.switchDowngradeBody').replace('{price}', details.price)}
         </p>
       </div>
 
@@ -260,8 +271,8 @@ function SwitchConfirmScreen({ fromPlan, toPlan, cfg, amountCents, busy, error, 
         disabled={busy}
       >
         {busy
-          ? <><span className="btn-spinner" /> Changing your plan…</>
-          : `Confirm change to ${details.label}`}
+          ? <><span className="btn-spinner" /> {t('pm.changingPlan')}</>
+          : t('pm.confirmChange').replace('{plan}', details.label)}
       </button>
       <button
         type="button"
@@ -269,11 +280,11 @@ function SwitchConfirmScreen({ fromPlan, toPlan, cfg, amountCents, busy, error, 
         onClick={onCancel}
         disabled={busy}
       >
-        Keep my {from} plan
+        {t('pm.keepPlan').replace('{plan}', from)}
       </button>
 
       <p className="pm-secure-note">
-        <IconLock /> Secured by Stripe · Cancel anytime
+        <IconLock /> {t('pm.secureNote')}
       </p>
     </div>
   )
@@ -287,7 +298,8 @@ function SuccessScreen({ plan, cfg, onClose, switchedFrom }: {
   /** Set when this was a plan change rather than a first subscription. */
   switchedFrom?: string | null
 }) {
-  const details = planDetails(plan, cfg)
+  const { t } = useTranslation()
+  const details = planDetails(plan, cfg, t)
   const navigate = useNavigate()
 
   // "Start Analyzing" used to only close the modal, leaving the customer on the
@@ -302,14 +314,15 @@ function SuccessScreen({ plan, cfg, onClose, switchedFrom }: {
   return (
     <div className="pm-success">
       <div className="pm-success-icon">✓</div>
-      <h2 className="pm-success-title">You're on {details?.label}!</h2>
+      <h2 className="pm-success-title">{t('pm.successTitle').replace('{plan}', details.label)}</h2>
       <p className="pm-success-sub">
-        {switchedFrom
-          ? <>Your plan has been changed to {details?.label}. Stripe has prorated the difference against your current billing period — you have not been charged for a second subscription. Enjoy {details?.features[0]}.</>
-          : <>Your subscription is active. Enjoy {details?.features[0]} and all {details?.label} features.</>}
+        {t(switchedFrom ? 'pm.successSwitched' : 'pm.successNew')
+          .replace('{plan}', details.label)
+          .replace('{plan}', details.label)
+          .replace('{feature}', details.features[0])}
       </p>
       <button className="btn-primary btn-cta pm-pay-btn" onClick={goToUpload}>
-        Start Analyzing →
+        {t('pm.startAnalyzing')}
       </button>
     </div>
   )
@@ -317,17 +330,14 @@ function SuccessScreen({ plan, cfg, onClose, switchedFrom }: {
 
 /* ─── Payment received, activation still settling ─── */
 function PendingScreen({ onClose }: { onClose: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="pm-success">
       <div className="pm-success-icon">⏳</div>
-      <h2 className="pm-success-title">Payment received</h2>
-      <p className="pm-success-sub">
-        Your payment went through. We're activating your plan now — this usually takes a few
-        seconds. Refresh your account page if it hasn't appeared in a minute, and contact support
-        if it still hasn't.
-      </p>
+      <h2 className="pm-success-title">{t('pm.pendingTitle')}</h2>
+      <p className="pm-success-sub">{t('pm.pendingBody')}</p>
       <button className="btn-primary btn-cta pm-pay-btn" onClick={onClose}>
-        Close
+        {t('pm.close')}
       </button>
     </div>
   )
@@ -342,6 +352,7 @@ interface PaymentModalProps {
 }
 
 export default function PaymentModal({ plan, email, name, onClose }: PaymentModalProps) {
+  const { t } = useTranslation()
   const [clientSecret,    setClientSecret]    = useState<string | null>(null)
   const [subscriptionId,  setSubscriptionId]  = useState<string>('')
   const [fetchError,      setFetchError]      = useState<string | null>(null)
@@ -365,6 +376,9 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
 
   // Same admin-editable config the pricing page renders from.
   useEffect(() => { getPlanConfig().then(setCfg).catch(() => {}) }, [])
+
+  // Funnel step: the customer opened checkout for a plan.
+  useEffect(() => { trackEvent('checkout_started', { plan }) }, [plan])
 
   /**
    * Ask the server what this plan means for this account.
@@ -399,12 +413,12 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
           setSubscriptionId(data.subscriptionId)
           if (typeof data.amountCents === 'number') setAmountCents(data.amountCents)
         } else {
-          setFetchError(data.error ?? 'Could not initialize payment')
+          setFetchError(data.error ?? t('pm.initFailed'))
         }
         setFetchLoading(false)
       })
       .catch(() => {
-        setFetchError('Network error. Please try again.')
+        setFetchError(t('pm.networkError'))
         setFetchLoading(false)
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
@@ -416,15 +430,16 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
     try {
       const data = await requestPlan(true)
       if (data.switched) {
+        trackEvent('payment_success', { plan, switched: true })
         setSwitchedFrom(data.previousPlan ?? pendingSwitch)
         setPendingSwitch(null)
         if (data.activated) setPaid(true)
         else setPending(true)
       } else {
-        setSwitchError(data.error ?? 'Could not change your plan. Please try again.')
+        setSwitchError(data.error ?? t('pm.switchFailed'))
       }
     } catch {
-      setSwitchError('Network error. Please try again.')
+      setSwitchError(t('pm.networkError'))
     } finally {
       setCharging(false)
     }
@@ -455,7 +470,7 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
         {/* Header */}
         <div className="pm-header">
           <span className="pm-header-title">⏱ TIMECUT</span>
-          <button className="pm-close-btn" onClick={onClose} aria-label="Close" disabled={busy}>
+          <button className="pm-close-btn" onClick={onClose} aria-label={t('pm.close')} disabled={busy}>
             <IconX />
           </button>
         </div>
@@ -464,24 +479,21 @@ export default function PaymentModal({ plan, email, name, onClose }: PaymentModa
         {fetchLoading && (
           <div className="pm-loading">
             <span className="btn-spinner pm-loading-spinner" />
-            <p>Preparing secure checkout…</p>
+            <p>{t('pm.preparing')}</p>
           </div>
         )}
 
         {fetchError && (
           <div className="pm-fetch-error">
             <p>{fetchError}</p>
-            <button className="btn-outline" onClick={onClose}>Close</button>
+            <button className="btn-outline" onClick={onClose}>{t('pm.close')}</button>
           </div>
         )}
 
         {alreadyOnPlan && (
           <div className="pm-fetch-error">
-            <p>
-              You are already subscribed to this plan. You can change or cancel it
-              from your account page.
-            </p>
-            <button className="btn-outline" onClick={onClose}>Close</button>
+            <p>{t('pm.alreadySubscribed')}</p>
+            <button className="btn-outline" onClick={onClose}>{t('pm.close')}</button>
           </div>
         )}
 

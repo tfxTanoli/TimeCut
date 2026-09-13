@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook, OverallDecision } from '../types'
+import { useState, useRef, useEffect } from 'react'
+import type { DecisionReport, RiskItem, RankedDocument, EvidenceItem, MissingInfoItem, VerificationQuestion, RecommendedAction, NegotiationSuggestion, WeakEvidenceItem, DecisionPlaybook, OverallDecision, SkippedDocument } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
@@ -234,24 +234,63 @@ function SectionCard({ icon, title, className = '', badge, children }: {
    off than one who knows to check the rest themselves.
 */
 function TruncationNotice({ names }: { names?: string[] }) {
+  const { t } = useTranslation()
   if (!names || names.length === 0) return null
+  const one = names.length === 1
   return (
     <div className="dr-truncation-notice" role="status">
       <span className="dr-truncation-icon" aria-hidden="true">⚠</span>
       <div>
         <p className="dr-truncation-title">
-          {names.length === 1
-            ? 'One document was too long to analyse in full'
-            : `${names.length} documents were too long to analyse in full`}
+          {one
+            ? t('report.truncatedTitleOne')
+            : t('report.truncatedTitleMany').replace('{n}', String(names.length))}
         </p>
         <p className="dr-truncation-body">
-          Only the earlier part of {names.join(', ')} was reviewed. Anything later in{' '}
-          {names.length === 1 ? 'the document' : 'those documents'} was not included in this
-          analysis — review those sections yourself, or split the file and run it again.
+          {t(one ? 'report.truncatedBodyOne' : 'report.truncatedBodyMany').replace('{names}', names.join(', '))}
         </p>
       </div>
     </div>
   )
+}
+
+/* ── Skipped-file notice ─────────────────────────────────────────────────────
+   A file that could not be read — wrong type, a scan with no text, damaged —
+   is left out of the analysis. The server used to log that and say nothing,
+   so a report built from one of three uploads looked exactly like a report
+   built from all three. It is stated before any finding now.
+*/
+function SkippedNotice({ items }: { items?: SkippedDocument[] }) {
+  const { t } = useTranslation()
+  if (!items || items.length === 0) return null
+  return (
+    <div className="dr-truncation-notice" role="alert">
+      <span className="dr-truncation-icon" aria-hidden="true">⚠</span>
+      <div>
+        <p className="dr-truncation-title">
+          {items.length === 1
+            ? t('report.skippedTitleOne')
+            : t('report.skippedTitleMany').replace('{n}', String(items.length))}
+        </p>
+        <p className="dr-truncation-body">{t('report.skippedBody')}</p>
+        <ul className="dr-truncation-body">
+          {items.map((s, i) => (
+            <li key={i}><strong>{s.name}</strong> — {skipReason(s, t)}</li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+/** The reason in the reader's language when we have it, else the server's English. */
+function skipReason(s: SkippedDocument, t: (k: string) => string): string {
+  if (s.code) {
+    const key = `report.skipReason_${s.code}`
+    const translated = t(key)
+    if (translated !== key) return translated
+  }
+  return s.reason
 }
 
 /* ── Executive Summary ── */
@@ -283,7 +322,9 @@ function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string
   const lowCount = report.hidden_risks.filter(r => r.severity === 'Low').length
   const bestOption = report.ranking[0]?.name ?? '—'
   const pages = report.pages_analyzed ?? 0
-  const timeSaved = pages > 0 ? `${(Math.round(pages * 4 / 60 * 10) / 10).toFixed(1)} hrs` : '—'
+  const timeSaved = pages > 0
+    ? t('report.hoursValue').replace('{n}', (Math.round(pages * 4 / 60 * 10) / 10).toFixed(1))
+    : '—'
 
   return (
     <div className="dr-exec-summary">
@@ -298,11 +339,11 @@ function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string
         <div className="dr-exec-quick-stats">
           <div className="dr-exec-qs-item">
             <span className="dr-exec-qs-val">{score}%</span>
-            <span className="dr-exec-qs-label">Confidence</span>
+            <span className="dr-exec-qs-label">{t('report.statConfidence')}</span>
           </div>
           <div className="dr-exec-qs-item dr-exec-qs-item--wide">
             <span className="dr-exec-qs-val dr-exec-qs-val--sm">{bestOption}</span>
-            <span className="dr-exec-qs-label">Best Option</span>
+            <span className="dr-exec-qs-label">{t('report.statBestOption')}</span>
           </div>
         </div>
       </div>
@@ -310,19 +351,19 @@ function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string
       {/* Risk breakdown dashboard */}
       <div className="dr-exec-risk-dashboard">
         <span className="dr-exec-risk-pill dr-exec-risk-pill--high">
-          🔴 High Risk <strong>{highCount}</strong>
+          🔴 {t('report.pillHighRisk')} <strong>{highCount}</strong>
         </span>
         <span className="dr-exec-risk-pill dr-exec-risk-pill--medium">
-          🟠 Medium Risk <strong>{medCount}</strong>
+          🟠 {t('report.pillMediumRisk')} <strong>{medCount}</strong>
         </span>
         <span className="dr-exec-risk-pill dr-exec-risk-pill--low">
-          🟢 Low Risk <strong>{lowCount}</strong>
+          🟢 {t('report.pillLowRisk')} <strong>{lowCount}</strong>
         </span>
         <span className="dr-exec-risk-pill dr-exec-risk-pill--missing">
-          ⚠ Missing Info <strong>{report.missing_information.length}</strong>
+          ⚠ {t('report.pillMissingInfo')} <strong>{report.missing_information.length}</strong>
         </span>
         <span className="dr-exec-risk-pill dr-exec-risk-pill--evidence">
-          📄 Evidence <strong>{report.evidence_found.length}</strong>
+          📄 {t('report.pillEvidence')} <strong>{report.evidence_found.length}</strong>
         </span>
       </div>
 
@@ -331,23 +372,23 @@ function ExecutiveSummary({ report, t }: { report: DecisionReport; t: (k: string
         {timeSaved !== '—' && (
           <div className="dr-exec-stat">
             <span className="dr-exec-stat-val">{timeSaved}</span>
-            <span className="dr-exec-stat-label">Estimated Time Saved</span>
+            <span className="dr-exec-stat-label">{t('report.statTimeSaved')}</span>
           </div>
         )}
         <div className="dr-exec-stat">
           <span className="dr-exec-stat-val">{report.documents_analyzed}</span>
-          <span className="dr-exec-stat-label">Documents Compared</span>
+          <span className="dr-exec-stat-label">{t('report.statDocsCompared')}</span>
         </div>
         {pages > 0 && (
           <div className="dr-exec-stat">
             <span className="dr-exec-stat-val">{pages}</span>
-            <span className="dr-exec-stat-label">Pages Analyzed</span>
+            <span className="dr-exec-stat-label">{t('report.statPagesAnalyzed')}</span>
           </div>
         )}
         {report.compared_categories && (
           <div className="dr-exec-stat">
             <span className="dr-exec-stat-val">{report.compared_categories.length}</span>
-            <span className="dr-exec-stat-label">Categories Compared</span>
+            <span className="dr-exec-stat-label">{t('report.statCategoriesCompared')}</span>
           </div>
         )}
       </div>
@@ -379,7 +420,7 @@ function RecommendationCard({
 
       {whatWouldChange && (
         <div className="dr-change-decision">
-          <p className="dr-change-label">💡 What Would Change This Decision?</p>
+          <p className="dr-change-label">💡 {t('report.whatWouldChange')}</p>
           <p className="dr-change-text">{whatWouldChange}</p>
         </div>
       )}
@@ -389,9 +430,9 @@ function RecommendationCard({
         {onChallenge && (
           <button
             className="dr-challenge-btn"
-            onClick={() => onChallenge(`Why did you make this recommendation? What's the main evidence supporting it?`)}
+            onClick={() => onChallenge(t('report.challengeRecommendationQ'))}
           >
-            <IconMessageCircle /> Challenge AI
+            <IconMessageCircle /> {t('report.challengeAi')}
           </button>
         )}
       </div>
@@ -444,7 +485,7 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
   const dashOffset = circumference - (pct / 100) * circumference
 
   return (
-    <SectionCard icon={<IconTarget />} title="Decision Strength">
+    <SectionCard icon={<IconTarget />} title={t('report.decisionStrength')}>
       <div className="dr-strength-top">
         <div className="dr-strength-gauge">
           <svg width="96" height="96" viewBox="0 0 96 96">
@@ -475,12 +516,12 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
 
       {breakdown && (
         <div className="dr-confidence-breakdown">
-          <p className="dr-breakdown-label">AI Confidence Based On:</p>
+          <p className="dr-breakdown-label">{t('report.confidenceBasedOn')}</p>
           {[
-            { label: 'Document Completeness', value: breakdown.document_completeness },
-            { label: 'Evidence Consistency', value: breakdown.evidence_consistency },
-            { label: 'Risk Severity', value: breakdown.risk_severity },
-            { label: 'Missing Information', value: breakdown.missing_information },
+            { label: t('report.cbDocumentCompleteness'), value: breakdown.document_completeness },
+            { label: t('report.cbEvidenceConsistency'), value: breakdown.evidence_consistency },
+            { label: t('report.cbRiskSeverity'), value: breakdown.risk_severity },
+            { label: t('report.cbMissingInformation'), value: breakdown.missing_information },
           ].map(({ label, value }) => {
             const barColor = value >= 70 ? '#22C55E' : value >= 40 ? '#F59E0B' : '#EF4444'
             return (
@@ -504,8 +545,14 @@ function DecisionStrengthCard({ report, t }: { report: DecisionReport; t: (k: st
 
 /* ── What Was Compared ── */
 function WhatWasCompared({ categories }: { categories: string[] }) {
+  const { t } = useTranslation()
+  const n = String(categories.length)
   return (
-    <SectionCard icon={<IconCheckGrid />} title="What Was Compared" badge={`${categories.length} Categories`}>
+    <SectionCard
+      icon={<IconCheckGrid />}
+      title={t('report.whatWasCompared')}
+      badge={t('report.categoriesBadge').replace('{n}', n)}
+    >
       <div className="dr-compared-grid">
         {categories.map((cat, i) => (
           <div key={i} className="dr-compared-item">
@@ -514,7 +561,7 @@ function WhatWasCompared({ categories }: { categories: string[] }) {
           </div>
         ))}
       </div>
-      <p className="dr-compared-footer">AI compared {categories.length} categories across all documents</p>
+      <p className="dr-compared-footer">{t('report.comparedFooter').replace('{n}', n)}</p>
     </SectionCard>
   )
 }
@@ -543,9 +590,9 @@ function HiddenRisks({ risks, t, onChallenge }: {
       {/* Visual risk breakdown header */}
       {risks.length > 0 && (
         <div className="dr-risk-breakdown">
-          {highCount > 0 && <span className="dr-rb-pill dr-rb-pill--high">🔴 High Risk <strong>{highCount}</strong></span>}
-          {medCount > 0 && <span className="dr-rb-pill dr-rb-pill--medium">🟠 Medium Risk <strong>{medCount}</strong></span>}
-          {lowCount > 0 && <span className="dr-rb-pill dr-rb-pill--low">🟢 Low Risk <strong>{lowCount}</strong></span>}
+          {highCount > 0 && <span className="dr-rb-pill dr-rb-pill--high">🔴 {t('report.pillHighRisk')} <strong>{highCount}</strong></span>}
+          {medCount > 0 && <span className="dr-rb-pill dr-rb-pill--medium">🟠 {t('report.pillMediumRisk')} <strong>{medCount}</strong></span>}
+          {lowCount > 0 && <span className="dr-rb-pill dr-rb-pill--low">🟢 {t('report.pillLowRisk')} <strong>{lowCount}</strong></span>}
         </div>
       )}
 
@@ -566,7 +613,7 @@ function HiddenRisks({ risks, t, onChallenge }: {
                     className="dr-risk-reasoning-toggle"
                     onClick={() => setOpenReasoning(openReasoning === i ? null : i)}
                   >
-                    <span>🧠 Why did the AI flag this?</span>
+                    <span>🧠 {t('report.whyFlagged')}</span>
                     <IconChevronDown open={openReasoning === i} />
                   </button>
                   {openReasoning === i && (
@@ -585,9 +632,13 @@ function HiddenRisks({ risks, t, onChallenge }: {
               {onChallenge && (
                 <button
                   className="dr-challenge-inline-btn"
-                  onClick={() => onChallenge(`Why is this considered a ${r.severity} risk: "${r.description.slice(0, 80)}..."?`)}
+                  onClick={() => onChallenge(
+                    t('report.challengeRiskQ')
+                      .replace('{severity}', t(`report.severity${r.severity}`))
+                      .replace('{risk}', r.description.length > 80 ? `${r.description.slice(0, 80)}…` : r.description),
+                  )}
                 >
-                  Challenge AI <IconArrowRight />
+                  {t('report.challengeAi')} <IconArrowRight />
                 </button>
               )}
             </div>
@@ -609,6 +660,14 @@ const EVIDENCE_BG: Record<string, string> = {
   'Partially mentioned': 'rgba(251,146,60,0.12)',
 }
 
+/** The model reports evidence status as an English identifier; show it translated. */
+function evidenceLabel(evidence: string, t: (k: string) => string): string {
+  if (evidence?.startsWith('Not found')) return t('report.evidenceNotFound')
+  if (evidence?.startsWith('Partially mentioned')) return t('report.evidencePartial')
+  if (evidence?.startsWith('Unclear')) return t('report.evidenceUnclear')
+  return evidence
+}
+
 /* ── 4. Missing Information ── */
 function MissingInformation({ items, t }: { items: MissingInfoItem[]; t: (k: string) => string }) {
   return (
@@ -627,16 +686,16 @@ function MissingInformation({ items, t }: { items: MissingInfoItem[]; t: (k: str
                     <span className="dr-missing-icon">⚠</span>
                     <span className="dr-missing-title">{item.title}</span>
                     <span className="dr-missing-evidence-badge" style={{ color: evidenceColor, background: evidenceBg }}>
-                      {item.evidence}
+                      {evidenceLabel(item.evidence, t)}
                     </span>
                   </div>
                   <div className="dr-missing-details">
                     <div className="dr-missing-row">
-                      <span className="dr-missing-key">Why It Matters</span>
+                      <span className="dr-missing-key">{t('report.whyItMatters')}</span>
                       <span className="dr-missing-val">{item.whyItMatters}</span>
                     </div>
                     <div className="dr-missing-row">
-                      <span className="dr-missing-key">Recommended Action</span>
+                      <span className="dr-missing-key">{t('report.recommendedAction')}</span>
                       <span className="dr-missing-val">{item.action}</span>
                     </div>
                   </div>
@@ -657,15 +716,46 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
   t: (k: string) => string
 }) {
   const [expandedContext, setExpandedContext] = useState<number | null>(null)
+  const [viewError, setViewError] = useState<string | null>(null)
+
+  // One object URL per file for the life of this page, released on unmount.
+  // A new URL used to be created on every click and never revoked, keeping a
+  // copy of the file alive for as long as the tab stayed open.
+  const objectUrls = useRef(new Map<File, string>())
+  useEffect(() => {
+    const urls = objectUrls.current
+    return () => {
+      urls.forEach(url => URL.revokeObjectURL(url))
+      urls.clear()
+    }
+  }, [])
+
+  /**
+   * The uploaded PDF an evidence item points at, if it is still available.
+   * Only an exact name match counts: falling back to the first upload used to
+   * open a different document at a page number that belonged to another file.
+   */
+  function originalFor(e: EvidenceItem): File | undefined {
+    if (!uploadedFiles || uploadedFiles.length === 0 || !e.page) return undefined
+    const file = e.document
+      ? uploadedFiles.find(f => f.name === e.document)
+      : uploadedFiles.length === 1 ? uploadedFiles[0] : undefined
+    return file && file.name.toLowerCase().endsWith('.pdf') ? file : undefined
+  }
 
   function handleViewOriginal(e: EvidenceItem) {
-    if (!uploadedFiles || uploadedFiles.length === 0) return
-    const file = e.document
-      ? uploadedFiles.find(f => f.name === e.document) ?? uploadedFiles[0]
-      : uploadedFiles[0]
-    const url = URL.createObjectURL(file)
+    setViewError(null)
+    const file = originalFor(e)
+    if (!file) { setViewError(t('report.viewOriginalMissing')); return }
+    let url = objectUrls.current.get(file)
+    if (!url) {
+      url = URL.createObjectURL(file)
+      objectUrls.current.set(file, url)
+    }
     const pageNum = e.page ? parseInt(e.page, 10) : 1
-    window.open(`${url}#page=${isNaN(pageNum) ? 1 : pageNum}`, '_blank')
+    const opened = window.open(`${url}#page=${isNaN(pageNum) ? 1 : pageNum}`, '_blank')
+    // A blocked pop-up used to fail with no sign that anything had happened.
+    if (!opened) setViewError(t('report.viewOriginalBlocked'))
   }
 
   return (
@@ -673,6 +763,8 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
       {evidence.length === 0
         ? <p className="dr-empty">{t('report.noEvidence')}</p>
         : (
+          <>
+          {viewError && <p className="dr-empty" role="status">{viewError}</p>}
           <div className="dr-evidence-cards">
             {evidence.map((e, i) => (
               <div key={i} className="dr-evidence-card">
@@ -682,7 +774,7 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
                     <div className="dr-evidence-card-info">
                       <span className="dr-evidence-section">{e.section || t('report.evidenceUnstructured')}</span>
                       <span className="dr-evidence-ref">
-                        {e.page && `Page ${e.page}`}{e.page && e.clause && ' · '}{e.clause && `§ ${e.clause}`}
+                        {e.page && t('report.pageRef').replace('{n}', e.page)}{e.page && e.clause && ' · '}{e.clause && `§ ${e.clause}`}
                         {e.document && <span className="dr-evidence-doc-name"> — {e.document}</span>}
                       </span>
                     </div>
@@ -691,7 +783,7 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
                     {e.confidence !== undefined && (
                       <span className="dr-evidence-confidence"
                         style={{ color: e.confidence >= 80 ? '#22C55E' : e.confidence >= 60 ? '#F59E0B' : '#EF4444' }}>
-                        {e.confidence}% confidence
+                        {t('report.confidencePct').replace('{n}', String(e.confidence))}
                       </span>
                     )}
                     <div className="dr-evidence-card-actions">
@@ -700,13 +792,13 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
                           className="dr-evidence-action-btn"
                           onClick={() => setExpandedContext(expandedContext === i ? null : i)}
                         >
-                          {expandedContext === i ? 'Hide Context' : 'Show Context'}
+                          {expandedContext === i ? t('report.hideContext') : t('report.showContext')}
                           <IconChevronDown open={expandedContext === i} />
                         </button>
                       )}
-                      {uploadedFiles && uploadedFiles.length > 0 && e.page && (
+                      {originalFor(e) && (
                         <button className="dr-evidence-view-btn" onClick={() => handleViewOriginal(e)}>
-                          View Original →
+                          {t('report.viewOriginal')}
                         </button>
                       )}
                     </div>
@@ -720,6 +812,7 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
               </div>
             ))}
           </div>
+          </>
         )
       }
     </SectionCard>
@@ -731,18 +824,19 @@ function EvidenceFound({ evidence, uploadedFiles, t }: {
    section's data from the response entirely, so this is a genuine upsell for
    content the account did not receive — not a UI-only hide. */
 function LockedSection({
-  icon, title, blurb, cta = 'Upgrade to unlock →',
+  icon, title, blurb, cta,
 }: { icon: string; title: string; blurb: string; cta?: string }) {
+  const { t } = useTranslation()
   return (
     <div className="dr-section-card dr-locked-section">
       <div className="dr-section-header">
         <span className="dr-section-icon">{icon}</span>
         <h3 className="dr-section-title">{title}</h3>
-        <span className="dr-pro-badge"><IconLock /> Paid plan</span>
+        <span className="dr-pro-badge"><IconLock /> {t('report.paidPlanBadge')}</span>
       </div>
       <div className="dr-section-body">
         <p className="dr-locked-text">{blurb}</p>
-        <a href="/pricing" className="dr-ifiwy-upgrade-btn">{cta}</a>
+        <a href="/pricing" className="dr-ifiwy-upgrade-btn">{cta ?? t('report.upgradeToUnlock')}</a>
       </div>
     </div>
   )
@@ -753,28 +847,25 @@ function LockedSection({
 // expected here rather than a sign the section should disappear — non-Pro
 // plans still see the locked prompt below.
 function IfIWereYou({ text, isPro }: { text?: string; isPro: boolean }) {
+  const { t } = useTranslation()
   return (
     <div className="dr-if-i-were-you">
       <div className="dr-section-header">
         <span className="dr-section-icon">🧑‍💼</span>
-        <h3 className="dr-section-title">If I Were You</h3>
-        {!isPro && <span className="dr-pro-badge"><IconLock /> Pro</span>}
+        <h3 className="dr-section-title">{t('report.ifIWereYou')}</h3>
+        {!isPro && <span className="dr-pro-badge"><IconLock /> {t('report.proBadge')}</span>}
       </div>
       {isPro && text ? (
         // Pro user — show the consultant advice
         <p className="dr-ifiwy-text">{text}</p>
       ) : isPro && !text ? (
         // Pro user but AI didn't return this field — reassure them
-        <p className="dr-ifiwy-unavailable">
-          Personal advisor insight is available on your plan. Re-run the analysis to generate this section.
-        </p>
+        <p className="dr-ifiwy-unavailable">{t('report.ifIWereYouUnavailable')}</p>
       ) : (
         // Free / Starter user — show upgrade prompt
         <div className="dr-ifiwy-locked">
-          <p className="dr-ifiwy-locked-text">
-            Get a personal consultant-style recommendation based on all the evidence above.
-          </p>
-          <a href="/pricing" className="dr-ifiwy-upgrade-btn">Upgrade to Pro →</a>
+          <p className="dr-ifiwy-locked-text">{t('report.ifIWereYouLocked')}</p>
+          <a href="/pricing" className="dr-ifiwy-upgrade-btn">{t('report.upgradeToPro')}</a>
         </div>
       )}
     </div>
@@ -783,6 +874,7 @@ function IfIWereYou({ text, isPro }: { text?: string; isPro: boolean }) {
 
 /* ── Before You Sign Checklist ── */
 function BeforeSigningChecklist({ items }: { items: string[] }) {
+  const { t } = useTranslation()
   const [checked, setChecked] = useState<Record<number, boolean>>({})
 
   function toggle(i: number) {
@@ -795,9 +887,11 @@ function BeforeSigningChecklist({ items }: { items: string[] }) {
     <div className="dr-section-card">
       <div className="dr-section-header">
         <span className="dr-section-icon">✅</span>
-        <h3 className="dr-section-title">Before You Sign</h3>
+        <h3 className="dr-section-title">{t('report.beforeYouSign')}</h3>
         {items.length > 0 && (
-          <span className="dr-section-badge">{doneCount}/{items.length} done</span>
+          <span className="dr-section-badge">
+            {t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(items.length))}
+          </span>
         )}
       </div>
       <div className="dr-checklist">
@@ -812,7 +906,7 @@ function BeforeSigningChecklist({ items }: { items: string[] }) {
             <span className="dr-checklist-text">{item}</span>
           </label>
         ))}
-        {items.length === 0 && <p className="dr-empty">No checklist items available.</p>}
+        {items.length === 0 && <p className="dr-empty">{t('report.noChecklist')}</p>}
       </div>
     </div>
   )
@@ -826,41 +920,17 @@ interface ChatMessage {
   upgrade?: boolean
 }
 
-const SUGGESTED_QUESTIONS_BY_TYPE: Record<string, string[]> = {
-  cv: [
-    'Which candidate has stronger evidence for the role?',
-    'What should I ask in the next interview round?',
-    'Which risk is the highest priority?',
-    'What would change my hiring decision?',
-  ],
-  supplier_quotation: [
-    'Compare Supplier A and Supplier B if pricing changes.',
-    'What should I negotiate before signing?',
-    'Which risk is the highest priority?',
-    'Draft a negotiation email.',
-  ],
-  contract: [
-    'Explain this clause in simple language.',
-    'What should I negotiate before signing?',
-    'Which risk is the highest priority?',
-    'Draft a negotiation email.',
-  ],
-  business_proposal: [
-    'Which risk is the highest priority?',
-    'What would change my recommendation?',
-    'What should I negotiate before signing?',
-    'Show me the strongest supporting evidence.',
-  ],
-  general: [
-    'Why did you recommend this option?',
-    'Show me the strongest supporting evidence.',
-    'Is there any evidence against this conclusion?',
-    'What assumptions did you make?',
-    'What would change your recommendation?',
-  ],
+/** Translation keys for the suggested starter questions, per document type. */
+const SUGGESTED_QUESTION_KEYS_BY_TYPE: Record<string, string[]> = {
+  cv: ['report.sqCv1', 'report.sqCv2', 'report.sqHighestRisk', 'report.sqCv4'],
+  supplier_quotation: ['report.sqSupplier1', 'report.sqNegotiate', 'report.sqHighestRisk', 'report.sqEmail'],
+  contract: ['report.sqContract1', 'report.sqNegotiate', 'report.sqHighestRisk', 'report.sqEmail'],
+  business_proposal: ['report.sqHighestRisk', 'report.sqChangeMine', 'report.sqNegotiate', 'report.sqStrongest'],
+  general: ['report.sqGeneral1', 'report.sqStrongest', 'report.sqGeneral3', 'report.sqGeneral4', 'report.sqChangeYours'],
 }
-function getSuggestedQuestions(docType?: string): string[] {
-  return SUGGESTED_QUESTIONS_BY_TYPE[docType ?? 'general'] ?? SUGGESTED_QUESTIONS_BY_TYPE.general
+function getSuggestedQuestions(docType: string | undefined, t: (k: string) => string): string[] {
+  const keys = SUGGESTED_QUESTION_KEYS_BY_TYPE[docType ?? 'general'] ?? SUGGESTED_QUESTION_KEYS_BY_TYPE.general
+  return keys.map(k => t(k))
 }
 
 /* ── Decision Assistant context ──────────────────────────────────────────────
@@ -869,7 +939,8 @@ function getSuggestedQuestions(docType?: string): string[] {
    api/_lib/aiConfig.ts, which enforces the same limit server-side — the browser
    is not trusted to be the only thing bounding what we send to OpenAI.
 */
-const ASSISTANT_CONTEXT_CHAR_LIMIT = 6000
+/** Mirrors MAX_ASSISTANT_QUESTION_CHARS in api/_lib/assistant.ts. */
+const ASSISTANT_QUESTION_MAX_CHARS = 1000
 const ASSISTANT_CONTEXT_MAX_ITEMS = 5
 const ASSISTANT_CONTEXT_MAX_FIELD = 300
 
@@ -915,14 +986,24 @@ function buildAssistantContext(report: DecisionReport): string {
     compared_categories: report.compared_categories,
   }
   // No pretty-printing: indentation is pure token cost on every question asked.
-  return JSON.stringify(context).slice(0, ASSISTANT_CONTEXT_CHAR_LIMIT)
+  // Not cut to length here: slicing the string produced invalid JSON. The
+  // server rebuilds the context from these fields and applies the ceiling.
+  return JSON.stringify(context)
 }
 
-function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSuggestion, t }: {
+/** A question to place in the Assistant, raised from elsewhere in the report. */
+interface ChallengeRequest {
+  text: string
+  /** Increments on every click, so asking the same question twice still applies. */
+  id: number
+}
+
+function ChallengeAIPanel({ report, decisionGoal, reportId, request, t }: {
   report: DecisionReport
   decisionGoal?: string
-  suggestedQuestion?: string
-  onClearSuggestion?: () => void
+  /** Saved report id; lets the server read the report instead of trusting the browser's copy. */
+  reportId?: string | null
+  request?: ChallengeRequest | null
   t: (k: string) => string
 }) {
   const [open, setOpen] = useState(false)
@@ -931,13 +1012,18 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
-  const SUGGESTED_QUESTIONS = getSuggestedQuestions(report.document_type)
+  const SUGGESTED_QUESTIONS = getSuggestedQuestions(report.document_type, t)
 
-  // Auto-open and fill when a challenge button is clicked from another section
-  if (suggestedQuestion && !open) {
+  // Open and pre-fill when a "Challenge AI" button elsewhere is pressed. This
+  // used to call the parent's state setter during render, which React warns
+  // about and which can loop. Remembering the last request handled is React's
+  // documented way to respond to a prop change during render, and it only
+  // touches this component's own state.
+  const [handledRequestId, setHandledRequestId] = useState<number | null>(null)
+  if (request && request.id !== handledRequestId) {
+    setHandledRequestId(request.id)
     setOpen(true)
-    setQuestion(suggestedQuestion)
-    onClearSuggestion?.()
+    setQuestion(request.text.slice(0, ASSISTANT_QUESTION_MAX_CHARS))
   }
 
   async function handleSend() {
@@ -953,23 +1039,31 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
     // the place that decides whether a question is allowed.
     const reportContext = buildAssistantContext(report)
 
-    const result = await challengeAI(q, reportContext, decisionGoal ?? '')
+    try {
+      const result = await challengeAI(q, reportContext, decisionGoal ?? '', reportId)
 
-    // Quota and credit failures come back with a code so the panel can point
-    // the user at the fix rather than showing a raw error.
-    const answer =
-      result.answer
-      ?? (result.code === 'UNAUTHENTICATED'
-        ? 'Please sign in to use the Decision Assistant.'
-        : result.error)
-      ?? 'Unable to generate a response.'
+      // Quota and credit failures come back with a code so the panel can point
+      // the user at the fix rather than showing a raw error.
+      const answer =
+        result.answer
+        ?? (result.code === 'UNAUTHENTICATED' ? t('report.assistantSignIn') : result.error)
+        ?? t('report.assistantNoAnswer')
 
-    setMessages(prev => [...prev, {
-      role: 'ai',
-      text: answer,
-      upgrade: result.code === 'ASSISTANT_LIMIT' || result.code === 'INSUFFICIENT_CREDITS',
-    }])
-    setLoading(false)
+      setMessages(prev => [...prev, {
+        role: 'ai',
+        text: answer,
+        upgrade: result.code === 'ASSISTANT_LIMIT' || result.code === 'INSUFFICIENT_CREDITS',
+      }])
+    } catch (e) {
+      // There was no catch here, so any network failure left the panel on
+      // "Thinking…" forever: nothing ever cleared the loading flag.
+      console.warn('[assistant] request failed:', e)
+      setMessages(prev => [...prev, { role: 'ai', text: t('report.assistantNetworkError') }])
+      // Give the question back so it can be sent again without retyping.
+      setQuestion(current => current || q)
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -993,9 +1087,7 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
 
       {open && (
         <div className="dr-challenge-body">
-          <p className="dr-challenge-intro">
-            Ask any question about this analysis. The AI will answer using only the evidence found in your documents.
-          </p>
+          <p className="dr-challenge-intro">{t('report.challengeIntro')}</p>
 
           {messages.length === 0 && (
             <div className="dr-challenge-suggestions">
@@ -1015,17 +1107,17 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
             <div className="dr-challenge-messages">
               {messages.map((m, i) => (
                 <div key={i} className={`dr-challenge-msg dr-challenge-msg--${m.role}`}>
-                  <span className="dr-challenge-msg-badge">{m.role === 'user' ? 'You' : 'AI'}</span>
+                  <span className="dr-challenge-msg-badge">{m.role === 'user' ? t('report.chatYou') : t('report.chatAi')}</span>
                   <p className="dr-challenge-msg-text">{m.text}</p>
                   {m.upgrade && (
-                    <a href="/pricing" className="dr-challenge-upgrade-link">View plans →</a>
+                    <a href="/pricing" className="dr-challenge-upgrade-link">{t('report.viewPlansLink')}</a>
                   )}
                 </div>
               ))}
               {loading && (
                 <div className="dr-challenge-msg dr-challenge-msg--ai">
-                  <span className="dr-challenge-msg-badge">AI</span>
-                  <p className="dr-challenge-msg-text dr-challenge-typing">Thinking…</p>
+                  <span className="dr-challenge-msg-badge">{t('report.chatAi')}</span>
+                  <p className="dr-challenge-msg-text dr-challenge-typing">{t('report.thinking')}</p>
                 </div>
               )}
             </div>
@@ -1038,8 +1130,9 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
               value={question}
               onChange={e => setQuestion(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Why did you recommend Supplier B? · Is there evidence against this?"
+              placeholder={t('report.challengePlaceholder')}
               rows={2}
+              maxLength={ASSISTANT_QUESTION_MAX_CHARS}
               disabled={loading}
             />
             <button
@@ -1050,43 +1143,46 @@ function ChallengeAIPanel({ report, decisionGoal, suggestedQuestion, onClearSugg
               <IconSend />
             </button>
           </div>
-          <p className="dr-challenge-note">Press Enter to send · Shift+Enter for new line</p>
+          <p className="dr-challenge-note">{t('report.challengeNote')}</p>
         </div>
       )}
     </div>
   )
 }
 
-/* ── Framework type helpers ── */
+/* ── Framework type helpers ──
+   `label` and `expert` are translation keys. */
 const FRAMEWORK_META: Record<string, { label: string; expert: string; icon: string; color: string }> = {
-  cv: { label: 'CV / Hiring Analysis', expert: 'Senior HR Director', icon: '👤', color: '#3B82F6' },
-  supplier_quotation: { label: 'Supplier Quotation Analysis', expert: 'Senior Procurement Manager', icon: '📦', color: '#F59E0B' },
-  contract: { label: 'Contract Review', expert: 'Commercial Contract Reviewer', icon: '📋', color: '#8B5CF6' },
-  business_proposal: { label: 'Business Proposal Review', expert: 'Senior Business Consultant', icon: '📊', color: '#10B981' },
-  general: { label: 'Decision Intelligence Analysis', expert: 'Critical Decision Reviewer', icon: '🧠', color: '#3B82F6' },
+  cv: { label: 'report.fwCvLabel', expert: 'report.fwCvExpert', icon: '👤', color: '#3B82F6' },
+  supplier_quotation: { label: 'report.fwSupplierLabel', expert: 'report.fwSupplierExpert', icon: '📦', color: '#F59E0B' },
+  contract: { label: 'report.fwContractLabel', expert: 'report.fwContractExpert', icon: '📋', color: '#8B5CF6' },
+  business_proposal: { label: 'report.fwProposalLabel', expert: 'report.fwProposalExpert', icon: '📊', color: '#10B981' },
+  general: { label: 'report.fwGeneralLabel', expert: 'report.fwGeneralExpert', icon: '🧠', color: '#3B82F6' },
 }
 
 function getFrameworkMeta(docType?: string) {
   return FRAMEWORK_META[docType ?? 'general'] ?? FRAMEWORK_META.general
 }
 
+/** Translation key for the verification section heading. */
 function getVerificationLabel(docType?: string): string {
-  if (docType === 'cv') return 'Competency Verification Questions'
-  if (docType === 'supplier_quotation') return 'Questions to Ask Supplier Before Signing'
-  if (docType === 'contract') return 'Clarification Questions Before Signing'
-  if (docType === 'business_proposal') return 'Critical Questions for the Proposer'
-  return 'Verification Questions'
+  if (docType === 'cv') return 'report.vqCv'
+  if (docType === 'supplier_quotation') return 'report.vqSupplier'
+  if (docType === 'contract') return 'report.vqContract'
+  if (docType === 'business_proposal') return 'report.vqProposal'
+  return 'report.vqGeneral'
 }
 
 /* ── Expert Framework Badge ── */
 function ExpertFrameworkBadge({ docType }: { docType?: string }) {
+  const { t } = useTranslation()
   const meta = getFrameworkMeta(docType)
   return (
     <div className="dr-framework-badge" style={{ borderColor: `${meta.color}40`, background: `${meta.color}12` }}>
       <span className="dr-framework-icon">{meta.icon}</span>
       <div className="dr-framework-info">
-        <span className="dr-framework-label" style={{ color: meta.color }}>{meta.label}</span>
-        <span className="dr-framework-expert">Analyzed by: {meta.expert}</span>
+        <span className="dr-framework-label" style={{ color: meta.color }}>{t(meta.label)}</span>
+        <span className="dr-framework-expert">{t('report.analyzedBy').replace('{expert}', t(meta.expert))}</span>
       </div>
     </div>
   )
@@ -1094,10 +1190,11 @@ function ExpertFrameworkBadge({ docType }: { docType?: string }) {
 
 /* ── Stage 2: Verification Questions ── */
 function VerificationQuestionsSection({ questions, docType }: { questions: VerificationQuestion[]; docType?: string }) {
+  const { t } = useTranslation()
   const [openIdx, setOpenIdx] = useState<number | null>(null)
   if (!questions || questions.length === 0) return null
 
-  const label = getVerificationLabel(docType)
+  const label = t(getVerificationLabel(docType))
   const isCV = docType === 'cv'
 
   return (
@@ -1105,13 +1202,11 @@ function VerificationQuestionsSection({ questions, docType }: { questions: Verif
       <div className="dr-section-header">
         <span className="dr-section-icon">🎯</span>
         <h3 className="dr-section-title">{label}</h3>
-        <span className="dr-section-badge">{questions.length} questions</span>
+        <span className="dr-section-badge">{t('report.questionsCount').replace('{n}', String(questions.length))}</span>
       </div>
       <div className="dr-section-body">
         {isCV && (
-          <p className="dr-verification-intro">
-            These questions are designed to verify whether the candidate genuinely possesses the claimed experience — not just what is written on the CV.
-          </p>
+          <p className="dr-verification-intro">{t('report.vqCvIntro')}</p>
         )}
         <div className="dr-vq-list">
           {questions.map((q, i) => (
@@ -1128,7 +1223,7 @@ function VerificationQuestionsSection({ questions, docType }: { questions: Verif
                 <div className="dr-vq-body">
                   {q.strong_answer_should_include && q.strong_answer_should_include.length > 0 && (
                     <div className="dr-vq-block dr-vq-block--strong">
-                      <p className="dr-vq-block-label">✅ Strong Answer Should Include:</p>
+                      <p className="dr-vq-block-label">✅ {t('report.strongAnswer')}</p>
                       <ul className="dr-vq-block-list">
                         {q.strong_answer_should_include.map((item, j) => (
                           <li key={j} className="dr-vq-block-item">{item}</li>
@@ -1138,7 +1233,7 @@ function VerificationQuestionsSection({ questions, docType }: { questions: Verif
                   )}
                   {q.red_flags && q.red_flags.length > 0 && (
                     <div className="dr-vq-block dr-vq-block--red">
-                      <p className="dr-vq-block-label">🚩 Red Flags to Watch For:</p>
+                      <p className="dr-vq-block-label">🚩 {t('report.redFlagsWatch')}</p>
                       <ul className="dr-vq-block-list">
                         {q.red_flags.map((flag, j) => (
                           <li key={j} className="dr-vq-block-item">{flag}</li>
@@ -1148,7 +1243,7 @@ function VerificationQuestionsSection({ questions, docType }: { questions: Verif
                   )}
                   {q.why_it_matters && (
                     <div className="dr-vq-block dr-vq-block--why">
-                      <p className="dr-vq-block-label">💡 Why This Question Matters:</p>
+                      <p className="dr-vq-block-label">💡 {t('report.whyQuestionMatters')}</p>
                       <p className="dr-vq-block-text">{q.why_it_matters}</p>
                     </div>
                   )}
@@ -1164,16 +1259,17 @@ function VerificationQuestionsSection({ questions, docType }: { questions: Verif
 
 /* ── Interview Red Flags (CV only) ── */
 function InterviewRedFlagsSection({ flags }: { flags: string[] }) {
+  const { t } = useTranslation()
   if (!flags || flags.length === 0) return null
   return (
     <div className="dr-section-card dr-interview-flags-section">
       <div className="dr-section-header">
         <span className="dr-section-icon">🚩</span>
-        <h3 className="dr-section-title">Interview Red Flags</h3>
-        <span className="dr-section-badge">{flags.length} flags</span>
+        <h3 className="dr-section-title">{t('report.interviewRedFlags')}</h3>
+        <span className="dr-section-badge">{t('report.flagsCount').replace('{n}', String(flags.length))}</span>
       </div>
       <div className="dr-section-body">
-        <p className="dr-verification-intro">Behavioral patterns and answer styles that suggest claimed experience may not be genuine.</p>
+        <p className="dr-verification-intro">{t('report.interviewFlagsIntro')}</p>
         <ul className="dr-flags-list">
           {flags.map((flag, i) => (
             <li key={i} className="dr-flags-item">
@@ -1189,20 +1285,21 @@ function InterviewRedFlagsSection({ flags }: { flags: string[] }) {
 
 /* ── Stage 3: Recommended Actions ── */
 function RecommendedActionsSection({ actions }: { actions: RecommendedAction[] }) {
+  const { t } = useTranslation()
   if (!actions || actions.length === 0) return null
 
   const priorityConfig = {
-    High: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: 'High Priority' },
-    Medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: 'Medium Priority' },
-    Low: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', label: 'Low Priority' },
+    High: { color: '#EF4444', bg: 'rgba(239,68,68,0.12)', label: t('report.priorityHigh') },
+    Medium: { color: '#F59E0B', bg: 'rgba(245,158,11,0.12)', label: t('report.priorityMedium') },
+    Low: { color: '#22C55E', bg: 'rgba(34,197,94,0.12)', label: t('report.priorityLow') },
   }
 
   return (
     <div className="dr-section-card dr-actions-section">
       <div className="dr-section-header">
         <span className="dr-section-icon">⚡</span>
-        <h3 className="dr-section-title">Recommended Actions</h3>
-        <span className="dr-section-badge">{actions.length} steps</span>
+        <h3 className="dr-section-title">{t('report.recommendedActions')}</h3>
+        <span className="dr-section-badge">{t('report.stepsCount').replace('{n}', String(actions.length))}</span>
       </div>
       <div className="dr-section-body">
         <div className="dr-actions-list">
@@ -1235,10 +1332,13 @@ function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: 
   // early returns below — previously it was skipped whenever the section had
   // nothing to show, which is exactly the case React cannot recover from.
   const [openIdx, setOpenIdx] = useState<number | null>(null)
+  const { t } = useTranslation()
 
   if (!suggestions || suggestions.length === 0) return null
 
-  const title = docType === 'cv' ? '' : docType === 'business_proposal' ? 'Negotiation & Commitment Points' : 'Negotiation Suggestions'
+  const title = docType === 'cv'
+    ? ''
+    : docType === 'business_proposal' ? t('report.negotiationProposal') : t('report.negotiationSuggestions')
   if (!title) return null
 
   return (
@@ -1246,7 +1346,7 @@ function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: 
       <div className="dr-section-header">
         <span className="dr-section-icon">🤝</span>
         <h3 className="dr-section-title">{title}</h3>
-        <span className="dr-section-badge">{suggestions.length} points</span>
+        <span className="dr-section-badge">{t('report.pointsCount').replace('{n}', String(suggestions.length))}</span>
       </div>
       <div className="dr-section-body">
         <div className="dr-neg-list">
@@ -1260,19 +1360,19 @@ function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: 
                 <div className="dr-neg-body">
                   {s.issue && (
                     <div className="dr-neg-row">
-                      <span className="dr-neg-key">Issue</span>
+                      <span className="dr-neg-key">{t('report.negIssue')}</span>
                       <span className="dr-neg-val">{s.issue}</span>
                     </div>
                   )}
                   {s.suggested_improvement && (
                     <div className="dr-neg-row dr-neg-row--suggest">
-                      <span className="dr-neg-key">Request</span>
+                      <span className="dr-neg-key">{t('report.negRequest')}</span>
                       <span className="dr-neg-val dr-neg-val--suggest">{s.suggested_improvement}</span>
                     </div>
                   )}
                   {s.leverage && (
                     <div className="dr-neg-row">
-                      <span className="dr-neg-key">Leverage</span>
+                      <span className="dr-neg-key">{t('report.negLeverage')}</span>
                       <span className="dr-neg-val dr-neg-val--leverage">{s.leverage}</span>
                     </div>
                   )}
@@ -1288,16 +1388,17 @@ function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: 
 
 /* ── Weak Evidence (Proposal only) ── */
 function WeakEvidenceSection({ items }: { items: WeakEvidenceItem[] }) {
+  const { t } = useTranslation()
   if (!items || items.length === 0) return null
   return (
     <div className="dr-section-card dr-weak-evidence-section">
       <div className="dr-section-header">
         <span className="dr-section-icon">⚠️</span>
-        <h3 className="dr-section-title">Weak Evidence & Unsupported Claims</h3>
-        <span className="dr-section-badge">{items.length} claims</span>
+        <h3 className="dr-section-title">{t('report.weakEvidence')}</h3>
+        <span className="dr-section-badge">{t('report.claimsCount').replace('{n}', String(items.length))}</span>
       </div>
       <div className="dr-section-body">
-        <p className="dr-verification-intro">Claims made in the proposal that lack adequate supporting data or evidence.</p>
+        <p className="dr-verification-intro">{t('report.weakEvidenceIntro')}</p>
         <div className="dr-we-list">
           {items.map((item, i) => (
             <div key={i} className="dr-we-item">
@@ -1308,13 +1409,13 @@ function WeakEvidenceSection({ items }: { items: WeakEvidenceItem[] }) {
               <div className="dr-we-details">
                 {item.issue && (
                   <div className="dr-we-row">
-                    <span className="dr-we-key">Why Weak</span>
+                    <span className="dr-we-key">{t('report.whyWeak')}</span>
                     <span className="dr-we-val">{item.issue}</span>
                   </div>
                 )}
                 {item.recommendation && (
                   <div className="dr-we-row dr-we-row--rec">
-                    <span className="dr-we-key">Evidence Needed</span>
+                    <span className="dr-we-key">{t('report.evidenceNeeded')}</span>
                     <span className="dr-we-val dr-we-val--rec">{item.recommendation}</span>
                   </div>
                 )}
@@ -1329,6 +1430,7 @@ function WeakEvidenceSection({ items }: { items: WeakEvidenceItem[] }) {
 
 /* ── Stage 5: Decision Playbook ── */
 function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlaybook; docType?: string }) {
+  const { t } = useTranslation()
   const [checked, setChecked] = useState<Record<number, boolean>>({})
   if (!playbook || !playbook.final_recommendation) return null
 
@@ -1352,15 +1454,15 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
   const matchedKey = Object.keys(decisionLabels).find(k => finalRecLower.includes(k))
   const decisionStyle = matchedKey ? decisionLabels[matchedKey] : { color: '#9CA3AF', bg: 'rgba(156,163,175,0.1)' }
 
-  const sectionTitle = docType === 'cv'
-    ? 'Hiring Decision Playbook'
+  const sectionTitle = t(docType === 'cv'
+    ? 'report.playbookCv'
     : docType === 'supplier_quotation'
-      ? 'Procurement Decision Playbook'
+      ? 'report.playbookSupplier'
       : docType === 'contract'
-        ? 'Contract Decision Playbook'
+        ? 'report.playbookContract'
         : docType === 'business_proposal'
-          ? 'Investment Decision Playbook'
-          : 'Decision Playbook'
+          ? 'report.playbookProposal'
+          : 'report.playbookGeneric')
 
   return (
     <div className="dr-section-card dr-playbook-section">
@@ -1371,7 +1473,7 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
       <div className="dr-section-body">
         {/* Final Recommendation */}
         <div className="dr-playbook-final" style={{ background: decisionStyle.bg, borderColor: `${decisionStyle.color}40` }}>
-          <p className="dr-playbook-final-label">Final Recommendation</p>
+          <p className="dr-playbook-final-label">{t('report.finalRecommendation')}</p>
           <p className="dr-playbook-final-text" style={{ color: decisionStyle.color }}>
             {playbook.final_recommendation}
           </p>
@@ -1381,7 +1483,7 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
           {/* Key Reasons */}
           {playbook.key_reasons && playbook.key_reasons.length > 0 && (
             <div className="dr-playbook-block">
-              <p className="dr-playbook-block-label">✅ Key Reasons</p>
+              <p className="dr-playbook-block-label">✅ {t('report.keyReasons')}</p>
               <ul className="dr-playbook-block-list">
                 {playbook.key_reasons.map((r, i) => (
                   <li key={i} className="dr-playbook-block-item dr-playbook-block-item--green">{r}</li>
@@ -1393,7 +1495,7 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
           {/* Remaining Risks */}
           {playbook.remaining_risks && playbook.remaining_risks.length > 0 && (
             <div className="dr-playbook-block">
-              <p className="dr-playbook-block-label">⚠️ Remaining Risks</p>
+              <p className="dr-playbook-block-label">⚠️ {t('report.remainingRisks')}</p>
               <ul className="dr-playbook-block-list">
                 {playbook.remaining_risks.map((r, i) => (
                   <li key={i} className="dr-playbook-block-item dr-playbook-block-item--orange">{r}</li>
@@ -1407,8 +1509,10 @@ function DecisionPlaybookSection({ playbook, docType }: { playbook: DecisionPlay
         {playbook.action_checklist && playbook.action_checklist.length > 0 && (
           <div className="dr-playbook-checklist">
             <p className="dr-playbook-block-label">
-              Action Checklist Before Deciding
-              <span className="dr-playbook-checklist-count"> — {doneCount}/{total} done</span>
+              {t('report.actionChecklist')}
+              <span className="dr-playbook-checklist-count">
+                {' — '}{t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(total))}
+              </span>
             </p>
             {playbook.action_checklist.map((item, i) => (
               <label key={i} className={`dr-checklist-item${checked[i] ? ' dr-checklist-item--done' : ''}`}>
@@ -1610,7 +1714,9 @@ function DecisionReadinessSection({ report, t }: { report: DecisionReport; t: (k
         <span className="dr-section-icon">📊</span>
         <h3 className="dr-section-title">{t('report.readinessTitle')}</h3>
         {verifyItems.length > 0 && (
-          <span className="dr-section-badge">{doneCount}/{verifyItems.length} done</span>
+          <span className="dr-section-badge">
+            {t('report.doneCount').replace('{done}', String(doneCount)).replace('{total}', String(verifyItems.length))}
+          </span>
         )}
       </div>
       <div className="dr-section-body">
@@ -1652,10 +1758,11 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
   const { user, features } = useAuth()
   const { openSignup } = useAuthModal()
   const { t } = useTranslation()
-  const [copied, setCopied] = useState(false)
+  // Share is switched off for now — see the commented-out handleShare below.
+  // const [copied, setCopied] = useState(false)
   const [linkCopied, setLinkCopied] = useState(false)
-  const [authPrompt, setAuthPrompt] = useState<'download' | 'share' | 'upgrade' | null>(null)
-  const [challengeQuestion, setChallengeQuestion] = useState<string | undefined>()
+  const [authPrompt, setAuthPrompt] = useState<'download' | 'upgrade' | null>(null)
+  const [challengeRequest, setChallengeRequest] = useState<ChallengeRequest | null>(null)
 
   // Which premium sections this account actually receives. Driven by
   // config/plans, and matched by the server, which omits the underlying data
@@ -1670,6 +1777,12 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
     logActivity(user.uid, 'report_downloaded', {})
     window.print()
   }
+
+  /* ── Share: disabled until it is implemented properly ─────────────────────
+     The button only copied a plain-text summary to the clipboard, despite a
+     share icon that promised a link someone else could open. It is hidden (see
+     the commented-out button in the nav) and kept here for the future
+     implementation, which needs a genuinely shareable, access-controlled link.
 
   function handleShare() {
     if (!user) { setAuthPrompt('share'); return }
@@ -1699,6 +1812,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         window.alert(t('result.copyFailed'))
       })
   }
+  ── end of disabled Share ── */
 
   /** Copy the permanent link to this saved report. */
   function handleCopyLink() {
@@ -1715,7 +1829,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
   }
 
   function handleChallenge(q: string) {
-    setChallengeQuestion(q)
+    setChallengeRequest(prev => ({ text: q, id: (prev?.id ?? 0) + 1 }))
     setTimeout(() => {
       document.getElementById('dr-challenge-panel')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 100)
@@ -1746,19 +1860,21 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
             <button
               className={`icon-btn icon-btn--download${!canExport ? ' icon-btn--locked' : ''}`}
               onClick={handleDownload}
-              title={canExport ? undefined : 'Available on paid plans'}
+              title={canExport ? undefined : t('report.exportLockedTitle')}
             >
               {canExport
                 ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 : <IconLock />}
               {t('result.exportReport')}
             </button>
+            {/* Share is hidden until a real shareable link exists (planned).
             <button className="icon-btn" onClick={handleShare}>
               {copied
                 ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22C55E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg> {t('result.copied')}</>
                 : <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> {t('result.share')}</>
               }
             </button>
+            */}
             {/* Only once the report has actually been saved — a link to a
                 report that was never persisted would 404. */}
             {reportId && (
@@ -1779,7 +1895,7 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
           <p className="auth-prompt-msg">
             {authPrompt === 'upgrade'
               ? t('result.exportUpgradePrompt')
-              : authPrompt === 'download' ? t('result.downloadPrompt') : t('result.sharePrompt')}
+              : t('result.downloadPrompt')}
           </p>
           <div className="auth-prompt-actions">
             {authPrompt === 'upgrade' ? (
@@ -1799,7 +1915,8 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         {/* Expert Framework Badge */}
         <ExpertFrameworkBadge docType={docType} />
 
-        {/* Say so before the findings if we did not read a document in full */}
+        {/* Say so before the findings if a file was left out or only partly read */}
+        <SkippedNotice items={report.skipped_documents} />
         <TruncationNotice names={report.truncated_documents} />
 
         {/* 1. Executive Summary */}
@@ -1848,8 +1965,8 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         ) : (
           <LockedSection
             icon="🕵️"
-            title="Smart Skeptic Questions"
-            blurb="The sharpest questions to ask before you commit — what a strong answer sounds like, and the red flags that should stop you."
+            title={t('report.skepticQuestions')}
+            blurb={t('report.lockedSkepticBlurb')}
           />
         )}
 
@@ -1892,8 +2009,8 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
         ) : (
           <LockedSection
             icon="📘"
-            title="Decision Playbook"
-            blurb="Your final recommendation with the reasons behind it, the risks that remain, and a step-by-step checklist to act on."
+            title={t('report.playbookGeneric')}
+            blurb={t('report.lockedPlaybookBlurb')}
           />
         )}
 
@@ -1908,8 +2025,8 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
           <ChallengeAIPanel
             report={report}
             decisionGoal={decisionGoal}
-            suggestedQuestion={challengeQuestion}
-            onClearSuggestion={() => setChallengeQuestion(undefined)}
+            reportId={reportId}
+            request={challengeRequest}
             t={t}
           />
         </div>

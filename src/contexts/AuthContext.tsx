@@ -30,6 +30,7 @@ import {
   type CreditsUsage,
 } from '../lib/userService'
 import { getCachedPlanConfig, getPlanConfig, planFeatures, type PlanConfig, type PlanFeatures } from '../lib/planConfig'
+import { trackEvent } from '../lib/analytics'
 
 interface AuthContextValue {
   user: User | null
@@ -57,6 +58,11 @@ interface AuthContextValue {
   changePassword: (newPassword: string) => Promise<void>
   reauthAndChangePassword: (currentPassword: string, newPassword: string) => Promise<void>
   resetPassword: (email: string) => Promise<void>
+  /**
+   * True when the account can sign in with an email and password. A
+   * Google-only account has no TimeCut password to change.
+   */
+  hasPasswordLogin: boolean
 }
 
 /**
@@ -109,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Keep refs to active Firestore unsubscribers so we can clean up on sign-out
   const unsubUserRef    = useRef<(() => void) | null>(null)
   const unsubCreditsRef = useRef<(() => void) | null>(null)
+  /** Month key the credits listener is currently attached to. */
+  const creditsMonthRef = useRef<string | null>(null)
 
   // Load live, admin-editable plan/credit config once.
   useEffect(() => { getPlanConfig().then(setPlanConfig).catch(() => {}) }, [])
@@ -118,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     unsubUserRef.current = null
     unsubCreditsRef.current?.()
     unsubCreditsRef.current = null
+    creditsMonthRef.current = null
   }
 
   function attachListeners(uid: string) {
@@ -155,9 +164,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       () => setLoading(false),
     )
 
-    // Real-time AI Credits ledger for the current month. Read-only to the
-    // client — every debit is written server-side after the plan is verified.
+    attachCreditsListener(uid)
+  }
+
+  /**
+   * Real-time AI Credits ledger for the current month. Read-only to the
+   * client — every debit is written server-side after the plan is verified.
+   *
+   * The month is part of the document path, so the listener must move when the
+   * month changes. It used to be chosen once at sign-in: a tab left open across
+   * the start of a month kept showing the previous month's ledger.
+   */
+  function attachCreditsListener(uid: string) {
+    unsubCreditsRef.current?.()
     const monthKey = getCurrentMonthKey()
+    if (creditsMonthRef.current && creditsMonthRef.current !== monthKey) {
+      // New month: nothing is used yet, even before the snapshot arrives.
+      setCreditsUsage({ used: 0, reportsUsed: 0, assistantUsed: 0, documentsUploaded: 0 })
+    }
+    creditsMonthRef.current = monthKey
     unsubCreditsRef.current = onSnapshot(
       doc(db, 'users', uid, 'credits', monthKey),
       snap => {
@@ -192,7 +217,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Follow the month rollover while the tab stays open. Checked once a minute
+  // and whenever the tab becomes visible again, since background timers are
+  // throttled by the browser.
+  const signedInUid = user?.uid
+  useEffect(() => {
+    if (!signedInUid) return
+    const check = () => {
+      if (creditsMonthRef.current && creditsMonthRef.current !== getCurrentMonthKey()) {
+        attachCreditsListener(signedInUid)
+      }
+    }
+    const timer = window.setInterval(check, 60_000)
+    document.addEventListener('visibilitychange', check)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', check)
+    }
+  }, [signedInUid])
+
   const displayName = user?.displayName || userData?.name || ''
+  const hasPasswordLogin = !!user?.providerData.some(p => p.providerId === 'password')
   const plan: PlanType = (userData?.plan as PlanType) ?? 'free'
   const features = planFeatures(planConfig, plan)
 
@@ -257,6 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const cleanEmail = email.trim()
     const cleanName = name.trim()
     const cred = await createUserWithEmailAndPassword(auth, cleanEmail, password)
+    trackEvent('signup', { method: 'email' })
 
     await Promise.allSettled([
       updateProfile(cred.user, { displayName: cleanName }),
@@ -303,6 +349,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .forEach(r => console.warn('[google-login] non-fatal post-login step failed:', r.reason))
     })
     if (isNew) {
+      trackEvent('signup', { method: 'google' })
       await sendWelcomeEmail(cred.user.displayName ?? '')
     }
   }
@@ -331,6 +378,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function reauthAndChangePassword(currentPassword: string, newPassword: string) {
     if (!auth.currentUser?.email) throw new Error('Not authenticated')
+    // Re-authenticating with a password can only ever fail for an account that
+    // has none (Google sign-in), and used to surface as "incorrect password".
+    if (!auth.currentUser.providerData.some(p => p.providerId === 'password')) {
+      throw Object.assign(new Error('This account signs in with Google'), { code: 'auth/no-password-provider' })
+    }
     const credential = EmailAuthProvider.credential(auth.currentUser.email, currentPassword)
     await reauthenticateWithCredential(auth.currentUser, credential)
     await updatePassword(auth.currentUser, newPassword)
@@ -375,6 +427,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUsage,
       login, signup, loginWithGoogle, logout,
       updateDisplayName, changePassword, reauthAndChangePassword, resetPassword,
+      hasPasswordLogin,
     }}>
       {children}
     </AuthContext.Provider>

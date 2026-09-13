@@ -1,11 +1,17 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import formidable from 'formidable'
 import fs from 'fs'
-import PDFParser from 'pdf2json'
 import { generateDecisionReport, normalizeDecisionReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE, toPageMarkedText } from './_lib/aiConfig.js'
+import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE, ModelOutputError } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
+import {
+  extractDocument,
+  DocumentReadError,
+  MAX_FILES_ABSOLUTE,
+  MAX_UPLOAD_TOTAL_BYTES,
+} from './_lib/documents.js'
+import { MAX_DECISION_GOAL_CHARS } from './_lib/assistant.js'
 import {
   resolveEntitlement,
   assertWithinDocumentLimits,
@@ -23,12 +29,16 @@ import {
 // form will let through a goal the server then rejects with a 400.
 const MIN_DECISION_GOAL_LENGTH = 2
 
+const DOCUMENT_TYPES = new Set(['auto', 'cv', 'supplier_quotation', 'contract', 'business_proposal', 'general'])
 
-// Hard ceiling on what the endpoint will ever accept, independent of plan.
-// The real, plan-specific document limit is enforced by
-// assertWithinDocumentLimits() below using the caller's verified plan.
-const MAX_FILES_ABSOLUTE = 10
-const MAX_FILE_SIZE_MB = 10
+/** A file that was uploaded but not analysed, and why. Returned to the UI. */
+interface SkippedDocument {
+  name: string
+  /** English explanation, used when the UI has no translation for `code`. */
+  reason: string
+  /** Machine-readable reason, translated by the report UI. */
+  code: string
+}
 
 /**
  * Remove the report sections the caller's plan does not include. Gating happens
@@ -49,30 +59,8 @@ function applyPlanGating(
   return out
 }
 
-/**
- * Extract a PDF as page-marked text.
- *
- * The page breaks pdf2json emits used to be counted for billing and then
- * stripped, which left the model with no way to know where one page ended and
- * the next began — while the report schema still asked it for a "page" per
- * piece of evidence, so it supplied invented ones. toPageMarkedText keeps them
- * as citable `[PAGE n]` headers; `pages` is still the break count, so what a
- * report costs does not change.
- */
-function extractPDFText(buffer: Buffer): Promise<{ text: string; pages: number; contentChars: number }> {
-  return new Promise((resolve, reject) => {
-    const parser = new PDFParser(null, true)
-    parser.on('pdfParser_dataReady', () => {
-      resolve(toPageMarkedText(parser.getRawTextContent()))
-    })
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    parser.on('pdfParser_dataError', (errData: any) => {
-      // pdf2json emits { parserError: string } — not an Error instance
-      const raw = errData?.parserError ?? errData
-      reject(new Error(typeof raw === 'string' ? raw : String(raw)))
-    })
-    parser.parseBuffer(buffer)
-  })
+function firstField(value: string | string[] | undefined): string {
+  return (Array.isArray(value) ? value[0] : value) ?? ''
 }
 
 export const config = { api: { bodyParser: false } }
@@ -102,31 +90,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const features = planFeatures(ent)
 
   const form = formidable({
-    maxFileSize: MAX_FILE_SIZE_MB * 1024 * 1024,
+    maxFileSize: MAX_UPLOAD_TOTAL_BYTES,
+    maxTotalFileSize: MAX_UPLOAD_TOTAL_BYTES,
+    maxFiles: MAX_FILES_ABSOLUTE,
     multiples: true,
   })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   form.parse(req as any, async (err, fields, files) => {
-    if (err) return res.status(500).json({ error: 'File upload failed' })
+    // Temp files are removed however the request ends — the Security page
+    // promises uploads are not kept, and a warm instance would otherwise
+    // accumulate them in /tmp.
+    const rawFiles = files?.['files[]'] ?? files?.files ?? []
+    const fileList = Array.isArray(rawFiles) ? rawFiles : [rawFiles]
+    const cleanup = () => {
+      for (const f of fileList) fs.promises.unlink(f.filepath).catch(() => {})
+    }
 
-    const decisionGoal =
-      (Array.isArray(fields.decisionGoal) ? fields.decisionGoal[0] : fields.decisionGoal) ?? ''
-    if (!decisionGoal || decisionGoal.trim().length < MIN_DECISION_GOAL_LENGTH) {
+    if (err) {
+      cleanup()
+      const httpCode = (err as { httpCode?: number }).httpCode
+      if (httpCode === 413) {
+        return res.status(413).json({
+          code: 'UPLOAD_TOO_LARGE',
+          error: `Your upload is too large. Files must total under ${MAX_UPLOAD_TOTAL_BYTES / (1024 * 1024)} MB, with at most ${MAX_FILES_ABSOLUTE} files per analysis.`,
+        })
+      }
+      console.warn('[DECISION] upload parse failed:', err)
+      return res.status(400).json({ error: 'File upload failed. Please try again.' })
+    }
+
+    try {
+      return await runAnalysis(fields, fileList)
+    } finally {
+      cleanup()
+    }
+  })
+
+  async function runAnalysis(
+    fields: formidable.Fields,
+    fileList: formidable.File[],
+  ) {
+    const decisionGoal = firstField(fields.decisionGoal).trim().slice(0, MAX_DECISION_GOAL_CHARS)
+    if (decisionGoal.length < MIN_DECISION_GOAL_LENGTH) {
       return res.status(400).json({
         error: `Decision goal is required (minimum ${MIN_DECISION_GOAL_LENGTH} characters)`,
       })
     }
 
-    const language =
-      (Array.isArray(fields.language) ? fields.language[0] : fields.language) ?? 'English'
-
-    const documentType =
-      (Array.isArray(fields.documentType) ? fields.documentType[0] : fields.documentType) ?? 'auto'
-
-    // Normalise files[] — formidable returns array or single object
-    const rawFiles = files['files[]'] ?? files.files ?? []
-    const fileList = Array.isArray(rawFiles) ? rawFiles : [rawFiles]
+    const language = firstField(fields.language).slice(0, 40) || 'English'
+    const requestedType = firstField(fields.documentType)
+    const documentType = DOCUMENT_TYPES.has(requestedType) ? requestedType : 'auto'
 
     if (fileList.length === 0) return res.status(400).json({ error: 'No files uploaded' })
     if (fileList.length > MAX_FILES_ABSOLUTE) {
@@ -146,50 +160,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
       const documents: { name: string; content: string }[] = []
-      const parseErrors: string[] = []
+      // Every file we could not use is reported back. These used to go only to
+      // the server log, so three uploads with two unreadable scans produced a
+      // full-confidence report on one document and nothing on screen saying
+      // the other two had been dropped.
+      const skipped: SkippedDocument[] = []
       let totalPages = 0
 
-      for (const file of fileList) {
-        const buffer = fs.readFileSync(file.filepath)
-        const mimeType = file.mimetype ?? ''
-        const originalName = file.originalFilename ?? `Document ${documents.length + 1}`
-
-        if (mimeType === 'application/pdf' || originalName.toLowerCase().endsWith('.pdf')) {
-          try {
-            const { text, pages, contentChars } = await extractPDFText(buffer)
-            // Measured without the [PAGE n] markers, so a scanned PDF whose
-            // only output is page headers is still recognised as empty.
-            if (contentChars < 50) {
-              parseErrors.push(`"${originalName}" has no extractable text — it may be a scanned/image-based PDF.`)
-              continue
-            }
-            totalPages += pages
-            documents.push({ name: originalName, content: text })
-          } catch (pdfErr) {
-            const msg = pdfErr instanceof Error ? pdfErr.message : String(pdfErr)
-            console.warn(`[DECISION] PDF parse failed for "${originalName}":`, msg)
-            parseErrors.push(`"${originalName}" could not be parsed: ${msg}`)
-            continue
+      for (const [i, file] of fileList.entries()) {
+        const name = (file.originalFilename ?? `Document ${i + 1}`).slice(0, 200)
+        try {
+          const buffer = await fs.promises.readFile(file.filepath)
+          const doc = await extractDocument(name, buffer)
+          totalPages += doc.pages
+          documents.push({ name, content: doc.text })
+        } catch (e) {
+          if (e instanceof DocumentReadError) {
+            skipped.push({ name, reason: e.message, code: e.code })
+          } else {
+            console.warn(`[DECISION] could not read "${name}":`, e)
+            skipped.push({ name, reason: `"${name}" could not be read.`, code: 'unreadable' })
           }
-        } else {
-          const text = buffer.toString('utf-8').trim()
-          if (text.length < 20) {
-            parseErrors.push(`"${originalName}" appears to be empty.`)
-            continue
-          }
-          const estimatedPages = Math.ceil(text.length / 3000)
-          totalPages += estimatedPages
-          documents.push({ name: originalName, content: text })
         }
       }
 
       if (documents.length === 0) {
-        const detail = parseErrors.length ? ` ${parseErrors.join(' ')}` : ''
-        return res.status(400).json({ error: `None of the uploaded files could be read.${detail}` })
-      }
-
-      if (parseErrors.length) {
-        console.warn(`[DECISION] ${parseErrors.length} file(s) skipped:`, parseErrors)
+        return res.status(400).json({
+          code: 'NO_READABLE_DOCUMENTS',
+          error: `None of the uploaded files could be read. ${skipped.map(s => s.reason).join(' ')}`.trim(),
+          skipped_documents: skipped,
+        })
       }
 
       // ── 4. Plan page limit, from the plan — not from a request header ──
@@ -202,8 +202,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // ── 5. Charge before doing the expensive work ──
       // Pages and documents are already known here, so the exact cost can be
-      // taken up front. A user can no longer overrun their allowance, and we
-      // never pay OpenAI for an analysis the plan cannot cover.
+      // taken up front. A skipped file is never billed: only what is analysed
+      // counts toward pages and documents.
       const cost = computeReportCost(ent.cfg, { pages: totalPages, docs: documents.length })
       try {
         if (ent.isFree) {
@@ -221,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { data: raw, usage, truncatedDocuments } = await generateDecisionReport(
         documents,
         language,
-        decisionGoal.trim(),
+        decisionGoal,
         documentType,
       )
       const data = normalizeDecisionReport(raw)
@@ -247,6 +247,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           // Surfaced in the UI. A contract-review tool must say when it only
           // read part of a document rather than let the user assume otherwise.
           truncated_documents: truncatedDocuments,
+          // Surfaced in the UI for the same reason: files that were uploaded
+          // but not part of this analysis at all.
+          skipped_documents: skipped,
         },
         entitlements: { plan: ent.plan, features, creditsCharged: ent.isFree ? 0 : cost },
       })
@@ -261,8 +264,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // A deadline hit is not a broken request — say what happened and confirm
       // the refund, rather than showing the raw SDK message.
       if (isTimeoutError(e)) return res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE })
+      if (e instanceof ModelOutputError) return res.status(502).json({ code: 'MODEL_OUTPUT', error: e.message })
       const message = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e)
       return res.status(500).json({ error: message || 'Decision analysis failed' })
     }
-  })
+  }
 }
