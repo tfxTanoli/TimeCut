@@ -123,7 +123,8 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
   "overall_decision": "<Proceed|Proceed with Caution|Do Not Proceed — judge the DEAL, not your certainty about it>",
   "headline_reason": "<ONE short sentence, in your own words, giving the reason for overall_decision — see HEADLINE REASON below>",
   "why_points": ["<concrete, document-based reason 1>", "<reason 2>", "<reason 3>"],
-  "next_action": "<ONE sentence: the single most important thing the user should do next>",
+  "next_action": "<ONE sentence: the single most important thing the user should do next with the CURRENT BEST OPTION (ranking[0]) — see BEST OPTION VS ALTERNATIVE below>",
+  "alternative_option": { "name": "<a lower-ranked option worth keeping in mind, or empty string>", "condition": "<what would have to change for it to become the better choice, e.g. 'lower-cost alternative if delivery and payment terms can be improved'>" },
   "ranking": [
     { "rank": 1, "name": "<document name>", "summary": "<1-2 sentences: why this rank, from document content only>" }
   ],
@@ -253,6 +254,22 @@ COMPARE THE OPTIONS — this is the core value of the report:
 - For "Proceed with Caution", "decision_playbook.final_recommendation" must not be a bare
   "Approve", "Hire" or "Sign" — say what must be verified first.
 - With only 1 document, "option_tradeoffs" and "choose_if" are [].
+
+BEST OPTION VS ALTERNATIVE — the reader must never see one option called best and
+another one in the next step:
+- ranking[0] is the CURRENT BEST OPTION. "recommendation", "headline_reason" and
+  "next_action" are about it.
+- "next_action" moves the current best option forward (verify, confirm, negotiate or
+  sign with IT). Never make "next_action" about a lower-ranked option.
+- When a lower-ranked option could still become the better choice (e.g. it is cheaper
+  but its delivery or payment terms are weak), name it in "alternative_option" with the
+  condition that would change the ranking. "alternative_option.name" must be written
+  exactly as that option's "name" in "ranking", so the reader can match them, e.g.
+  { "name": "ValueSpark", "condition": "Lower-cost alternative if its delivery and payment terms can be improved" }.
+  Any negotiation with that alternative belongs in "negotiation_suggestions" or a
+  lower-priority "recommended_actions" item that names it as the alternative.
+- With only 1 document, or no credible alternative, "alternative_option" is
+  { "name": "", "condition": "" }.
 
 SAMPLE OR FICTIONAL DOCUMENTS:
 - If the documents look like samples, templates, test or fictional material, say so ONCE
@@ -807,9 +824,22 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     )[0]?.action ?? ''
   )
 
+  const ranking = completeRanking(raw.ranking, optionTradeoffs, documentNames)
+
+  // The alternative is only worth showing when it is a different option from
+  // the current best one and says what would make it win.
+  const alt = raw.alternative_option
+  const altName = text(alt?.name ?? alt?.option)
+  const altCondition = text(alt?.condition ?? alt?.reason)
+  const bestName = text(ranking?.[0]?.name).toLowerCase()
+  const alternativeOption = altName && altCondition && altName.toLowerCase() !== bestName
+    ? { name: altName, condition: altCondition }
+    : undefined
+
   return {
     ...raw,
-    ranking: completeRanking(raw.ranking, optionTradeoffs, documentNames),
+    ranking,
+    alternative_option: alternativeOption,
     headline_reason: text(raw.headline_reason),
     why_points: whyPoints,
     next_action: nextAction,

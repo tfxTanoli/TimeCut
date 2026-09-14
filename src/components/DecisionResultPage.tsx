@@ -435,6 +435,12 @@ function DecisionView({ report, decision, readiness, detailsOpen, onToggleDetail
   const best = report.ranking?.[0]
   const tradeoffs = (report.option_tradeoffs ?? []).filter(o => o && o.name)
   const chooseIf = (report.choose_if ?? []).filter(c => c && c.priority && c.option)
+  // Named separately from the best option so a cheaper runner-up is presented
+  // as an alternative, not read as a second recommendation.
+  const alt = report.alternative_option
+  const alternative = alt?.name?.trim() && alt.condition?.trim() && alt.name.trim() !== best?.name
+    ? alt
+    : null
 
   const whyPoints = (report.why_points ?? []).filter(Boolean).slice(0, 3)
   const whyText = whyPoints.length > 0 ? '' : (report.decision_defense?.trim() || report.confidence_rationale?.trim() || '')
@@ -503,6 +509,13 @@ function DecisionView({ report, decision, readiness, detailsOpen, onToggleDetail
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {alternative && (
+              <div className="dv-alt">
+                <p className="dv-label">↔ {t('report.dvAlternative')}</p>
+                <p className="dv-text"><strong>{alternative.name}</strong> — {alternative.condition}</p>
               </div>
             )}
           </div>
@@ -1880,7 +1893,11 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
       {/* Nav */}
       <div className="result-nav">
         <div className="container result-nav-inner">
-          <button className="back-btn" onClick={onBack}>{t(backLabelKey ?? 'result.backToHome')}</button>
+          <button className="back-btn" onClick={onBack}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            {/* Some labels carry their own "←"; the icon replaces it. */}
+            <span>{t(backLabelKey ?? 'result.backToHome').replace(/^←\s*/, '')}</span>
+          </button>
           <h2 className="result-nav-title">{t('report.title')}</h2>
           <div className="result-nav-actions">
             <button

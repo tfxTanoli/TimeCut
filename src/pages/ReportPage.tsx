@@ -1,10 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import Footer from '../components/Footer'
 import { useAuth } from '../contexts/AuthContext'
 import { useAuthModal } from '../contexts/AuthModalContext'
 import { useTranslation } from '../hooks/useTranslation'
 import { getDecisionAnalysis, type StoredDecisionReport } from '../lib/userService'
+import { getFreshReport } from '../lib/freshReports'
 
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
 
@@ -14,8 +15,8 @@ const DecisionResultPage = lazy(() => import('../components/DecisionResultPage')
  * Reports used to live only in the component state of the page that produced
  * them, so a refresh or a Back press destroyed what the customer had just paid
  * credits for. Every report is persisted to the account now, and this route is
- * how it is opened again — from the profile's history, from a bookmark, or
- * from the link the report page copies.
+ * how it is opened — straight after the analysis finishes, from the profile's
+ * history, from a bookmark, or from the link the report page copies.
  *
  * Access is enforced by Firestore rules, not here: `users/{uid}/analyses` is
  * readable only by its owner, so a signed-out visitor or the wrong account
@@ -27,6 +28,15 @@ export default function ReportPage() {
   const { openLogin } = useAuthModal()
   const { t } = useTranslation()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // Arrived straight from the analysis that produced it. That history entry
+  // keeps the flag across a refresh, so Back still means "home" there, while a
+  // report opened from the profile goes back to the list.
+  const fromAnalysis = (location.state as { fresh?: boolean } | null)?.fresh === true
+  // Same session as the analysis: render it at once, with the uploaded files
+  // the evidence links need. After a refresh this is empty and it loads below.
+  const fresh = fromAnalysis && id ? getFreshReport(id) : null
 
   const [stored, setStored] = useState<StoredDecisionReport | null>(null)
   const [fetchState, setFetchState] = useState<'loading' | 'ready' | 'missing' | 'error'>('loading')
@@ -35,7 +45,7 @@ export default function ReportPage() {
   // fetch — session still restoring, signed out, no id — is derived below
   // during render, so the effect never has to set state synchronously to
   // express it.
-  const canLoad = !authLoading && !!user && !!id
+  const canLoad = !fresh && !authLoading && !!user && !!id
 
   useEffect(() => {
     if (!canLoad || !user || !id) return
@@ -54,6 +64,25 @@ export default function ReportPage() {
     return () => { active = false }
   }, [canLoad, user, id])
 
+  const backProps = fromAnalysis
+    ? { onBack: () => navigate('/') }
+    : { onBack: () => navigate('/profile'), backLabelKey: 'result.backToReports' }
+
+  if (fresh && id) {
+    return (
+      <Suspense fallback={<div className="page-loading" />}>
+        <DecisionResultPage
+          report={fresh.report}
+          {...backProps}
+          language={fresh.language}
+          uploadedFiles={fresh.uploadedFiles}
+          decisionGoal={fresh.decisionGoal}
+          reportId={id}
+        />
+      </Suspense>
+    )
+  }
+
   // Wait for the session to restore before deciding anything — on a cold load
   // of a bookmarked report `user` is briefly null for a signed-in owner too.
   if (authLoading) return <div className="page-loading" />
@@ -69,8 +98,7 @@ export default function ReportPage() {
       <Suspense fallback={<div className="page-loading" />}>
         <DecisionResultPage
           report={stored.report}
-          onBack={() => navigate('/profile')}
-          backLabelKey="result.backToReports"
+          {...backProps}
           language={stored.language}
           decisionGoal={stored.decisionGoal}
           reportId={stored.id}

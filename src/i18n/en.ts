@@ -862,7 +862,8 @@ const en: Record<string, string> = {
   'report.edpReadyLow': 'Not enough information to decide yet',
   'report.dvEyebrow': '30-Second Decision View',
   'report.dvRecommendation': 'Recommendation',
-  'report.dvBestOption': 'Best Option',
+  'report.dvBestOption': 'Current Best Option',
+  'report.dvAlternative': 'Alternative to keep in mind',
   'report.dvChooseIf': 'Which option fits your priority?',
   'report.dvWhy': 'Why',
   'report.dvBiggestRisks': 'Biggest Risks',
@@ -1325,6 +1326,11 @@ const en: Record<string, string> = {
   'loader.crossChecking': 'Cross-checking documents...',
   'loader.generating': 'Generating recommendations...',
   'loader.done': 'Done.',
+  'loader.elapsed': '{s}s elapsed',
+  'loader.hint': 'This usually takes 30–60 seconds. Keep this tab open while TimeCut reads your documents.',
+  'loader.stillWorking': 'Still working — longer documents take a little more time to read carefully.',
+  'loader.soundOn': 'Sound on',
+  'loader.soundOff': 'Sound off',
 
   // ── Checkout (payment modal) ──
   'pm.starterTagline': 'Full analysis depth for individuals',

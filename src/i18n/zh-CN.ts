@@ -782,7 +782,8 @@ const zhCN: Record<string, string> = {
   'report.edpReadyLow': '信息不足，暂不宜决定',
   'report.dvEyebrow': '30 秒决策概览',
   'report.dvRecommendation': '建议',
-  'report.dvBestOption': '最佳选项',
+  'report.dvBestOption': '当前最佳选项',
+  'report.dvAlternative': '可考虑的备选方案',
   'report.dvChooseIf': '哪个选项更符合您的优先事项？',
   'report.dvWhy': '原因',
   'report.dvBiggestRisks': '最大风险',
@@ -1317,6 +1318,11 @@ const zhCN: Record<string, string> = {
   'loader.crossChecking': '正在交叉核对文件...',
   'loader.generating': '正在生成建议...',
   'loader.done': '完成。',
+  'loader.elapsed': '已用时 {s} 秒',
+  'loader.hint': '通常需要 30–60 秒。TimeCut 阅读文件期间，请保持此页面打开。',
+  'loader.stillWorking': '仍在处理中 — 较长的文件需要更多时间仔细阅读。',
+  'loader.soundOn': '声音已开启',
+  'loader.soundOff': '声音已关闭',
 
   // ── 结账（付款弹窗） ──
   'pm.starterTagline': '面向个人的完整深度分析',

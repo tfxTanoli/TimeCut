@@ -1,5 +1,5 @@
-import { lazy, Suspense, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { analyzeDecision } from '../api'
 import type { DecisionReport, DocumentType } from '../types'
 import LandingPage from '../components/LandingPage'
@@ -11,8 +11,18 @@ import { useTranslation } from '../hooks/useTranslation'
 import { logActivity, saveDecisionAnalysis } from '../lib/userService'
 import { isUnlimited } from '../lib/planConfig'
 import { trackEvent } from '../lib/analytics'
+import { playCompletionChime, primeProcessingSound } from '../lib/processingSound'
+import { rememberFreshReport } from '../lib/freshReports'
 
 const DecisionResultPage = lazy(() => import('../components/DecisionResultPage'))
+
+// A save that has not come back by now is treated as failed, so a stalled
+// connection shows the report in place rather than keeping the loader up.
+const SAVE_TIMEOUT_MS = 10_000
+
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([promise, new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms))])
+}
 
 // Signed-out visitors are shown the free allowance so the value is visible
 // before signing up, but the analysis itself requires an account: the API
@@ -76,6 +86,7 @@ export default function HomePage() {
   } = useAuth()
   const { openSignup: openAuthModal } = useAuthModal()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [decisionReport, setDecisionReport] = useState<DecisionReport | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [showDecisionLoader, setShowDecisionLoader] = useState(false)
@@ -87,6 +98,15 @@ export default function HomePage() {
   // Id of the saved copy, so the report on screen can offer a permanent link
   // to itself instead of existing only until the next navigation.
   const [savedReportId, setSavedReportId] = useState<string | null>(null)
+
+  // A reload during the analysis throws away a report the account is being
+  // charged for, so the browser asks first.
+  useEffect(() => {
+    if (!isLoading) return
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = '' }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [isLoading])
 
   const isFreePlan = plan === 'free'
   // Logged-in: paid plans gate on AI Credits, free plan gates on free reports.
@@ -152,6 +172,8 @@ export default function HomePage() {
       return
     }
 
+    // Still inside the submit click — the only moment browsers allow audio to start.
+    primeProcessingSound()
     setIsLoading(true)
     setShowDecisionLoader(true)
     setAnalysisLanguage(language)
@@ -163,24 +185,37 @@ export default function HomePage() {
     try {
       const result = await analyzeDecision(files, goal, language, documentType)
       if (result.data) {
-        setDecisionReport(result.data)
         trackEvent('analysis_completed', { plan, documentType, documents: files.length })
-        // Persist it before anything else can navigate away. The report is the
-        // thing the customer paid for, so it has to outlive this component —
-        // it is listed on the profile and reachable at /report/:id from here on.
-        // Both calls are best-effort: the report is already on screen, and a
-        // bookkeeping failure must not read back as a failed analysis.
-        const [reportId] = await Promise.all([
+        logActivity(user.uid, 'analysis_completed', { language, documentType })
+          .catch(e => console.warn('[analysis_completed] log failed:', e))
+        // Persist it before showing it. The report is the thing the customer
+        // paid for, so it has to outlive this component: it is listed on the
+        // profile and opened at /report/:id. It used to be shown here, at "/",
+        // while the save ran in the background — so the address never changed
+        // and a refresh landed back on the upload form even though the report
+        // had been saved.
+        const reportId = await withTimeout(
           saveDecisionAnalysis(user.uid, result.data, {
             decisionGoal: goal,
             language,
             documentType,
             documentNames: files.map(f => f.name),
           }),
-          logActivity(user.uid, 'analysis_completed', { language, documentType })
-            .catch(e => console.warn('[analysis_completed] log failed:', e)),
-        ])
-        setSavedReportId(reportId)
+          SAVE_TIMEOUT_MS,
+          null,
+        )
+        playCompletionChime()
+        if (reportId) {
+          rememberFreshReport(reportId, {
+            report: result.data, language, decisionGoal: goal, uploadedFiles: files,
+          })
+          navigate(`/report/${reportId}`, { state: { fresh: true } })
+          return
+        }
+        // The save failed. Show the report here rather than lose it; it just
+        // has no permanent address.
+        setDecisionReport(result.data)
+        setSavedReportId(null)
       } else {
         setShowDecisionLoader(false)
         handleApiFailure(result.code, result.error)

@@ -122,6 +122,12 @@ export interface ChooseIfItem {
   reason?: string
 }
 
+/** "ValueSpark — lower-cost alternative if delivery terms improve." */
+export interface AlternativeOption {
+  name: string
+  condition: string
+}
+
 export interface DecisionReport {
   recommendation: string
   /** Verdict on the deal. Server-normalized, so always present on a fresh
@@ -131,8 +137,11 @@ export interface DecisionReport {
   headline_reason?: string
   /** Up to three short reasons behind the verdict. */
   why_points?: string[]
-  /** The single most important next step. */
+  /** The single most important next step, for the current best option. */
   next_action?: string
+  /** A lower-ranked option and what would make it the better choice. Absent
+   *  when there is none, and on reports saved before it existed. */
+  alternative_option?: AlternativeOption
   option_tradeoffs?: OptionTradeoff[]
   choose_if?: ChooseIfItem[]
   /** What the readiness score is made of. Absent on reports saved before it existed. */

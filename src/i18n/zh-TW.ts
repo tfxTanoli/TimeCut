@@ -782,7 +782,8 @@ const zhTW: Record<string, string> = {
   'report.edpReadyLow': '資訊不足，暫不宜決定',
   'report.dvEyebrow': '30 秒決策概覽',
   'report.dvRecommendation': '建議',
-  'report.dvBestOption': '最佳選項',
+  'report.dvBestOption': '目前最佳選項',
+  'report.dvAlternative': '可考慮的備選方案',
   'report.dvChooseIf': '哪個選項更符合您的優先事項？',
   'report.dvWhy': '原因',
   'report.dvBiggestRisks': '最大風險',
@@ -1317,6 +1318,11 @@ const zhTW: Record<string, string> = {
   'loader.crossChecking': '正在交叉核對文件...',
   'loader.generating': '正在產生建議...',
   'loader.done': '完成。',
+  'loader.elapsed': '已用時 {s} 秒',
+  'loader.hint': '通常需要 30–60 秒。TimeCut 閱讀文件期間，請保持此頁面開啟。',
+  'loader.stillWorking': '仍在處理中 — 較長的文件需要更多時間仔細閱讀。',
+  'loader.soundOn': '聲音已開啟',
+  'loader.soundOff': '聲音已關閉',
 
   // ── 結帳（付款視窗） ──
   'pm.starterTagline': '為個人提供完整深度分析',
