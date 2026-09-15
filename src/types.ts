@@ -106,6 +106,50 @@ export interface ConfidenceBreakdown {
 export interface ReadinessFactor {
   label: string
   score: number
+  /** Stable identifier of the factor, on reports scored by the checklist. */
+  key?: string
+}
+
+/** One checklist item as assessed for one option. */
+export interface ChecklistResult {
+  key: string
+  label: string
+  critical: boolean
+  status: 'Adequate' | 'Partial' | 'Missing' | 'Unfavorable'
+}
+
+/** How one option was scored. */
+export interface OptionAssessment {
+  rank: number
+  name: string
+  score: number
+  terms_score: number
+  price_total: number | null
+  price_score: number | null
+  currency: string
+  critical_unfavorable: number
+  critical_missing: number
+  checklist: ChecklistResult[]
+}
+
+/**
+ * What the decision was computed from: the checklist status of every option
+ * and the fixed rules applied to it. Absent on reports saved before scoring
+ * moved into code, and when the assessment step could not run.
+ */
+export interface DecisionBasis {
+  version: number
+  document_type: string
+  goal_priority: 'lowest_cost' | 'lowest_risk' | 'balanced'
+  price_compared: boolean
+  price_items_compared: string[]
+  options: OptionAssessment[]
+  readiness_factors: ReadinessFactor[]
+  decision_readiness: number
+  overall_decision: OverallDecision
+  confidence_score: number
+  confidence_breakdown: ConfidenceBreakdown
+  decision_strength: number
 }
 
 /** How one option compares with the others. */
@@ -181,6 +225,7 @@ export interface DecisionReport {
   negotiation_suggestions?: NegotiationSuggestion[]
   weak_evidence?: WeakEvidenceItem[]
   decision_playbook?: DecisionPlaybook
+  decision_basis?: DecisionBasis
 }
 
 export interface SkippedDocument {

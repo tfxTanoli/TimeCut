@@ -1,0 +1,35 @@
+SUPPLIER A — OFFICE SUPPLIES QUOTATION
+Company: Alpha Office Solutions Ltd.
+Date: June 2026
+
+PRICING
+- Standard paper (A4, 80gsm): $8.50/ream
+- Printer cartridges (black): $22.00/unit
+- Pens and stationery bundle: $45.00/pack
+Note: Prices subject to change without notice. No fixed price guarantee provided.
+
+DELIVERY
+Estimated delivery time: 5–10 business days.
+No formal delivery SLA documented. Delays may occur during peak periods.
+No penalty clause for late delivery.
+
+WARRANTY
+Defective items may be returned within 7 days of receipt.
+No written warranty policy provided beyond return window.
+Claim process not specified.
+
+PAYMENT TERMS
+Full payment due within 14 days of invoice.
+No milestone payments or installment options available.
+
+CANCELLATION
+No formal cancellation policy documented.
+Orders placed cannot be cancelled once processed.
+
+LIABILITY
+Supplier not liable for indirect losses arising from delays or defective goods.
+No insurance documentation provided.
+
+PAST PERFORMANCE
+No references or case studies provided.
+No track record documentation submitted.

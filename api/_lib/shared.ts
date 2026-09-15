@@ -4,12 +4,23 @@ import {
   MAX_CONTENT_CHARS,
   CONTENT_TIMEOUT_MS,
   REPORT_TIMEOUT_MS,
+  ASSESSMENT_TIMEOUT_MS,
+  REPORT_SAMPLING,
   OPENAI_MAX_RETRIES,
   buildDocsBlock,
   readUsage,
+  addUsage,
   parseModelJson,
+  isTimeoutError,
   type TokenUsage,
 } from './aiConfig.js'
+import {
+  assessmentPrompt,
+  assessmentSchema,
+  computeDecisionBasis,
+  formatBasisForPrompt,
+  type DecisionBasis,
+} from './decisionScoring.js'
 
 const SYSTEM_PROMPT = `You are the Time Intelligence Engine for "Time Cut", a tool that helps users decide whether content is truly worth their time.
 
@@ -102,6 +113,7 @@ export async function generateReport(content: string, language: string): Promise
   const truncated = wasTruncated ? content.slice(0, MAX_CONTENT_CHARS) : content
   const completion = await openai.chat.completions.create({
     model: REPORT_MODEL,
+    ...REPORT_SAMPLING,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -149,7 +161,7 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
     "missing_information": <integer 0-100>
   },
   "readiness_factors": [
-    { "label": "<factor name, in the user's language>", "score": <integer 0-100> }
+    { "key": "<factor key when one is given, otherwise empty string>", "label": "<factor name, in the user's language>", "score": <integer 0-100> }
   ],
   "data_quality_note": "<one sentence ONLY if the documents look like samples, templates, test or fictional material; otherwise an empty string>",
   "hidden_risks": [
@@ -192,6 +204,26 @@ OUTPUT FORMAT (JSON ONLY — no markdown, no extra keys):
 
 EVIDENCE STATUS OPTIONS: "Not found" | "Unclear" | "Partially mentioned"
 SEVERITY: High = material harm; Medium = significant uncertainty; Low = minor concern.
+
+SYSTEM-COMPUTED ASSESSMENT — when the user message contains this block, a deterministic
+scoring step has already made the decision from a fixed checklist. It is FINAL and
+overrides any instruction below about choosing these values:
+- Copy "document_type", "overall_decision", "confidence_score" and "decision_strength" exactly.
+- "readiness_factors": the given factors, same keys and scores, with each label translated
+  into the user's language.
+- "ranking": exactly the given names, in exactly the given order. ranking[0] is the
+  current best option; never argue for a different order or verdict in any text field.
+- Explain the results using the checklist: the reasons for the order are the items where
+  the options differ, and the price comparison when one was made.
+- "hidden_risks" severity follows the checklist, so it is the same every time:
+  an Unfavorable critical (*) item → High; any other Unfavorable item, or a Missing critical
+  item → Medium; a Partial or Missing non-critical item → Low. Cover the best option first.
+  A risk the checklist does not capture may be added only when the documents state it
+  explicitly, and at most Medium unless material harm is written in the document.
+- "missing_information" comes from the Missing and Partial items, best option first.
+- "choose_if" must agree with the ranking: an overall or balanced priority ("best overall",
+  "balanced cost and terms") always names ranking[0]. Other options may only be named for a
+  single, specific priority they actually win (e.g. lowest price).
 
 OVERALL DECISION — "overall_decision" rates the DEAL, not your confidence in the analysis:
 - "Proceed"              — no material risk; terms are sound and adequately evidenced.
@@ -483,6 +515,44 @@ export interface GeneratedDecisionReport {
   truncatedDocuments: string[]
 }
 
+/** The report writer always gets at least this long, even after a slow assessment. */
+const MIN_REPORT_WRITE_MS = 20_000
+
+/**
+ * Record each document's checklist status and prices, and score them into the
+ * decision. Returns null — and the report falls back to the model's own
+ * figures — if the assessment fails for any reason, so a problem here can
+ * never cost the customer their report.
+ */
+async function assessDocuments(
+  openai: OpenAI,
+  documents: DecisionDocument[],
+  docsBlock: string,
+  decisionGoal: string,
+  documentType: string,
+  truncated: boolean,
+): Promise<{ basis: DecisionBasis | null; usage: TokenUsage | null }> {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: REPORT_MODEL,
+      ...REPORT_SAMPLING,
+      response_format: { type: 'json_schema', json_schema: assessmentSchema(documents.map(d => d.name), documentType) },
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: assessmentPrompt(documentType, documents.length) },
+        { role: 'user', content: `Decision Goal: ${decisionGoal}\n\n${docsBlock}` },
+      ],
+    }, { timeout: ASSESSMENT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
+    const usage = readUsage(completion)
+    const basis = computeDecisionBasis(parseModelJson(completion), documents.map(d => d.name), documentType, { truncated })
+    if (!basis) console.warn('[DECISION] assessment unusable; report uses model figures')
+    return { basis, usage }
+  } catch (e) {
+    console.warn(`[DECISION] assessment ${isTimeoutError(e) ? 'timed out' : 'failed'}; report uses model figures:`, e instanceof Error ? e.message : e)
+    return { basis: null, usage: null }
+  }
+}
+
 export async function generateDecisionReport(
   documents: DecisionDocument[],
   language: string,
@@ -490,29 +560,49 @@ export async function generateDecisionReport(
   documentType: string = 'auto',
 ): Promise<GeneratedDecisionReport> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  const started = Date.now()
 
   const systemPrompt = getFrameworkPrompt(documentType)
 
+  // A fixed order, so re-uploading the same files in a different order sends
+  // the model an identical prompt. Names are identifiers, never evidence.
+  const ordered = [...documents].sort((a, b) =>
+    a.name.localeCompare(b.name, 'en') || (a.content < b.content ? -1 : a.content > b.content ? 1 : 0))
+
   // Shares a fixed character budget across the uploaded documents, and reports
   // which ones were cut so the UI can say so instead of silently dropping them.
-  const { block: docsBlock, truncated } = buildDocsBlock(documents)
+  const { block: docsBlock, truncated } = buildDocsBlock(ordered)
+
+  const { basis, usage: assessmentUsage } = await assessDocuments(
+    openai, ordered, docsBlock, decisionGoal, documentType, truncated.length > 0,
+  )
+
+  const fixedResults = basis ? `\n\n${formatBasisForPrompt(basis)}` : ''
+  const remaining = Math.max(MIN_REPORT_WRITE_MS, REPORT_TIMEOUT_MS - (Date.now() - started))
 
   const completion = await openai.chat.completions.create({
     model: REPORT_MODEL,
+    ...REPORT_SAMPLING,
     response_format: { type: 'json_object' },
     max_tokens: 8192,
     messages: [
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}`,
+        content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}${fixedResults}`,
       },
     ],
-  }, { timeout: REPORT_TIMEOUT_MS, maxRetries: OPENAI_MAX_RETRIES })
+  }, { timeout: remaining, maxRetries: OPENAI_MAX_RETRIES })
 
+  const data = parseModelJson(completion)
+  // Carried on the report so the normaliser can enforce it, and so a saved
+  // report shows exactly what its decision was based on.
+  if (basis) data.decision_basis = basis
+
+  const usage = readUsage(completion)
   return {
-    data: parseModelJson(completion),
-    usage: readUsage(completion),
+    data,
+    usage: assessmentUsage ? addUsage(assessmentUsage, usage) : usage,
     truncatedDocuments: truncated,
   }
 }
@@ -578,6 +668,9 @@ export function reconcileDecision(decision: OverallDecision, readiness: number |
 }
 
 const PRIORITY_RANK: Record<string, number> = { High: 0, Medium: 1, Low: 2 }
+
+/** "choose_if" priorities that mean the overall decision rather than one criterion. */
+const OVERALL_PRIORITY = /balanc|overall|best (value|terms|fit|choice)|all[- ]round|综合|平衡|整体|均衡/i
 
 function text(value: Raw): string {
   return typeof value === 'string' ? value.trim() : ''
@@ -728,17 +821,28 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     recommendation: w.recommendation ?? w.action ?? w.suggestion ?? '',
   })).filter((w: Raw) => w.claim)
 
-  const readinessFactors = normalizeReadinessFactors(raw.readiness_factors)
-  const decisionReadiness = readinessFactors.length > 0
-    ? Math.round(readinessFactors.reduce((sum, f) => sum + f.score, 0) / readinessFactors.length)
-    : undefined
+  // When the checklist assessment ran, the decision was computed in code and
+  // every core figure comes from it. The model's own values are only used for
+  // reports where that step could not run.
+  const basis = asDecisionBasis(raw.decision_basis)
+
+  const readinessFactors = basis
+    ? basisReadinessFactors(basis, raw.readiness_factors)
+    : normalizeReadinessFactors(raw.readiness_factors)
+  const decisionReadiness = basis
+    ? basis.decision_readiness
+    : readinessFactors.length > 0
+      ? Math.round(readinessFactors.reduce((sum, f) => sum + f.score, 0) / readinessFactors.length)
+      : undefined
 
   // One verdict drives the whole report. A "Proceed" beside a readiness score
   // saying key information is still missing is the contradiction readers
   // flagged, so the verdict gives way to the evidence gap.
   const claimed = String(raw.overall_decision ?? '').trim() as OverallDecision
   const overallDecision = reconcileDecision(
-    OVERALL_DECISIONS.includes(claimed) ? claimed : deriveOverallDecision(hiddenRisks, missingInfo),
+    basis
+      ? basis.overall_decision
+      : OVERALL_DECISIONS.includes(claimed) ? claimed : deriveOverallDecision(hiddenRisks, missingInfo),
     decisionReadiness,
   )
 
@@ -768,7 +872,7 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
   }
 
   // Derive fallbacks for fields GPT sometimes omits
-  const score = raw.confidence_score ?? 75
+  const score = basis ? basis.confidence_score : raw.confidence_score ?? 75
 
   const ifIWereYou = raw.if_i_were_you?.trim() ||
     (raw.recommendation
@@ -792,7 +896,7 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     ? raw.compared_categories
     : evidenceFound.map((e: Raw) => e.section).filter(Boolean).slice(0, 6)
 
-  const confidenceBreakdown = raw.confidence_breakdown ?? {
+  const confidenceBreakdown = basis?.confidence_breakdown ?? raw.confidence_breakdown ?? {
     document_completeness: Math.min(100, score + 5),
     evidence_consistency: Math.min(100, score),
     risk_severity: Math.max(0, 100 - (hiddenRisks.filter((r: Raw) => r.severity === 'High').length * 20)),
@@ -824,7 +928,17 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     )[0]?.action ?? ''
   )
 
-  const ranking = completeRanking(raw.ranking, optionTradeoffs, documentNames)
+  const ranking = basis
+    ? basisRanking(basis, completeRanking(raw.ranking, optionTradeoffs), optionTradeoffs)
+    : completeRanking(raw.ranking, optionTradeoffs, documentNames)
+
+  // An overall or balanced priority is exactly what the computed ranking
+  // answers, so naming a different option for it contradicts "Current Best
+  // Option". The writer is told this and still does it, so it is enforced here.
+  const consistentChooseIf = basis
+    ? chooseIf.filter((c: { priority: string; option: string }) =>
+        !OVERALL_PRIORITY.test(c.priority) || docKey(c.option) === docKey(ranking[0]?.name ?? ''))
+    : chooseIf
 
   // The alternative is only worth showing when it is a different option from
   // the current best one and says what would make it win.
@@ -836,7 +950,7 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     ? { name: altName, condition: altCondition }
     : undefined
 
-  return {
+  const out: Record<string, Raw> = {
     ...raw,
     ranking,
     alternative_option: alternativeOption,
@@ -844,7 +958,7 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     why_points: whyPoints,
     next_action: nextAction,
     option_tradeoffs: optionTradeoffs,
-    choose_if: chooseIf,
+    choose_if: consistentChooseIf,
     readiness_factors: readinessFactors,
     decision_readiness: decisionReadiness,
     data_quality_note: text(raw.data_quality_note),
@@ -864,4 +978,62 @@ export function normalizeDecisionReport(raw: Record<string, Raw>, documentNames:
     decision_playbook: decisionPlaybook,
     interview_red_flags: Array.isArray(raw.interview_red_flags) ? raw.interview_red_flags : [],
   }
+
+  if (basis) {
+    out.decision_basis = basis
+    out.document_type = basis.document_type
+    out.confidence_score = basis.confidence_score
+    out.decision_strength = basis.decision_strength
+  } else {
+    delete out.decision_basis
+  }
+  return out
+}
+
+/** The decision basis attached by generateDecisionReport, or null if absent or malformed. */
+function asDecisionBasis(value: Raw): DecisionBasis | null {
+  const ok = value && typeof value === 'object'
+    && value.version === 1
+    && Array.isArray(value.options) && value.options.length > 0
+    && Array.isArray(value.readiness_factors) && value.readiness_factors.length > 0
+    && OVERALL_DECISIONS.includes(value.overall_decision)
+    && Number.isFinite(value.decision_readiness)
+    && Number.isFinite(value.confidence_score)
+  return ok ? value as DecisionBasis : null
+}
+
+/** Computed readiness factors, labelled in the report language where the writer translated them. */
+function basisReadinessFactors(basis: DecisionBasis, modelFactors: Raw): { key: string; label: string; score: number }[] {
+  const given: Raw[] = Array.isArray(modelFactors) ? modelFactors : []
+  const byKey = new Map(given.map(f => [text(f?.key), text(f?.label)]))
+  return basis.readiness_factors.map((f, i) => ({
+    key: f.key,
+    label: byKey.get(f.key) || (given.length === basis.readiness_factors.length ? text(given[i]?.label) : '') || f.label,
+    score: f.score,
+  }))
+}
+
+/**
+ * The computed ranking, carrying the writer's summary for each option. The
+ * writer is told the exact names and order; when it still names an option
+ * differently (a company name instead of the file name), its entry at the same
+ * position is used.
+ */
+function basisRanking(
+  basis: DecisionBasis,
+  modelRanking: RankedEntry[],
+  tradeoffs: { name: string; advantage: string; drawback: string }[],
+): RankedEntry[] {
+  const basisKeys = new Set(basis.options.map(o => docKey(o.name)))
+  return basis.options.map((o, i) => {
+    const key = docKey(o.name)
+    const positional = modelRanking[i] && !basisKeys.has(docKey(modelRanking[i].name)) ? modelRanking[i] : undefined
+    const match = modelRanking.find(r => docKey(r.name) === key) ?? positional
+    const t = tradeoffs.find(x => docKey(x.name) === key)
+    return {
+      rank: i + 1,
+      name: o.name,
+      summary: match?.summary || (t ? [t.advantage, t.drawback].filter(Boolean).join(' · ') : ''),
+    }
+  })
 }

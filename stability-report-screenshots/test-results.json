@@ -1,0 +1,1288 @@
+{
+  "startedAt": "2026-09-15T09:20:29.591Z",
+  "checks": [
+    {
+      "section": "Public pages",
+      "name": "/ loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/how-it-works loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/features loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/examples loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/pricing loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/blog loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/faq loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/about loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/security loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/contact loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/privacy loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Public pages",
+      "name": "/terms loads",
+      "ok": true,
+      "detail": "HTTP 200"
+    },
+    {
+      "section": "Account",
+      "name": "Sign in with the test account",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run1",
+      "name": "3 files uploaded together",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run1",
+      "name": "Report generated",
+      "ok": true,
+      "detail": "HTTP 200 in 65.4s "
+    },
+    {
+      "section": "run1",
+      "name": "Decision computed from the checklist (not guessed by the AI)",
+      "ok": true,
+      "detail": "type supplier_quotation, priority balanced"
+    },
+    {
+      "section": "run1",
+      "name": "Verdict on page = computed verdict",
+      "ok": true,
+      "detail": "PROCEED"
+    },
+    {
+      "section": "run1",
+      "name": "Ranking on page = computed order",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-c.txt > supplier-a.txt"
+    },
+    {
+      "section": "run1",
+      "name": "Readiness on page = computed readiness",
+      "ok": true,
+      "detail": "90%"
+    },
+    {
+      "section": "run1",
+      "name": "Best option on page is ranking #1",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "run1",
+      "name": "\"Which option fits your priority\" never names another option as best overall",
+      "ok": true,
+      "detail": "2 lines"
+    },
+    {
+      "section": "run1",
+      "name": "Saved report is identical after a page reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run2",
+      "name": "3 files uploaded together",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run2",
+      "name": "Report generated",
+      "ok": true,
+      "detail": "HTTP 200 in 30.2s "
+    },
+    {
+      "section": "run2",
+      "name": "Decision computed from the checklist (not guessed by the AI)",
+      "ok": true,
+      "detail": "type supplier_quotation, priority balanced"
+    },
+    {
+      "section": "run2",
+      "name": "Verdict on page = computed verdict",
+      "ok": true,
+      "detail": "PROCEED"
+    },
+    {
+      "section": "run2",
+      "name": "Ranking on page = computed order",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-c.txt > supplier-a.txt"
+    },
+    {
+      "section": "run2",
+      "name": "Readiness on page = computed readiness",
+      "ok": true,
+      "detail": "90%"
+    },
+    {
+      "section": "run2",
+      "name": "Best option on page is ranking #1",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "run2",
+      "name": "\"Which option fits your priority\" never names another option as best overall",
+      "ok": true,
+      "detail": "2 lines"
+    },
+    {
+      "section": "run2",
+      "name": "Saved report is identical after a page reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run3",
+      "name": "3 files uploaded together",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "run3",
+      "name": "Report generated",
+      "ok": true,
+      "detail": "HTTP 200 in 35.9s "
+    },
+    {
+      "section": "run3",
+      "name": "Decision computed from the checklist (not guessed by the AI)",
+      "ok": true,
+      "detail": "type supplier_quotation, priority balanced"
+    },
+    {
+      "section": "run3",
+      "name": "Verdict on page = computed verdict",
+      "ok": true,
+      "detail": "PROCEED"
+    },
+    {
+      "section": "run3",
+      "name": "Ranking on page = computed order",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-c.txt > supplier-a.txt"
+    },
+    {
+      "section": "run3",
+      "name": "Readiness on page = computed readiness",
+      "ok": true,
+      "detail": "90%"
+    },
+    {
+      "section": "run3",
+      "name": "Best option on page is ranking #1",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "run3",
+      "name": "\"Which option fits your priority\" never names another option as best overall",
+      "ok": true,
+      "detail": "2 lines"
+    },
+    {
+      "section": "run3",
+      "name": "Saved report is identical after a page reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "Credits",
+      "name": "AI Credits charged once per report",
+      "ok": true,
+      "detail": "2840 of 3000 AI credits left this month → 2786 of 3000 AI credits left this month"
+    },
+    {
+      "section": "Stability",
+      "name": "Same best option on all 3 runs",
+      "ok": true,
+      "detail": "supplier-b.txt | supplier-b.txt | supplier-b.txt"
+    },
+    {
+      "section": "Stability",
+      "name": "Same full ranking on all 3 runs",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-c.txt > supplier-a.txt | supplier-b.txt > supplier-c.txt > supplier-a.txt | supplier-b.txt > supplier-c.txt > supplier-a.txt"
+    },
+    {
+      "section": "Stability",
+      "name": "Same verdict on all 3 runs",
+      "ok": true,
+      "detail": "Proceed | Proceed | Proceed"
+    },
+    {
+      "section": "Stability",
+      "name": "Same Decision Readiness on all 3 runs",
+      "ok": true,
+      "detail": "90 | 90 | 90"
+    },
+    {
+      "section": "Stability",
+      "name": "Same readiness factor scores on all 3 runs",
+      "ok": true,
+      "detail": "100/100/100/100/50 | 100/100/100/100/50 | 100/100/100/100/50"
+    },
+    {
+      "section": "Stability",
+      "name": "Same AI confidence on all 3 runs",
+      "ok": true,
+      "detail": "88 | 88 | 88"
+    },
+    {
+      "section": "Stability",
+      "name": "Same supplier scores on all 3 runs",
+      "ok": false,
+      "detail": "94/65/63 | 94/66/63 | 94/65/63"
+    },
+    {
+      "section": "Stability",
+      "name": "Same document type on all 3 runs",
+      "ok": true,
+      "detail": "supplier_quotation | supplier_quotation | supplier_quotation"
+    },
+    {
+      "section": "Stability",
+      "name": "Same number of High risks on all 3 runs",
+      "ok": true,
+      "detail": "0 | 0 | 0"
+    },
+    {
+      "section": "zh",
+      "name": "3 files uploaded together",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "zh",
+      "name": "Report generated",
+      "ok": true,
+      "detail": "HTTP 200 in 33.6s "
+    },
+    {
+      "section": "zh",
+      "name": "Decision computed from the checklist (not guessed by the AI)",
+      "ok": true,
+      "detail": "type supplier_quotation, priority balanced"
+    },
+    {
+      "section": "zh",
+      "name": "Verdict on page = computed verdict",
+      "ok": true,
+      "detail": "PROCEED"
+    },
+    {
+      "section": "zh",
+      "name": "Ranking on page = computed order",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-c.txt > supplier-a.txt"
+    },
+    {
+      "section": "zh",
+      "name": "Readiness on page = computed readiness",
+      "ok": true,
+      "detail": "90%"
+    },
+    {
+      "section": "zh",
+      "name": "Best option on page is ranking #1",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "zh",
+      "name": "\"Which option fits your priority\" never names another option as best overall",
+      "ok": true,
+      "detail": "2 lines"
+    },
+    {
+      "section": "zh",
+      "name": "Saved report is identical after a page reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "zh",
+      "name": "Selected framework \"Supplier Quotation\" is used",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "zh",
+      "name": "Readiness factor labels are in Chinese",
+      "ok": true,
+      "detail": "价格验证 100%, 商业条款 100%, 范围完整性 100%, 风险清晰度 100%, 证据质量 50%"
+    },
+    {
+      "section": "zh",
+      "name": "Same best option as the English runs",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "zh",
+      "name": "Same verdict as the English runs",
+      "ok": true,
+      "detail": "Proceed"
+    },
+    {
+      "section": "skipped",
+      "name": "3 files uploaded together",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "skipped",
+      "name": "Report generated",
+      "ok": true,
+      "detail": "HTTP 200 in 30.4s "
+    },
+    {
+      "section": "skipped",
+      "name": "Decision computed from the checklist (not guessed by the AI)",
+      "ok": true,
+      "detail": "type supplier_quotation, priority balanced"
+    },
+    {
+      "section": "skipped",
+      "name": "Verdict on page = computed verdict",
+      "ok": true,
+      "detail": "PROCEED"
+    },
+    {
+      "section": "skipped",
+      "name": "Ranking on page = computed order",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-a.txt"
+    },
+    {
+      "section": "skipped",
+      "name": "Readiness on page = computed readiness",
+      "ok": true,
+      "detail": "90%"
+    },
+    {
+      "section": "skipped",
+      "name": "Best option on page is ranking #1",
+      "ok": true,
+      "detail": "supplier-b.txt"
+    },
+    {
+      "section": "skipped",
+      "name": "\"Which option fits your priority\" never names another option as best overall",
+      "ok": true,
+      "detail": "2 lines"
+    },
+    {
+      "section": "skipped",
+      "name": "Saved report is identical after a page reload",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "skipped",
+      "name": "Unreadable file listed as skipped by the server",
+      "ok": true,
+      "detail": "[{\"name\":\"empty-notes.txt\",\"reason\":\"\\\"empty-notes.txt\\\" appears to be empty.\",\"code\":\"empty\"}]"
+    },
+    {
+      "section": "skipped",
+      "name": "Only the 2 readable documents are ranked",
+      "ok": true,
+      "detail": "supplier-b.txt > supplier-a.txt"
+    },
+    {
+      "section": "skipped",
+      "name": "Skipped-file notice is shown on the report",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "section": "Profile",
+      "name": "Saved reports are listed on the profile",
+      "ok": true,
+      "detail": "14 reports"
+    },
+    {
+      "section": "Profile",
+      "name": "Newest report opens from the profile",
+      "ok": true,
+      "detail": "PROCEED · supplier-b.txt"
+    },
+    {
+      "section": "Assistant",
+      "name": "Decision Assistant answers a question about the report",
+      "ok": true,
+      "detail": "Supplier B is ranked first due to its comprehensive and reliable offerings, which include fixed pricing for 12 months, a strong delivery Ser"
+    },
+    {
+      "section": "Backward compatibility",
+      "name": "A report saved before this change still opens",
+      "ok": true,
+      "detail": "NOT YET — VERIFY FIRST · readiness 80%"
+    },
+    {
+      "section": "Console",
+      "name": "No browser console errors during the whole test",
+      "ok": false,
+      "detail": "3 errors"
+    }
+  ],
+  "runs": [
+    {
+      "tag": "run1",
+      "seconds": 65.39,
+      "url": "http://localhost:5173/report/ngpJHM9kcIxrHsMAQM2R",
+      "shown": {
+        "verdict": "PROCEED",
+        "best": "supplier-b.txt",
+        "readiness": "90%",
+        "confidence": "88%",
+        "factors": [
+          "Pricing Validation 100%",
+          "Commercial Terms 100%",
+          "Scope Completeness 100%",
+          "Risk Clarity 100%",
+          "Evidence Quality 50%"
+        ],
+        "chooseIf": [
+          "Best overall terms→supplier-b.txt — Comprehensive risk management and fixed pricing.",
+          "Lowest upfront cost→supplier-a.txt — Lowest initial pricing."
+        ],
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ]
+      },
+      "api": {
+        "overall_decision": "Proceed",
+        "document_type": "supplier_quotation",
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ],
+        "decision_readiness": 90,
+        "confidence_score": 88,
+        "decision_strength": 5,
+        "readiness_factors": [
+          {
+            "key": "pricing_validation",
+            "label": "Pricing Validation",
+            "score": 100
+          },
+          {
+            "key": "commercial_terms",
+            "label": "Commercial Terms",
+            "score": 100
+          },
+          {
+            "key": "scope_completeness",
+            "label": "Scope Completeness",
+            "score": 100
+          },
+          {
+            "key": "risk_clarity",
+            "label": "Risk Clarity",
+            "score": 100
+          },
+          {
+            "key": "evidence_quality",
+            "label": "Evidence Quality",
+            "score": 50
+          }
+        ],
+        "high_risks": 0,
+        "risks": [
+          "Medium: Supplier A lacks a fixed price guarantee and comprehensive warranty, posing a risk of cost increases and inadequate product support.",
+          "Medium: Supplier C's delivery terms are not guaranteed, which could lead to operational disruptions."
+        ],
+        "missing": [
+          "Supplier A's Warranty Policy",
+          "Supplier C's Price Increase Cap"
+        ],
+        "skipped": [],
+        "creditsCharged": 18,
+        "choose_if": [
+          {
+            "priority": "Best overall terms",
+            "option": "supplier-b.txt",
+            "reason": "Comprehensive risk management and fixed pricing."
+          },
+          {
+            "priority": "Lowest upfront cost",
+            "option": "supplier-a.txt",
+            "reason": "Lowest initial pricing."
+          }
+        ],
+        "options": [
+          {
+            "rank": 1,
+            "name": "supplier-b.txt",
+            "score": 94,
+            "terms": 95,
+            "price_total": 81.7,
+            "price_score": 92,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Adequate",
+              "Price increase cap=Adequate",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Adequate",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Adequate",
+              "Late delivery penalty=Adequate",
+              "Warranty terms=Adequate",
+              "Liability & insurance*=Adequate",
+              "Service levels & support=Adequate",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 2,
+            "name": "supplier-c.txt",
+            "score": 65,
+            "terms": 53,
+            "price_total": 76,
+            "price_score": 99,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Partial",
+              "Price increase cap=Missing",
+              "Payment terms*=Unfavorable",
+              "Cancellation terms=Partial",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Partial",
+              "Service levels & support=Missing",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 3,
+            "name": "supplier-a.txt",
+            "score": 63,
+            "terms": 50,
+            "price_total": 75.5,
+            "price_score": 100,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Unfavorable",
+              "Price increase cap=Missing",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Unfavorable",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Unfavorable",
+              "Service levels & support=Missing",
+              "Past performance evidence=Missing"
+            ]
+          }
+        ],
+        "price_items_compared": [
+          "pens and stationery bundle",
+          "printer cartridges black",
+          "standard paper a4 80gsm"
+        ],
+        "goal_priority": "balanced"
+      }
+    },
+    {
+      "tag": "run2",
+      "seconds": 30.157,
+      "url": "http://localhost:5173/report/pPaJdPQ2vogQPFVPpvD8",
+      "shown": {
+        "verdict": "PROCEED",
+        "best": "supplier-b.txt",
+        "readiness": "90%",
+        "confidence": "88%",
+        "factors": [
+          "Pricing Validation 100%",
+          "Commercial Terms 100%",
+          "Scope Completeness 100%",
+          "Risk Clarity 100%",
+          "Evidence Quality 50%"
+        ],
+        "chooseIf": [
+          "Best overall terms→supplier-b.txt — Comprehensive terms with fixed pricing and strong delivery commitments.",
+          "Lowest cost→supplier-a.txt — Offers the lowest pricing but with significant risks."
+        ],
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ]
+      },
+      "api": {
+        "overall_decision": "Proceed",
+        "document_type": "supplier_quotation",
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ],
+        "decision_readiness": 90,
+        "confidence_score": 88,
+        "decision_strength": 5,
+        "readiness_factors": [
+          {
+            "key": "pricing_validation",
+            "label": "Pricing Validation",
+            "score": 100
+          },
+          {
+            "key": "commercial_terms",
+            "label": "Commercial Terms",
+            "score": 100
+          },
+          {
+            "key": "scope_completeness",
+            "label": "Scope Completeness",
+            "score": 100
+          },
+          {
+            "key": "risk_clarity",
+            "label": "Risk Clarity",
+            "score": 100
+          },
+          {
+            "key": "evidence_quality",
+            "label": "Evidence Quality",
+            "score": 50
+          }
+        ],
+        "high_risks": 0,
+        "risks": [
+          "Medium: Supplier A lacks a fixed price guarantee and delivery commitments, posing a risk of cost increases and delivery delays.",
+          "Medium: Supplier C's delivery terms are vague, and the warranty is limited, which could lead to operational disruptions."
+        ],
+        "missing": [
+          "Supplier A's Warranty Policy",
+          "Supplier C's Liability Insurance Amount"
+        ],
+        "skipped": [],
+        "creditsCharged": 18,
+        "choose_if": [
+          {
+            "priority": "Best overall terms",
+            "option": "supplier-b.txt",
+            "reason": "Comprehensive terms with fixed pricing and strong delivery commitments."
+          },
+          {
+            "priority": "Lowest cost",
+            "option": "supplier-a.txt",
+            "reason": "Offers the lowest pricing but with significant risks."
+          }
+        ],
+        "options": [
+          {
+            "rank": 1,
+            "name": "supplier-b.txt",
+            "score": 94,
+            "terms": 95,
+            "price_total": 81.7,
+            "price_score": 92,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Adequate",
+              "Price increase cap=Adequate",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Adequate",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Adequate",
+              "Late delivery penalty=Adequate",
+              "Warranty terms=Adequate",
+              "Liability & insurance*=Adequate",
+              "Service levels & support=Adequate",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 2,
+            "name": "supplier-c.txt",
+            "score": 66,
+            "terms": 55,
+            "price_total": 76,
+            "price_score": 99,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Partial",
+              "Price increase cap=Missing",
+              "Payment terms*=Unfavorable",
+              "Cancellation terms=Partial",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Partial",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Partial",
+              "Service levels & support=Missing",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 3,
+            "name": "supplier-a.txt",
+            "score": 63,
+            "terms": 50,
+            "price_total": 75.5,
+            "price_score": 100,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Unfavorable",
+              "Price increase cap=Missing",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Unfavorable",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Unfavorable",
+              "Service levels & support=Missing",
+              "Past performance evidence=Missing"
+            ]
+          }
+        ],
+        "price_items_compared": [
+          "pens and stationery bundle",
+          "printer cartridges black",
+          "standard paper a4 80gsm"
+        ],
+        "goal_priority": "balanced"
+      }
+    },
+    {
+      "tag": "run3",
+      "seconds": 35.911,
+      "url": "http://localhost:5173/report/YodG5jQiqCSjkqBJJWLt",
+      "shown": {
+        "verdict": "PROCEED",
+        "best": "supplier-b.txt",
+        "readiness": "90%",
+        "confidence": "88%",
+        "factors": [
+          "Pricing Validation 100%",
+          "Commercial Terms 100%",
+          "Scope Completeness 100%",
+          "Risk Clarity 100%",
+          "Evidence Quality 50%"
+        ],
+        "chooseIf": [
+          "Best overall terms→supplier-b.txt — Comprehensive terms and risk management.",
+          "Lowest upfront cost→supplier-a.txt — Lowest pricing but with significant risk."
+        ],
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ]
+      },
+      "api": {
+        "overall_decision": "Proceed",
+        "document_type": "supplier_quotation",
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ],
+        "decision_readiness": 90,
+        "confidence_score": 88,
+        "decision_strength": 5,
+        "readiness_factors": [
+          {
+            "key": "pricing_validation",
+            "label": "Pricing Validation",
+            "score": 100
+          },
+          {
+            "key": "commercial_terms",
+            "label": "Commercial Terms",
+            "score": 100
+          },
+          {
+            "key": "scope_completeness",
+            "label": "Scope Completeness",
+            "score": 100
+          },
+          {
+            "key": "risk_clarity",
+            "label": "Risk Clarity",
+            "score": 100
+          },
+          {
+            "key": "evidence_quality",
+            "label": "Evidence Quality",
+            "score": 50
+          }
+        ],
+        "high_risks": 0,
+        "risks": [
+          "Medium: Supplier A's lack of fixed pricing and delivery guarantees poses a risk of cost increases and delays.",
+          "Medium: Supplier C's limited warranty and lack of delivery penalties could lead to increased operational risks."
+        ],
+        "missing": [
+          "Supplier A's Warranty Policy",
+          "Supplier C's Liability Insurance Amount"
+        ],
+        "skipped": [],
+        "creditsCharged": 18,
+        "choose_if": [
+          {
+            "priority": "Best overall terms",
+            "option": "supplier-b.txt",
+            "reason": "Comprehensive terms and risk management."
+          },
+          {
+            "priority": "Lowest upfront cost",
+            "option": "supplier-a.txt",
+            "reason": "Lowest pricing but with significant risk."
+          }
+        ],
+        "options": [
+          {
+            "rank": 1,
+            "name": "supplier-b.txt",
+            "score": 94,
+            "terms": 95,
+            "price_total": 81.7,
+            "price_score": 92,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Adequate",
+              "Price increase cap=Adequate",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Adequate",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Adequate",
+              "Late delivery penalty=Adequate",
+              "Warranty terms=Adequate",
+              "Liability & insurance*=Adequate",
+              "Service levels & support=Adequate",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 2,
+            "name": "supplier-c.txt",
+            "score": 65,
+            "terms": 53,
+            "price_total": 76,
+            "price_score": 99,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Partial",
+              "Price increase cap=Missing",
+              "Payment terms*=Unfavorable",
+              "Cancellation terms=Partial",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Partial",
+              "Service levels & support=Missing",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 3,
+            "name": "supplier-a.txt",
+            "score": 63,
+            "terms": 50,
+            "price_total": 75.5,
+            "price_score": 100,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Unfavorable",
+              "Price increase cap=Missing",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Unfavorable",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Unfavorable",
+              "Service levels & support=Missing",
+              "Past performance evidence=Missing"
+            ]
+          }
+        ],
+        "price_items_compared": [
+          "pens and stationery bundle",
+          "printer cartridges black",
+          "standard paper a4 80gsm"
+        ],
+        "goal_priority": "balanced"
+      }
+    },
+    {
+      "tag": "zh",
+      "seconds": 33.58,
+      "url": "http://localhost:5173/report/1LzPayQexMoyj1zro4Z9",
+      "shown": {
+        "verdict": "PROCEED",
+        "best": "supplier-b.txt",
+        "readiness": "90%",
+        "confidence": "88%",
+        "factors": [
+          "价格验证 100%",
+          "商业条款 100%",
+          "范围完整性 100%",
+          "风险清晰度 100%",
+          "证据质量 50%"
+        ],
+        "chooseIf": [
+          "最低成本→supplier-a.txt — 价格最低",
+          "最佳整体条款→supplier-b.txt — 提供全面的合同条款和价格锁定"
+        ],
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ]
+      },
+      "api": {
+        "overall_decision": "Proceed",
+        "document_type": "supplier_quotation",
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-c.txt",
+          "supplier-a.txt"
+        ],
+        "decision_readiness": 90,
+        "confidence_score": 88,
+        "decision_strength": 5,
+        "readiness_factors": [
+          {
+            "key": "pricing_validation",
+            "label": "价格验证",
+            "score": 100
+          },
+          {
+            "key": "commercial_terms",
+            "label": "商业条款",
+            "score": 100
+          },
+          {
+            "key": "scope_completeness",
+            "label": "范围完整性",
+            "score": 100
+          },
+          {
+            "key": "risk_clarity",
+            "label": "风险清晰度",
+            "score": 100
+          },
+          {
+            "key": "evidence_quality",
+            "label": "证据质量",
+            "score": 50
+          }
+        ],
+        "high_risks": 0,
+        "risks": [
+          "Medium: 供应商A缺乏价格锁定和交付承诺，可能导致成本增加和交付延迟。"
+        ],
+        "missing": [
+          "供应商A的取消条款"
+        ],
+        "skipped": [],
+        "creditsCharged": 18,
+        "choose_if": [
+          {
+            "priority": "最低成本",
+            "option": "supplier-a.txt",
+            "reason": "价格最低"
+          },
+          {
+            "priority": "最佳整体条款",
+            "option": "supplier-b.txt",
+            "reason": "提供全面的合同条款和价格锁定"
+          }
+        ],
+        "options": [
+          {
+            "rank": 1,
+            "name": "supplier-b.txt",
+            "score": 94,
+            "terms": 95,
+            "price_total": 81.7,
+            "price_score": 92,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Adequate",
+              "Price increase cap=Adequate",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Adequate",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Adequate",
+              "Late delivery penalty=Adequate",
+              "Warranty terms=Adequate",
+              "Liability & insurance*=Adequate",
+              "Service levels & support=Adequate",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 2,
+            "name": "supplier-c.txt",
+            "score": 66,
+            "terms": 55,
+            "price_total": 76,
+            "price_score": 99,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Partial",
+              "Price increase cap=Missing",
+              "Payment terms*=Unfavorable",
+              "Cancellation terms=Partial",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Partial",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Partial",
+              "Service levels & support=Missing",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 3,
+            "name": "supplier-a.txt",
+            "score": 55,
+            "terms": 40,
+            "price_total": 75.5,
+            "price_score": 100,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Unfavorable",
+              "Price increase cap=Missing",
+              "Payment terms*=Unfavorable",
+              "Cancellation terms=Unfavorable",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Unfavorable",
+              "Service levels & support=Missing",
+              "Past performance evidence=Missing"
+            ]
+          }
+        ],
+        "price_items_compared": [
+          "pens and stationery bundle",
+          "printer cartridges black",
+          "standard paper a4 80gsm"
+        ],
+        "goal_priority": "balanced"
+      }
+    },
+    {
+      "tag": "skipped",
+      "seconds": 30.383,
+      "url": "http://localhost:5173/report/mk4RJRzZoiEwy0Z6mKdy",
+      "shown": {
+        "verdict": "PROCEED",
+        "best": "supplier-b.txt",
+        "readiness": "90%",
+        "confidence": "92%",
+        "factors": [
+          "Pricing Validation 100%",
+          "Commercial Terms 100%",
+          "Scope Completeness 100%",
+          "Risk Clarity 100%",
+          "Evidence Quality 50%"
+        ],
+        "chooseIf": [
+          "Best overall terms→supplier-b.txt — Offers fixed pricing and strong delivery and warranty commitments.",
+          "Lowest initial cost→supplier-a.txt — Offers lower initial pricing."
+        ],
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-a.txt"
+        ]
+      },
+      "api": {
+        "overall_decision": "Proceed",
+        "document_type": "supplier_quotation",
+        "ranking": [
+          "supplier-b.txt",
+          "supplier-a.txt"
+        ],
+        "decision_readiness": 90,
+        "confidence_score": 92,
+        "decision_strength": 5,
+        "readiness_factors": [
+          {
+            "key": "pricing_validation",
+            "label": "Pricing Validation",
+            "score": 100
+          },
+          {
+            "key": "commercial_terms",
+            "label": "Commercial Terms",
+            "score": 100
+          },
+          {
+            "key": "scope_completeness",
+            "label": "Scope Completeness",
+            "score": 100
+          },
+          {
+            "key": "risk_clarity",
+            "label": "Risk Clarity",
+            "score": 100
+          },
+          {
+            "key": "evidence_quality",
+            "label": "Evidence Quality",
+            "score": 50
+          }
+        ],
+        "high_risks": 0,
+        "risks": [
+          "Medium: Supplier A's lack of fixed pricing and delivery SLA poses a risk of cost increases and delivery delays."
+        ],
+        "missing": [
+          "Supplier A's Warranty Policy",
+          "Supplier A's Delivery SLA"
+        ],
+        "skipped": [
+          {
+            "name": "empty-notes.txt",
+            "reason": "\"empty-notes.txt\" appears to be empty.",
+            "code": "empty"
+          }
+        ],
+        "creditsCharged": 17,
+        "choose_if": [
+          {
+            "priority": "Best overall terms",
+            "option": "supplier-b.txt",
+            "reason": "Offers fixed pricing and strong delivery and warranty commitments."
+          },
+          {
+            "priority": "Lowest initial cost",
+            "option": "supplier-a.txt",
+            "reason": "Offers lower initial pricing."
+          }
+        ],
+        "options": [
+          {
+            "rank": 1,
+            "name": "supplier-b.txt",
+            "score": 94,
+            "terms": 95,
+            "price_total": 81.7,
+            "price_score": 92,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Adequate",
+              "Price increase cap=Adequate",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Adequate",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Adequate",
+              "Late delivery penalty=Adequate",
+              "Warranty terms=Adequate",
+              "Liability & insurance*=Adequate",
+              "Service levels & support=Adequate",
+              "Past performance evidence=Partial"
+            ]
+          },
+          {
+            "rank": 2,
+            "name": "supplier-a.txt",
+            "score": 63,
+            "terms": 50,
+            "price_total": 75.5,
+            "price_score": 100,
+            "checklist": [
+              "Pricing transparency*=Adequate",
+              "Fixed price period=Unfavorable",
+              "Price increase cap=Missing",
+              "Payment terms*=Adequate",
+              "Cancellation terms=Unfavorable",
+              "Scope of supply*=Adequate",
+              "Delivery commitment*=Partial",
+              "Late delivery penalty=Missing",
+              "Warranty terms=Partial",
+              "Liability & insurance*=Unfavorable",
+              "Service levels & support=Missing",
+              "Past performance evidence=Missing"
+            ]
+          }
+        ],
+        "price_items_compared": [
+          "pens and stationery bundle",
+          "printer cartridges black",
+          "standard paper a4 80gsm"
+        ],
+        "goal_priority": "balanced"
+      }
+    }
+  ],
+  "consoleErrors": [
+    "http://localhost:5173/ :: [2026-09-15T09:20:31.244Z]  @firebase/firestore: Firestore (12.13.0): Could not reach Cloud Firestore backend. Connection failed 1 times. Most recent error: FirebaseError: [code=unavailable]: The operation could not be completed\nThis typically indicates that your device does not have a healthy Inter",
+    "http://localhost:5173/privacy :: [2026-09-15T09:20:39.622Z]  @firebase/firestore: Firestore (12.13.0): Could not reach Cloud Firestore backend. Connection failed 1 times. Most recent error: FirebaseError: [code=unavailable]: The operation could not be completed\nThis typically indicates that your device does not have a healthy Inter",
+    "http://localhost:5173/terms :: [2026-09-15T09:20:40.440Z]  @firebase/firestore: Firestore (12.13.0): Could not reach Cloud Firestore backend. Connection failed 1 times. Most recent error: FirebaseError: [code=unavailable]: The operation could not be completed\nThis typically indicates that your device does not have a healthy Inter"
+  ],
+  "assistantAnswer": "Supplier B is ranked first due to its comprehensive and reliable offerings, which include fixed pricing for 12 months, a strong delivery Service Level Agreement (SLA) with penalties for late delivery, and comprehensive warranty and liability coverage. This provides a higher level of cost stability and reliability compared to Supplier A, which lacks fixed pricing and a formal delivery SLA, posing a medium risk of cost increases and delivery delays. The confidence in this ranking is supported by clear and comprehensive documentation from Supplier B, contributing to the overall decision to proceed with them.",
+  "finishedAt": "2026-09-15T09:25:21.828Z"
+}

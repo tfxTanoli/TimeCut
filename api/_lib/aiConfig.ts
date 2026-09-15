@@ -5,8 +5,23 @@
 // code paths can never drift apart — previously each held its own copy of the
 // model name and the truncation limits.
 
-/** Model used for document analysis and report generation. */
-export const REPORT_MODEL = 'gpt-4o'
+/**
+ * Model used for document analysis and report generation.
+ *
+ * Pinned to a dated snapshot. The bare 'gpt-4o' alias is moved to newer
+ * snapshots by OpenAI without notice, which changes how the same documents are
+ * judged from one week to the next. This is the snapshot the alias pointed to
+ * when it was pinned (2026-09-15), so report quality is unchanged.
+ */
+export const REPORT_MODEL = 'gpt-4o-2024-08-06'
+
+/**
+ * Sampling settings for every report call. The default temperature (1.0)
+ * samples a different verdict, ranking and scores from identical documents on
+ * each run. Temperature 0 with a fixed seed makes the output as repeatable as
+ * the API allows; the scoring in decisionScoring.ts removes what remains.
+ */
+export const REPORT_SAMPLING = { temperature: 0, seed: 20260915 } as const
 
 /**
  * Model used for the Decision Assistant chat.
@@ -28,6 +43,7 @@ export const ASSISTANT_MODEL = 'gpt-4o-mini'
  */
 export const MODEL_PRICING: Record<string, { input: number; cachedInput: number; output: number }> = {
   'gpt-4o':      { input: 2.50, cachedInput: 1.25,  output: 10.00 },
+  'gpt-4o-2024-08-06': { input: 2.50, cachedInput: 1.25, output: 10.00 },
   'gpt-4o-mini': { input: 0.15, cachedInput: 0.075, output: 0.60  },
 }
 
@@ -75,8 +91,12 @@ export const MAX_ASSISTANT_CONTEXT_CHARS = 6_000
    default, which would push a second attempt straight past the route's ceiling.
 */
 
-/** Decision reports — route allows 60s. */
+/** Decision reports — route allows 60s. Shared by the assessment and the
+ *  report-writing call, so the two together still finish inside the route. */
 export const REPORT_TIMEOUT_MS = 50_000
+/** The assessment step's own ceiling. When it is exceeded the report is still
+ *  written, from the model's own figures, in the time that is left. */
+export const ASSESSMENT_TIMEOUT_MS = 18_000
 /** Content analyses — route allows 30s. */
 export const CONTENT_TIMEOUT_MS = 25_000
 /** Assistant questions — route allows 30s, and answers are short. */
@@ -246,6 +266,16 @@ export function readUsage(completion: any): TokenUsage {
     cachedTokens: u.prompt_tokens_details?.cached_tokens ?? 0,
     totalTokens: u.total_tokens ?? promptTokens + completionTokens,
   }
+}
+
+/** Token counts of several calls that together produced one result. */
+export function addUsage(...parts: TokenUsage[]): TokenUsage {
+  return parts.reduce((sum, u) => ({
+    promptTokens: sum.promptTokens + u.promptTokens,
+    completionTokens: sum.completionTokens + u.completionTokens,
+    cachedTokens: sum.cachedTokens + u.cachedTokens,
+    totalTokens: sum.totalTokens + u.totalTokens,
+  }), { promptTokens: 0, completionTokens: 0, cachedTokens: 0, totalTokens: 0 })
 }
 
 /**
