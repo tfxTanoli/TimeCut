@@ -1565,10 +1565,6 @@ function ActionPlanSection({ actions, checklist }: { actions: RecommendedAction[
 
 /* ── Stage 4: Negotiation Suggestions ── */
 function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: NegotiationSuggestion[]; docType?: string }) {
-  // Hooks have to run in the same order on every render, so this sits above the
-  // early returns below — previously it was skipped whenever the section had
-  // nothing to show, which is exactly the case React cannot recover from.
-  const [openIdx, setOpenIdx] = useState<number | null>(null)
   const { t } = useTranslation()
 
   if (!suggestions || suggestions.length === 0) return null
@@ -1589,32 +1585,29 @@ function NegotiationSuggestionsSection({ suggestions, docType }: { suggestions: 
         <div className="dr-neg-list">
           {suggestions.map((s, i) => (
             <div key={i} className="dr-neg-item">
-              <button className="dr-neg-header" onClick={() => setOpenIdx(openIdx === i ? null : i)}>
+              <div className="dr-neg-header dr-neg-header--static">
                 <span className="dr-neg-clause">{s.clause}</span>
-                <IconChevronDown open={openIdx === i} />
-              </button>
-              {openIdx === i && (
-                <div className="dr-neg-body">
-                  {s.issue && (
-                    <div className="dr-neg-row">
-                      <span className="dr-neg-key">{t('report.negIssue')}</span>
-                      <span className="dr-neg-val">{s.issue}</span>
-                    </div>
-                  )}
-                  {s.suggested_improvement && (
-                    <div className="dr-neg-row dr-neg-row--suggest">
-                      <span className="dr-neg-key">{t('report.negRequest')}</span>
-                      <span className="dr-neg-val dr-neg-val--suggest">{s.suggested_improvement}</span>
-                    </div>
-                  )}
-                  {s.leverage && (
-                    <div className="dr-neg-row">
-                      <span className="dr-neg-key">{t('report.negLeverage')}</span>
-                      <span className="dr-neg-val dr-neg-val--leverage">{s.leverage}</span>
-                    </div>
-                  )}
-                </div>
-              )}
+              </div>
+              <div className="dr-neg-body">
+                {s.issue && (
+                  <div className="dr-neg-row">
+                    <span className="dr-neg-key">{t('report.negIssue')}</span>
+                    <span className="dr-neg-val">{s.issue}</span>
+                  </div>
+                )}
+                {s.suggested_improvement && (
+                  <div className="dr-neg-row dr-neg-row--suggest">
+                    <span className="dr-neg-key">{t('report.negRequest')}</span>
+                    <span className="dr-neg-val dr-neg-val--suggest">{s.suggested_improvement}</span>
+                  </div>
+                )}
+                {s.leverage && (
+                  <div className="dr-neg-row">
+                    <span className="dr-neg-key">{t('report.negLeverage')}</span>
+                    <span className="dr-neg-val dr-neg-val--leverage">{s.leverage}</span>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

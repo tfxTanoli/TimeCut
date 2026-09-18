@@ -5800,12 +5800,12 @@
 
 /* Recommendation */
 .dr-recommendation-card {
-  background: linear-gradient(135deg, rgba(59,130,246,0.12) 0%, rgba(99,102,241,0.08) 100%);
-  border: 1px solid rgba(59,130,246,0.25); border-radius: 14px; padding: 24px 26px;
+  background: linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(22,163,74,0.08) 100%);
+  border: 1px solid rgba(34,197,94,0.25); border-radius: 14px; padding: 24px 26px;
 }
 .dr-rec-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-.dr-rec-icon { color: #3B82F6; }
-.dr-rec-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #60A5FA; margin: 0; }
+.dr-rec-icon { color: #22C55E; }
+.dr-rec-label { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #4ADE80; margin: 0; }
 .dr-rec-text { font-size: 16px; line-height: 1.65; color: #FFFFFF; margin: 0 0 12px; font-weight: 500; }
 .dr-rec-disclaimer { font-size: 12px; color: #6B7280; margin: 0; font-style: italic; }
 
@@ -5907,8 +5907,8 @@
 
 /* ── Recommendation card enhancements ── */
 .dr-rec-defense {
-  border-left: 3px solid #3B82F6; padding: 10px 14px;
-  margin: 12px 0 0; background: rgba(59,130,246,0.06); border-radius: 0 8px 8px 0;
+  border-left: 3px solid #22C55E; padding: 10px 14px;
+  margin: 12px 0 0; background: rgba(34,197,94,0.06); border-radius: 0 8px 8px 0;
   font-size: 14px; line-height: 1.6; color: #D1D5DB; font-style: italic;
 }
 .dr-change-decision {
@@ -7234,6 +7234,8 @@
   transition: background 0.15s;
 }
 .dr-neg-header:hover { background: rgba(245,158,11,0.06); }
+.dr-neg-header--static { cursor: default; }
+.dr-neg-header--static:hover { background: none; }
 .dr-neg-clause {
   font-size: 14px;
   font-weight: 700;
