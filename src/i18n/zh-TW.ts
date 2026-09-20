@@ -790,7 +790,7 @@ const zhTW: Record<string, string> = {
   'report.dvMissingInfo': '缺失資訊',
   'report.dvReadiness': '決策準備度',
   'report.dvReadinessDef': '您目前是否擁有足夠可靠的資訊來做出此決定。',
-  'report.dvReadinessBasedOn': '由以下各項平均得出：',
+  'report.dvReadinessBasedOn': '依據以下各項：',
   'report.dvConfidence': 'AI 信心度',
   'report.dvConfidenceDef': 'TimeCut 根據現有證據對本次分析的把握程度。',
   'report.dvNextAction': '下一步行動',

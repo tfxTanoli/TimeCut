@@ -790,7 +790,7 @@ const zhCN: Record<string, string> = {
   'report.dvMissingInfo': '缺失信息',
   'report.dvReadiness': '决策准备度',
   'report.dvReadinessDef': '您目前是否拥有足够可靠的信息来做出此决定。',
-  'report.dvReadinessBasedOn': '由以下各项平均得出：',
+  'report.dvReadinessBasedOn': '依据以下各项：',
   'report.dvConfidence': 'AI 置信度',
   'report.dvConfidenceDef': 'TimeCut 基于现有证据对本次分析的把握程度。',
   'report.dvNextAction': '下一步行动',

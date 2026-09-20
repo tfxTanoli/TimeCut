@@ -210,7 +210,8 @@ scoring step has already made the decision from a fixed checklist. It is FINAL a
 overrides any instruction below about choosing these values:
 - Copy "document_type", "overall_decision", "confidence_score" and "decision_strength" exactly.
 - "readiness_factors": the given factors, same keys and scores, with each label translated
-  into the user's language.
+  into the user's language. Decision Readiness itself is already computed and given as
+  "decision_readiness"; if any text mentions a readiness figure, it is that number.
 - "ranking": exactly the given names, in exactly the given order. ranking[0] is the
   current best option; never argue for a different order or verdict in any text field.
 - Explain the results using the checklist: the reasons for the order are the items where
@@ -260,7 +261,7 @@ SCORES — two different questions; keep them distinct:
   - contract: Key Terms Clarity, Clause Completeness, Liability & Risk Clarity, Commercial Terms, Evidence Quality
   - cv: Role Fit Evidence, Experience Verification, Skills Evidence, Employment History Clarity, Risk Clarity
   - general: Information Completeness, Evidence Quality, Options Comparability, Risk Clarity
-  Decision readiness is the average of these scores, so score honestly: an area with a
+  Decision readiness is derived from these scores, so score honestly: an area with a
   critical unverified item scores below 50.
 - When critical information is still missing, "overall_decision" must not be "Proceed".
 

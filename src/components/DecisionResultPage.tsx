@@ -209,6 +209,21 @@ function IconLock() {
   )
 }
 
+/**
+ * An uploaded file name, wrapped where a reader would break it.
+ *
+ * File names are one long word to a browser, so "01_Quote_A_ValueSpark_
+ * Electrical-1.pdf" either pushed the card off the side of a phone screen or,
+ * once the card was allowed to shrink, split mid-extension ("...Electrical.pd
+ * / f"). Marking each separator as a break opportunity keeps the break on a
+ * "_", "-" or "." instead; the CSS still allows an anywhere-break as a last
+ * resort for a name that has no separators at all.
+ */
+function FileName({ name }: { name: string }) {
+  const parts = name.split(/(?<=[_\-.\s])/)
+  return <>{parts.map((part, i) => <span key={i}>{part}{i < parts.length - 1 && <wbr />}</span>)}</>
+}
+
 /* ── Section card wrapper ── */
 function SectionCard({ icon, title, className = '', badge, children }: {
   icon: React.ReactNode; title: string; className?: string; badge?: React.ReactNode; children: React.ReactNode
@@ -483,14 +498,14 @@ function DecisionView({ report, decision, readiness, detailsOpen, onToggleDetail
         {best && (
           <div className="dv-block dv-block--wide">
             <div className="dv-block-head"><p className="dv-label">🏆 {t('report.dvBestOption')}</p></div>
-            <p className="dv-best-name">{best.name}</p>
+            <p className="dv-best-name"><FileName name={best.name} /></p>
             {best.summary && <p className="dv-text">{best.summary}</p>}
 
             {tradeoffs.length > 1 && (
               <div className="dv-tradeoffs">
                 {tradeoffs.map((o, i) => (
                   <div key={i} className={`dv-tradeoff${o.name === best.name ? ' dv-tradeoff--best' : ''}`}>
-                    <p className="dv-tradeoff-name">{o.name}</p>
+                    <p className="dv-tradeoff-name"><FileName name={o.name} /></p>
                     {o.advantage && <p className="dv-plus"><span aria-hidden="true">+</span>{o.advantage}</p>}
                     {o.drawback && <p className="dv-minus"><span aria-hidden="true">−</span>{o.drawback}</p>}
                   </div>
@@ -708,7 +723,7 @@ function RankingSection({ ranking, t }: { ranking: RankedDocument[]; t: (k: stri
           <div key={doc.rank} className="dr-ranking-item">
             <span className="dr-rank-medal">{medals[doc.rank - 1] ?? `#${doc.rank}`}</span>
             <div className="dr-rank-info">
-              <p className="dr-rank-name">{doc.name}</p>
+              <p className="dr-rank-name"><FileName name={doc.name} /></p>
               <p className="dr-rank-summary">{doc.summary}</p>
             </div>
             <span className="dr-rank-num">#{doc.rank}</span>

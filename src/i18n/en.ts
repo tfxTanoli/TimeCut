@@ -870,7 +870,7 @@ const en: Record<string, string> = {
   'report.dvMissingInfo': 'Missing Information',
   'report.dvReadiness': 'Decision Readiness',
   'report.dvReadinessDef': 'Whether you currently have enough reliable information to make this decision.',
-  'report.dvReadinessBasedOn': 'Average of:',
+  'report.dvReadinessBasedOn': 'Based on:',
   'report.dvConfidence': 'AI Confidence',
   'report.dvConfidenceDef': 'How confident TimeCut is in this analysis, based on the evidence available.',
   'report.dvNextAction': 'Next Action',

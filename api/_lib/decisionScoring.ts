@@ -276,10 +276,15 @@ STEP 2 — goal_priority, from the Decision Goal only:
 STEP 3 — options: exactly one entry per document, in the order the documents are given, "name" exactly as in its "--- Document N: <name> ---" header.
 
 checklist: every item listed for the document_type below, each exactly once, in the listed order. Status of each item:
-- "Adequate": clearly and specifically stated, and acceptable for the user.
-- "Partial": mentioned but vague, conditional, estimated, incomplete, or only "available on request".
-- "Missing": not addressed anywhere in that document.
+- "Adequate": the document states it specifically — a figure, a date, a period, a named procedure or a firm commitment — and what it states is acceptable for the user.
+- "Partial": the document addresses it but leaves it open. Choose this ONLY when the document itself hedges: "estimated", "approximately", "target", "typically", "subject to", "to be agreed", "where reasonable", "available on request", a range with no commitment, or only some of what the item asks for.
+- "Missing": not addressed anywhere in that document. A document that says nothing about the item is "Missing", never "Partial".
 - "Unfavorable": clearly stated, but one-sided or harmful for the user (see the notes in the item). For a CV: the document itself shows a red flag.
+
+Decide each status from the words on the page, never from how good or bad the offer feels overall:
+- Wanting more detail than the document gives is not a reason to choose "Partial". If the commitment is specific, it is "Adequate".
+- A specific but unwelcome term is "Unfavorable", not "Partial".
+- Where two statuses still seem to fit after these tests, choose the earlier one in this order: Unfavorable, Missing, Partial, Adequate.
 Judge every item from that document alone — never compare with the other documents. File names, upload order and labels such as "final" or "preferred" are not evidence.
 
 price_items: ${'the prices the document states, one entry per priced item, "amount" as a plain number in the stated currency. Copy amounts; never add, multiply or estimate. Use the SAME short item label for the same product or service in every document (e.g. "A4 paper ream", "Black toner cartridge") so the items can be matched. If a document quotes only one total for the whole scope, use a single item "Total". Leave out optional extras, taxes and delivery charges. Use [] for cv and contract documents, and when no price is stated.'}
@@ -417,7 +422,22 @@ export function computeDecisionBasis(
       .filter(k => k.factor === factor)
       .map(k => ({ weight: k.weight, points: INFO_POINTS[k.status] })))),
   }))
-  const decisionReadiness = round(readinessFactors.reduce((s, f) => s + f.score, 0) / readinessFactors.length)
+  // Readiness weighs every checklist item by its own importance, rather than
+  // averaging the factor scores.
+  //
+  // Averaging the factors gave each factor an equal fifth of the number
+  // however many items it covers, so "Evidence Quality" — a single item on a
+  // supplier quotation — carried as much weight as the three pricing items
+  // together. One borderline reading of that one item ("references available
+  // on request": Adequate or Partial?) moved Decision Readiness by 10 points
+  // between two runs of the same documents, which is what a customer sees as
+  // an unstable score. Weighting by the item weights halves that movement and
+  // puts it where it belongs: a critical term is worth more than a minor one.
+  // The factors are still shown beside the score as the breakdown of where
+  // information is thin.
+  const decisionReadiness = round(weightedAverage(
+    best.a.checklist.map(k => ({ weight: k.weight, points: INFO_POINTS[k.status] })),
+  ))
 
   // ── Verdict ──
   let overallDecision: OverallDecision
@@ -489,6 +509,7 @@ export function formatBasisForPrompt(basis: DecisionBasis): string {
     `overall_decision: ${basis.overall_decision}`,
     `confidence_score: ${basis.confidence_score}`,
     `decision_strength: ${basis.decision_strength}`,
+    `decision_readiness: ${basis.decision_readiness}`,
     `readiness_factors: ${basis.readiness_factors.map(f => `{"key":"${f.key}","label":"${f.label}","score":${f.score}}`).join(', ')}`,
     '',
     'ranking (best first — "ranking" must list these names in exactly this order):',

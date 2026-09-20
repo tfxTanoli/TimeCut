@@ -139,7 +139,9 @@ The AI judges each document **on its own**, never by comparing it with the other
 
 ### 4.3 Decision Readiness
 
-For the best-ranked option, each readiness factor is the weighted average of its checklist items, scored for **how complete the information is**: Adequate = 100, Unfavorable = 100 (the term is clear, even if bad), Partial = 50, Missing = 0. Decision Readiness is the average of the factors. The AI now only translates the factor names into the report language.
+For the best-ranked option, each readiness factor is the weighted average of its checklist items, scored for **how complete the information is**: Adequate = 100, Unfavorable = 100 (the term is clear, even if bad), Partial = 50, Missing = 0. Decision Readiness is the weighted average of every checklist item, using the same item weights as the ranking, and the factors are shown beside it as the breakdown of where information is thin.
+
+Readiness was previously the plain average of the five factor scores. That gave a factor with one checklist item (Evidence Quality on a supplier quotation) the same fifth of the score as the three pricing items together, so one borderline reading — "references available on request": Adequate or Partial? — moved Decision Readiness by 10 points between two runs of the same documents. Weighting by item halves that movement and counts a critical term for more than a minor one. The AI only translates the factor names into the report language.
 
 ### 4.4 The verdict
 
