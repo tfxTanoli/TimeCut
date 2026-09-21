@@ -4,9 +4,46 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/webp" href="/timecut-pwa-logo.webp" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- The manifest lists the icon twice on purpose. icon-192/512 are the whole
+         logo, declared "any", and are what Android draws on the launch screen —
+         rounded corners and glow intact. A "maskable" icon is cropped to the
+         middle of the square by the launcher, so declaring the full-bleed logo
+         maskable squared off its corners and zoomed it until the T touched the
+         edge; icon-maskable-* carry the padding that crop needs instead. -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090B" />
+    <style>
+      /* Installed-app launch screen — see the markup at the end of the body.
+         CSS only, and deliberately so: the page's Content-Security-Policy
+         allows no inline script, and anything loaded from a file would still
+         have to arrive before the first paint to be of any use. The screen
+         therefore shows itself, times itself out and can never get stuck, with
+         or without JavaScript. */
+      #app-splash { display: none; }
+      @media all and (display-mode: standalone), all and (display-mode: fullscreen), all and (display-mode: minimal-ui) {
+        @media screen { body { background: #000000; } }
+        #app-splash {
+          position: fixed;
+          inset: 0;
+          z-index: 2147483647;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          /* Matches the manifest's background_color and the black the logo sits
+             on, so the handover from Android's own launch screen to this one is
+             invisible and no square edge shows around the artwork. */
+          background: #000000;
+          /* Holds the logo still, then fades. `forwards` leaves it hidden. */
+          animation: app-splash-exit 1650ms ease-in forwards;
+        }
+        #app-splash img { width: min(180px, 44vw); height: auto; }
+      }
+      @keyframes app-splash-exit {
+        0%, 82% { opacity: 1; visibility: visible; }
+        100% { opacity: 0; visibility: hidden; }
+      }
+    </style>
     <!-- Defaults for the first paint and for link-preview crawlers, which do not
          run JavaScript. RouteMeta replaces title/description per route and adds
          the canonical; no canonical here, or every URL would claim the homepage. -->
@@ -42,6 +79,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Installed-app launch screen ─────────────────────────────────────────
+         Android shows its own splash only until the page paints, which for this
+         app is fast enough that the logo flashed past before it could be read.
+         This holds the same logo on the same background for about a second and
+         a half, so opening the app looks deliberate rather than jumpy.
+
+         It is only for the installed app: a visitor on the website gets the
+         page immediately, with nothing standing in front of it. The markup and
+         its styles sit in this file so the screen is there on the very first
+         paint, before the bundle has loaded. -->
+    <div id="app-splash" aria-hidden="true"><img src="/icon-512.png" alt="" width="180" height="180" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
