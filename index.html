@@ -4,12 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/webp" href="/timecut-pwa-logo.webp" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- The manifest lists the icon twice on purpose. icon-192/512 are the whole
-         logo, declared "any", and are what Android draws on the launch screen —
-         rounded corners and glow intact. A "maskable" icon is cropped to the
-         middle of the square by the launcher, so declaring the full-bleed logo
-         maskable squared off its corners and zoomed it until the T touched the
-         edge; icon-maskable-* carry the padding that crop needs instead. -->
+    <!-- The manifest lists the icon twice on purpose, and the two are framed
+         differently because they are drawn differently.
+
+         icon-192/512 are declared "any": the whole logo, glow and all, as
+         Android draws it on the launch screen.
+
+         icon-maskable-* go on the home screen, where the launcher lays its own
+         rounded mask over the square and shows what is left. Measured against
+         the neighbouring apps on a phone, it shows very nearly the whole
+         square — so these crop the black surround away and let the tile fill
+         the canvas. Padded to leave room for a crop that does not happen, the
+         icon sat visibly smaller than every other app on the home screen. -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090B" />
@@ -48,7 +54,10 @@
           animation: app-splash-failsafe 6s ease-in forwards;
         }
         html.app-loaded #app-splash { animation: app-splash-exit 320ms ease-in forwards; }
-        #app-splash img { width: min(180px, 44vw); height: auto; }
+        /* 240px is the box Android draws its own launch icon in (measured at
+           720 device pixels on a 3x screen), so when this screen takes over
+           from the system one the logo does not change size. */
+        #app-splash img { width: min(240px, 60vw); height: auto; }
       }
       /* Only for an app that never finished loading. */
       @keyframes app-splash-failsafe {
@@ -105,7 +114,7 @@
          page immediately, with nothing standing in front of it. The markup and
          its styles sit in this file so the screen is there on the very first
          paint, before the bundle has loaded. -->
-    <div id="app-splash" aria-hidden="true"><img src="/splash-logo.webp" alt="" width="180" height="180" /></div>
+    <div id="app-splash" aria-hidden="true"><img src="/splash-logo.webp" alt="" width="240" height="240" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
