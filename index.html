@@ -13,16 +13,27 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090B" />
+    <!-- The page is dark before any stylesheet has been parsed, so a launch
+         never starts with a white frame. -->
+    <meta name="color-scheme" content="dark" />
+    <!-- Fetched with the HTML in the installed app, so the logo arrives in one
+         piece. It used to be the 512px icon, a third of a megabyte, which drew
+         itself down the screen in strips on a phone connection. -->
+    <link rel="preload" as="image" href="/splash-logo.webp" media="(display-mode: standalone)" fetchpriority="high" />
     <style>
       /* Installed-app launch screen — see the markup at the end of the body.
-         CSS only, and deliberately so: the page's Content-Security-Policy
-         allows no inline script, and anything loaded from a file would still
-         have to arrive before the first paint to be of any use. The screen
-         therefore shows itself, times itself out and can never get stuck, with
-         or without JavaScript. */
+         It shows itself in CSS, with no script of any kind: the page's
+         Content-Security-Policy allows no inline script, and a file would
+         still have to arrive before the first paint to be of any use.
+
+         It comes down when the app says it has rendered (src/lib/launchScreen
+         adds `app-loaded`), never merely after a set time — fading on a timer
+         uncovered an empty page on a slow start, which read as a second flash
+         before the app appeared. The failsafe animation below is what hides it
+         when that signal never comes, so it can never strand anyone. */
       #app-splash { display: none; }
       @media all and (display-mode: standalone), all and (display-mode: fullscreen), all and (display-mode: minimal-ui) {
-        @media screen { body { background: #000000; } }
+        @media screen { html, body { background: #000000; } }
         #app-splash {
           position: fixed;
           inset: 0;
@@ -34,14 +45,19 @@
              on, so the handover from Android's own launch screen to this one is
              invisible and no square edge shows around the artwork. */
           background: #000000;
-          /* Holds the logo still, then fades. `forwards` leaves it hidden. */
-          animation: app-splash-exit 1650ms ease-in forwards;
+          animation: app-splash-failsafe 6s ease-in forwards;
         }
+        html.app-loaded #app-splash { animation: app-splash-exit 320ms ease-in forwards; }
         #app-splash img { width: min(180px, 44vw); height: auto; }
       }
-      @keyframes app-splash-exit {
-        0%, 82% { opacity: 1; visibility: visible; }
+      /* Only for an app that never finished loading. */
+      @keyframes app-splash-failsafe {
+        0%, 94% { opacity: 1; visibility: visible; }
         100% { opacity: 0; visibility: hidden; }
+      }
+      @keyframes app-splash-exit {
+        from { opacity: 1; visibility: visible; }
+        to { opacity: 0; visibility: hidden; }
       }
     </style>
     <!-- Defaults for the first paint and for link-preview crawlers, which do not
@@ -89,7 +105,7 @@
          page immediately, with nothing standing in front of it. The markup and
          its styles sit in this file so the screen is there on the very first
          paint, before the bundle has loaded. -->
-    <div id="app-splash" aria-hidden="true"><img src="/icon-512.png" alt="" width="180" height="180" /></div>
+    <div id="app-splash" aria-hidden="true"><img src="/splash-logo.webp" alt="" width="180" height="180" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

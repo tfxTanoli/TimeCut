@@ -116,6 +116,8 @@ export interface ChecklistResult {
   label: string
   critical: boolean
   status: 'Adequate' | 'Partial' | 'Missing' | 'Unfavorable'
+  /** Readiness factor this item feeds. Absent on reports saved before it was carried. */
+  factor?: string
 }
 
 /** How one option was scored. */

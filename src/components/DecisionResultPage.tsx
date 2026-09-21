@@ -365,6 +365,37 @@ function readinessOf(report: DecisionReport, t: (k: string) => string): Readines
   return { score: clampPct(report.confidence_score ?? 0), factors: [] }
 }
 
+/**
+ * Why a readiness factor scored what it did, in one short line.
+ *
+ * A factor can rest on a single checklist item — "Evidence Quality" on a
+ * supplier quotation is only "past performance evidence" — so it reads 0% for
+ * the ordinary case of a quote that names no references at all. That is
+ * correct, and it looked broken: readers asked whether the analysis had
+ * failed. The line says which it is.
+ *
+ * Phrased from the counts rather than the item names, because the item names
+ * are only held in English while the report may be in any language.
+ */
+function factorNote(
+  report: DecisionReport,
+  factor: string | undefined,
+  score: number,
+  t: (k: string) => string,
+): string {
+  if (!factor || score >= 100) return ''
+  const best = report.decision_basis?.options?.find(o => o.rank === 1) ?? report.decision_basis?.options?.[0]
+  const items = (best?.checklist ?? []).filter(k => k.factor === factor)
+  if (items.length === 0) return ''
+
+  const missing = items.filter(k => k.status === 'Missing').length
+  if (missing === items.length) return t('report.rfAllMissing')
+  if (missing > 0) {
+    return t('report.rfSomeMissing').replace('{n}', String(missing)).replace('{m}', String(items.length))
+  }
+  return items.some(k => k.status === 'Partial') ? t('report.rfSomePartial') : ''
+}
+
 function readinessLabel(score: number, decision: OverallDecision, t: (k: string) => string): string {
   if (score >= 70) {
     // "Enough information to decide" beside "Not Yet — Verify First" reads as
@@ -597,13 +628,17 @@ function DecisionView({ report, decision, readiness, detailsOpen, onToggleDetail
                   {readiness.factors.map((f, i) => {
                     const value = clampPct(f.score)
                     const barColor = scoreColor(value)
+                    const note = factorNote(report, f.key, value, t)
                     return (
-                      <div key={i} className="dr-breakdown-row">
-                        <span className="dr-breakdown-name">{f.label}</span>
-                        <div className="dr-breakdown-bar-track">
-                          <div className="dr-breakdown-bar-fill" style={{ width: `${value}%`, background: barColor }} />
+                      <div key={i} className="dv-factor">
+                        <div className="dr-breakdown-row">
+                          <span className="dr-breakdown-name">{f.label}</span>
+                          <div className="dr-breakdown-bar-track">
+                            <div className="dr-breakdown-bar-fill" style={{ width: `${value}%`, background: barColor }} />
+                          </div>
+                          <span className="dr-breakdown-pct" style={{ color: barColor }}>{value}%</span>
                         </div>
-                        <span className="dr-breakdown-pct" style={{ color: barColor }}>{value}%</span>
+                        {note && <p className="dv-factor-note">{note}</p>}
                       </div>
                     )
                   })}

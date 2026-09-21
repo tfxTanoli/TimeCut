@@ -7510,7 +7510,11 @@
 
 .dv-scores { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; align-items: start; }
 .dv-def { font-size: 12.5px; color: #9CA3AF; line-height: 1.5; margin: 4px 0 12px; }
-.dv-factors .dr-breakdown-row:last-child { margin-bottom: 0; }
+.dv-factor:last-child .dr-breakdown-row { margin-bottom: 0; }
+/* Why a factor scored what it did, under its bar. A factor can rest on a
+   single checklist item, so a plain "0%" reads as a fault rather than as the
+   documents saying nothing on the subject. */
+.dv-factor-note { font-size: 11px; color: #6B7280; line-height: 1.45; margin: -4px 0 8px; }
 .dv-factors .dr-breakdown-name { width: 160px; }
 .dv-confidence { border-left: 1px solid rgba(255,255,255,0.07); padding-left: 20px; }
 .dv-confidence-val { font-size: 24px; font-weight: 800; line-height: 1; }

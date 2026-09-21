@@ -143,6 +143,8 @@ export interface ChecklistResult {
   label: string
   critical: boolean
   status: CriterionStatus
+  /** Readiness factor this item feeds, so the report can say why one scored low. */
+  factor: string
 }
 
 export interface OptionAssessment {
@@ -482,7 +484,7 @@ export function computeDecisionBasis(
       currency: s.a.currency,
       critical_unfavorable: s.criticalUnfavorable,
       critical_missing: s.criticalMissing,
-      checklist: s.a.checklist.map(k => ({ key: k.key, label: k.label, critical: k.critical, status: k.status })),
+      checklist: s.a.checklist.map(k => ({ key: k.key, label: k.label, critical: k.critical, status: k.status, factor: k.factor })),
     })),
     readiness_factors: readinessFactors,
     decision_readiness: decisionReadiness,

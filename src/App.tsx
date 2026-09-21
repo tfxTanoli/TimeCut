@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { AuthModalProvider } from './contexts/AuthModalContext'
 import AuthModal from './components/AuthModal'
 import { isAdminEmail } from './lib/admin'
+import { dismissLaunchScreen } from './lib/launchScreen'
 
 const HomePage = lazy(() => import('./pages/HomePage'))
 const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'))
@@ -28,6 +29,19 @@ const AdminPage   = lazy(() => import('./pages/AdminPage'))
 const FaqPage      = lazy(() => import('./pages/FaqPage'))
 const SecurityPage = lazy(() => import('./pages/SecurityPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
+
+/**
+ * Takes down the installed app's launch screen.
+ *
+ * It sits inside the Suspense boundary on purpose: while the route's chunk is
+ * still loading, the boundary shows its fallback and this component is not
+ * mounted, so the effect runs at the moment there is a real page to uncover
+ * rather than when React first starts.
+ */
+function LaunchScreenDismiss() {
+  useEffect(() => { dismissLaunchScreen() }, [])
+  return null
+}
 
 // Admins land on /admin only — keep them off the regular user dashboard
 // (e.g. if they hit the back button or open a bookmarked "/" link).
@@ -60,6 +74,7 @@ export default function App() {
           <AdminRouteGuard />
           <Navbar />
           <Suspense fallback={<div className="page-loading" />}>
+            <LaunchScreenDismiss />
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/how-it-works" element={<HowItWorksPage />} />
