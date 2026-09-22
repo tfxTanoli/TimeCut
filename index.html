@@ -4,18 +4,23 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/webp" href="/timecut-pwa-logo.webp" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!-- The manifest lists the icon twice on purpose, and the two are framed
-         differently because they are drawn differently.
+    <!-- Two framings of one logo, because the phone draws it two ways. Measured
+         from photographs of an installed app rather than assumed, since the
+         assumption was wrong twice:
 
-         icon-192/512 are declared "any": the whole logo, glow and all, as
-         Android draws it on the launch screen.
+         The HOME SCREEN takes the "maskable" file and draws it as it is — no
+         mask, no crop. So that one is the whole artwork, which carries its own
+         rounded corners: icon-192/512. Anything padded sits smaller than the
+         apps beside it, and anything full-bleed shows as a hard square.
 
-         icon-maskable-* go on the home screen, where the launcher lays its own
-         rounded mask over the square and shows what is left. Measured against
-         the neighbouring apps on a phone, it shows very nearly the whole
-         square — so these crop the black surround away and let the tile fill
-         the canvas. Padded to leave room for a crop that does not happen, the
-         icon sat visibly smaller than every other app on the home screen. -->
+         The LAUNCH SCREEN takes the "any" file and shows the middle ~72% of it
+         (the artwork's T measured 91% of that screen against 66% of the file).
+         So that one is padded to ~70%: icon-launch-*, whose crop is the whole
+         logo, ending up the same size and shape as the page's own launch
+         screen below.
+
+         Both files are the same picture. Swapping them is what made the icon
+         square, and what left the launch screen cropped. -->
     <link rel="manifest" href="/manifest.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#09090B" />
@@ -54,10 +59,11 @@
           animation: app-splash-failsafe 6s ease-in forwards;
         }
         html.app-loaded #app-splash { animation: app-splash-exit 320ms ease-in forwards; }
-        /* 240px is the box Android draws its own launch icon in (measured at
-           720 device pixels on a 3x screen), so when this screen takes over
-           from the system one the logo does not change size. */
-        #app-splash img { width: min(240px, 60vw); height: auto; }
+        /* The size Android's own launch screen draws the logo: 55% of the
+           screen width in photographs of a 3x phone, which is 224px there. The
+           logo therefore stays put when this screen takes over from the system
+           one, instead of jumping to another size mid-launch. */
+        #app-splash img { width: min(224px, 55vw); height: auto; }
       }
       /* Only for an app that never finished loading. */
       @keyframes app-splash-failsafe {
@@ -114,7 +120,7 @@
          page immediately, with nothing standing in front of it. The markup and
          its styles sit in this file so the screen is there on the very first
          paint, before the bundle has loaded. -->
-    <div id="app-splash" aria-hidden="true"><img src="/splash-logo.webp" alt="" width="240" height="240" /></div>
+    <div id="app-splash" aria-hidden="true"><img src="/splash-logo.webp" alt="" width="224" height="224" /></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
