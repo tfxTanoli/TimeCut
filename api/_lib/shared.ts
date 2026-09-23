@@ -6,6 +6,8 @@ import {
   REPORT_TIMEOUT_MS,
   ASSESSMENT_TIMEOUT_MS,
   REPORT_SAMPLING,
+  WRITER_TOTAL_CHARS,
+  WRITER_MIN_DOC_CHARS,
   OPENAI_MAX_RETRIES,
   buildDocsBlock,
   readUsage,
@@ -17,6 +19,7 @@ import {
 import {
   assessmentPrompt,
   assessmentSchema,
+  checklistTerms,
   computeDecisionBasis,
   formatBasisForPrompt,
   type DecisionBasis,
@@ -570,13 +573,26 @@ export async function generateDecisionReport(
   const ordered = [...documents].sort((a, b) =>
     a.name.localeCompare(b.name, 'en') || (a.content < b.content ? -1 : a.content > b.content ? 1 : 0))
 
-  // Shares a fixed character budget across the uploaded documents, and reports
-  // which ones were cut so the UI can say so instead of silently dropping them.
-  const { block: docsBlock, truncated } = buildDocsBlock(ordered)
+  // The assessment reads the documents: it is the step that decides what a
+  // contract does and does not contain, so it gets the whole character budget.
+  // Anything too long for it is condensed around the checklist rather than cut
+  // off part-way through, and those documents are named to the reader.
+  const terms = checklistTerms(documentType)
+  const { block: docsBlock, condensed } = buildDocsBlock(ordered, { terms })
 
   const { basis, usage: assessmentUsage } = await assessDocuments(
-    openai, ordered, docsBlock, decisionGoal, documentType, truncated.length > 0,
+    openai, ordered, docsBlock, decisionGoal, documentType, condensed.length > 0,
   )
+
+  // The writer explains a decision that has already been made, so it is given
+  // a smaller extract — enough to quote evidence from, not the whole file
+  // again. Sending every document twice at full length spent most of the
+  // minute's token allowance and left long uploads at risk of being refused
+  // by the rate limiter. Without a basis there is nothing else to write from,
+  // so in that fallback it still gets everything.
+  const writerBlock = basis
+    ? buildDocsBlock(ordered, { totalChars: WRITER_TOTAL_CHARS, minChars: WRITER_MIN_DOC_CHARS, terms }).block
+    : docsBlock
 
   const fixedResults = basis ? `\n\n${formatBasisForPrompt(basis)}` : ''
   const remaining = Math.max(MIN_REPORT_WRITE_MS, REPORT_TIMEOUT_MS - (Date.now() - started))
@@ -590,7 +606,7 @@ export async function generateDecisionReport(
       { role: 'system', content: systemPrompt },
       {
         role: 'user',
-        content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${docsBlock}${fixedResults}`,
+        content: `Language: ${language}\n\nDecision Goal: ${decisionGoal}\n\n${writerBlock}${fixedResults}`,
       },
     ],
   }, { timeout: remaining, maxRetries: OPENAI_MAX_RETRIES })
@@ -604,7 +620,7 @@ export async function generateDecisionReport(
   return {
     data,
     usage: assessmentUsage ? addUsage(assessmentUsage, usage) : usage,
-    truncatedDocuments: truncated,
+    truncatedDocuments: condensed,
   }
 }
 

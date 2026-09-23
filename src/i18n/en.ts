@@ -1178,10 +1178,10 @@ const en: Record<string, string> = {
   'profile.pwManageGoogle': 'Manage Google account security →',
 
   // ── Decision report ──
-  'report.truncatedTitleOne': 'One document was too long to analyse in full',
-  'report.truncatedTitleMany': '{n} documents were too long to analyse in full',
-  'report.truncatedBodyOne': 'Only the earlier part of {names} was reviewed. Anything later in the document was not included in this analysis — review those sections yourself, or split the file and run it again.',
-  'report.truncatedBodyMany': 'Only the earlier part of {names} was reviewed. Anything later in those documents was not included in this analysis — review those sections yourself, or split the files and run them again.',
+  'report.truncatedTitleOne': 'One document was too long to send in full',
+  'report.truncatedTitleMany': '{n} documents were too long to send in full',
+  'report.truncatedBodyOne': '{names} was read in full, and the sections that bear on this decision were analysed. Routine passages were left out to fit the document within one analysis. If a clause matters to you and is not mentioned here, check it yourself or split the file and run it again.',
+  'report.truncatedBodyMany': '{names} were read in full, and the sections that bear on this decision were analysed. Routine passages were left out to fit them within one analysis. If a clause matters to you and is not mentioned here, check it yourself or split the files and run them again.',
   'report.skippedTitleOne': 'One uploaded file was not analysed',
   'report.skippedTitleMany': '{n} uploaded files were not analysed',
   'report.skippedBody': 'This report is based only on the documents that could be read. Nothing from the files below was considered, and they were not charged for. If they matter to this decision, fix or replace them and run the analysis again.',

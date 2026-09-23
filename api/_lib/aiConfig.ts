@@ -5,6 +5,8 @@
 // code paths can never drift apart — previously each held its own copy of the
 // model name and the truncation limits.
 
+import { selectWithinBudget } from './documentSelection.js'
+
 /**
  * Model used for document analysis and report generation.
  *
@@ -48,33 +50,56 @@ export const MODEL_PRICING: Record<string, { input: number; cachedInput: number;
 }
 
 /* ── Input ceilings ──────────────────────────────────────────────────────────
-   Documents used to be cut to 8,000 characters each, which silently dropped
-   everything past roughly page 3-5 of a contract: a liability clause on page 30
-   was never seen by the model, and nothing told the user. These limits raise
-   that a long way while keeping a hard ceiling on what one report can cost.
+   What one report may read is set by the account's tokens-per-minute ceiling,
+   not by the model's context window. The key runs at 30,000 TPM, and a report
+   is two calls inside the same minute, so everything both of them send and
+   receive has to fit in that one figure:
 
-   MAX_TOTAL_CHARS is the load-bearing one. Without it, ten documents at the
-   per-document allowance would send 500k characters (~125k tokens) and cost
-   ~$0.35 a report, which 3,000 monthly credits of would outrun a $29
-   subscription. The budget is shared across documents instead: a single
-   upload gets the full allowance, ten documents get 8,000 each.
+     assessment prompt      ~14,000   the documents, at MAX_TOTAL_CHARS
+     writer prompt           ~4,000   its extract, at WRITER_TOTAL_CHARS
+     the two system prompts  ~4,500
+     the report itself       ~3,000
+                            ───────
+                            ~25,500   of 30,000
+
+   Measured at 28,753 before this budget was set — 96% of the ceiling, with the
+   documents sent twice at full length. A slightly longer upload would have
+   been refused outright by the rate limiter, costing the customer a report.
+   Raising these numbers means raising the key's tier first.
+
+   The budget is shared across documents rather than given to each: one upload
+   gets the full allowance, several get a share with a floor under it. A
+   document longer than its share is condensed by selectWithinBudget rather
+   than cut off at the character count, so a clause late in a contract still
+   reaches the model. Either way the reader is told which documents did not
+   fit whole — analysing part of a contract silently is not an option.
 */
 
 /** Single-content analyses (pasted text, one PDF). ~18 pages of dense text. */
 export const MAX_CONTENT_CHARS = 50_000
 /** The most any single document may contribute to a decision report. */
-export const MAX_DOC_CHARS = 50_000
+export const MAX_DOC_CHARS = 56_000
 /**
  * Total across every document in one decision report. A single upload gets the
  * full MAX_DOC_CHARS; beyond that the budget is divided, so two documents get
- * 40,000 each and five get 16,000 each. MIN_DOC_CHARS wins over this above ten
- * documents, which is deliberate — 10 x 8,000 is exactly what shipped
+ * 32,000 each and five get 12,800 each. MIN_DOC_CHARS wins over this above
+ * eight documents, which is deliberate — 8,000 each is what shipped
  * originally, and lowering it to satisfy this number would make large reports
  * worse than they already are.
  */
-export const MAX_TOTAL_CHARS = 80_000
-/** Floor per document, so a 10-document report is never worse than before. */
+export const MAX_TOTAL_CHARS = 64_000
+/** Floor per document, so a many-document report is never worse than before. */
 export const MIN_DOC_CHARS = 8_000
+/**
+ * What the report writer is given. It does not judge the documents — the
+ * checklist has already been scored by the time it runs, and it is handed
+ * those results as final — so it needs enough of the text to quote evidence
+ * and write accurately, not the whole thing. Sending the documents twice at
+ * full length was most of the token bill.
+ */
+export const WRITER_TOTAL_CHARS = 16_000
+/** Floor per document inside the writer's allowance, for many-document reports. */
+export const WRITER_MIN_DOC_CHARS = 2_000
 /** Ceiling on the report context sent with each Decision Assistant question. */
 export const MAX_ASSISTANT_CONTEXT_CHARS = 6_000
 
@@ -160,10 +185,20 @@ export function parseModelJson(completion: any): Record<string, unknown> {
 }
 
 /** How many characters each document may use, given how many were uploaded. */
-export function perDocumentBudget(documentCount: number): number {
-  if (documentCount <= 0) return MAX_DOC_CHARS
-  const share = Math.floor(MAX_TOTAL_CHARS / documentCount)
-  return Math.min(MAX_DOC_CHARS, Math.max(MIN_DOC_CHARS, share))
+export function perDocumentBudget(
+  documentCount: number,
+  totalChars: number = MAX_TOTAL_CHARS,
+  minChars: number = MIN_DOC_CHARS,
+): number {
+  const cap = Math.min(MAX_DOC_CHARS, totalChars)
+  if (documentCount <= 0) return cap
+  const share = Math.floor(totalChars / documentCount)
+  // The floor stops a handful of documents being read too thinly, but it is
+  // dropped once it would burst the shared budget: ten documents at 8,000 each
+  // is 80,000 characters, and a report that asks for more than the minute's
+  // token allowance is refused outright rather than answered thinly.
+  const floorFits = documentCount * minChars <= totalChars
+  return Math.min(cap, floorFits ? Math.max(minChars, share) : share)
 }
 
 /* ── PDF page markers ────────────────────────────────────────────────────────
@@ -221,29 +256,39 @@ export function toPageMarkedText(rawPdfText: string): PageMarkedText {
 export interface DocsBlockResult {
   /** The prompt block to send to the model. */
   block: string
-  /** Names of documents that did not fit and were cut short. */
-  truncated: string[]
+  /** Names of documents that did not fit whole and were reduced. */
+  condensed: string[]
 }
 
 /**
- * Build the document block for a decision report, sharing MAX_TOTAL_CHARS
- * across the uploaded documents and reporting which ones were cut. The caller
- * is expected to surface `truncated` to the user — silent truncation is the
- * problem this replaces.
+ * Build the document block for a decision report, sharing a character budget
+ * across the uploaded documents and reporting which ones did not fit whole.
+ * The caller is expected to surface `condensed` to the user — sending the
+ * model part of a contract without saying so is the problem this replaces.
+ *
+ * A document that fits is sent exactly as it is, which is the usual case. One
+ * that does not is reduced by selectWithinBudget, which keeps its opening and
+ * the passages that bear on the checklist instead of stopping at a character
+ * count and discarding the rest of the contract.
  */
-export function buildDocsBlock(documents: { name: string; content: string }[]): DocsBlockResult {
-  const budget = perDocumentBudget(documents.length)
-  const truncated: string[] = []
+export function buildDocsBlock(
+  documents: { name: string; content: string }[],
+  options: { totalChars?: number; minChars?: number; terms?: string[] } = {},
+): DocsBlockResult {
+  const total = options.totalChars ?? MAX_TOTAL_CHARS
+  const budget = perDocumentBudget(documents.length, total, options.minChars)
+  const terms = options.terms ?? []
+  const condensed: string[] = []
 
   const block = documents
     .map((d, i) => {
-      const cut = d.content.length > budget
-      if (cut) truncated.push(d.name)
-      return `--- Document ${i + 1}: ${d.name} ---\n${cut ? d.content.slice(0, budget) : d.content}`
+      const extract = selectWithinBudget(d.content, budget, terms)
+      if (extract.condensed) condensed.push(d.name)
+      return `--- Document ${i + 1}: ${d.name} ---\n${extract.text}`
     })
     .join('\n\n')
 
-  return { block, truncated }
+  return { block, condensed }
 }
 
 export interface TokenUsage {

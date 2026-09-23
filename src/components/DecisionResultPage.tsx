@@ -1923,7 +1923,11 @@ export default function DecisionResultPage({ report: rawReport, onBack, language
 
   const hasComparedCategories = report.compared_categories && report.compared_categories.length > 0
   const hasChecklist = report.before_signing_checklist && report.before_signing_checklist.length > 0
-  const docType = report.document_type
+  // The checklist that scored the report is the authority on which expert
+  // framework was applied. The top-level field can be the model's own word for
+  // the document where no checklist ran, and a report whose factors come from
+  // one framework must not carry another framework's name at the top of it.
+  const docType = report.decision_basis?.document_type ?? report.document_type
   const hasVerificationQuestions = report.verification_questions && report.verification_questions.length > 0
   const hasInterviewFlags = report.interview_red_flags && report.interview_red_flags.length > 0
   const hasRecommendedActions = report.recommended_actions && report.recommended_actions.length > 0

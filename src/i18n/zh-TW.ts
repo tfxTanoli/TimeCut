@@ -1170,10 +1170,10 @@ const zhTW: Record<string, string> = {
   'profile.pwManageGoogle': '管理 Google 帳戶安全 →',
 
   // ── 決策報告 ──
-  'report.truncatedTitleOne': '有一份文件過長，未能完整分析',
-  'report.truncatedTitleMany': '有 {n} 份文件過長，未能完整分析',
-  'report.truncatedBodyOne': '只審閱了 {names} 的前半部分。文件後段的內容未納入本次分析——請自行查看這些部分，或拆分檔案後重新分析。',
-  'report.truncatedBodyMany': '只審閱了 {names} 的前半部分。這些文件後段的內容未納入本次分析——請自行查看這些部分，或拆分檔案後重新分析。',
+  'report.truncatedTitleOne': '有一份文件過長，未能全文送入分析',
+  'report.truncatedTitleMany': '有 {n} 份文件過長，未能全文送入分析',
+  'report.truncatedBodyOne': '已通讀 {names} 全文，並分析了與本次決策相關的條款；為了在一次分析內容納整份文件，常規條文未一一送入。若某項條款對您很重要但本報告未提及，請自行核對，或拆分檔案後重新分析。',
+  'report.truncatedBodyMany': '已通讀 {names} 全文，並分析了與本次決策相關的條款；為了在一次分析內容納這些文件，常規條文未一一送入。若某項條款對您很重要但本報告未提及，請自行核對，或拆分檔案後重新分析。',
   'report.skippedTitleOne': '有一個上傳的檔案未被分析',
   'report.skippedTitleMany': '有 {n} 個上傳的檔案未被分析',
   'report.skippedBody': '本報告僅根據可讀取的文件。下列檔案的內容均未納入考量，也未因此扣點。如果它們對本次決策很重要，請修正或替換後重新分析。',

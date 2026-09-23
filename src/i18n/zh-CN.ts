@@ -1170,10 +1170,10 @@ const zhCN: Record<string, string> = {
   'profile.pwManageGoogle': '管理 Google 账户安全 →',
 
   // ── 决策报告 ──
-  'report.truncatedTitleOne': '有一份文件过长，未能完整分析',
-  'report.truncatedTitleMany': '有 {n} 份文件过长，未能完整分析',
-  'report.truncatedBodyOne': '只审阅了 {names} 的前半部分。文件后面的内容未纳入本次分析——请自行查看这些部分，或拆分文件后重新分析。',
-  'report.truncatedBodyMany': '只审阅了 {names} 的前半部分。这些文件后面的内容未纳入本次分析——请自行查看这些部分，或拆分文件后重新分析。',
+  'report.truncatedTitleOne': '有一份文件过长，未能全文送入分析',
+  'report.truncatedTitleMany': '有 {n} 份文件过长，未能全文送入分析',
+  'report.truncatedBodyOne': '已通读 {names} 全文，并分析了与本次决策相关的条款；为了在一次分析内容纳整份文件，常规条文未一一送入。若某项条款对您很重要但本报告未提及，请自行核对，或拆分文件后重新分析。',
+  'report.truncatedBodyMany': '已通读 {names} 全文，并分析了与本次决策相关的条款；为了在一次分析内容纳这些文件，常规条文未一一送入。若某项条款对您很重要但本报告未提及，请自行核对，或拆分文件后重新分析。',
   'report.skippedTitleOne': '有一个上传的文件未被分析',
   'report.skippedTitleMany': '有 {n} 个上传的文件未被分析',
   'report.skippedBody': '本报告仅基于可读取的文件。下列文件的内容均未纳入考虑，也未因此扣费。如果它们对本次决策很重要，请修复或替换后重新分析。',

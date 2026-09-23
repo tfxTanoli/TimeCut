@@ -250,6 +250,46 @@ export function assessmentSchema(documentNames: string[], requestedType: string)
   }
 }
 
+/**
+ * Terms that mark a paragraph as worth keeping when a document is too long to
+ * send in full (see documentSelection).
+ *
+ * Taken from the checklist itself, so the text kept is the text the report is
+ * about to be scored against, and so the two can never drift apart. Stems
+ * rather than whole words: "indemnif" catches indemnify, indemnities and
+ * indemnification alike.
+ */
+const EXTRA_TERMS = [
+  'liabilit', 'indemnif', 'insur', 'terminat', 'cancel', 'warrant', 'guarantee',
+  'deliver', 'payment', 'price', 'pricing', 'cost', 'fee', 'invoice', 'deposit',
+  'penalt', 'damages', 'dispute', 'governing law', 'jurisdiction', 'confidential',
+  'intellectual property', 'renewal', 'notice period', 'settlement', 'gst', 'tax',
+  'refund', 'risk', 'breach', 'default', 'schedule', 'annex', 'exclusion', 'limit',
+]
+
+const STOP_WORDS = new Set([
+  'a', 'an', 'and', 'are', 'all', 'any', 'been', 'can', 'each', 'for', 'from', 'has',
+  'have', 'how', 'into', 'is', 'it', 'its', 'no', 'not', 'of', 'on', 'or', 'only',
+  'other', 'over', 'own', 'per', 'stated', 'state', 'that', 'the', 'their', 'them',
+  'there', 'they', 'this', 'to', 'use', 'used', 'very', 'was', 'what', 'when',
+  'where', 'which', 'who', 'whom', 'with', 'without', 'would', 'must', 'may', 'one',
+  'two', 'more', 'most', 'such', 'than', 'then', 'these', 'those', 'also', 'about',
+])
+
+export function checklistTerms(requestedType: string): string[] {
+  const fixed = frameworkOrNull(requestedType)
+  const types = fixed ? [fixed] : [...FRAMEWORKS]
+  const terms = new Set(EXTRA_TERMS)
+  for (const type of types) {
+    for (const criterion of FRAMEWORK_CRITERIA[type]) {
+      for (const word of `${criterion.label} ${criterion.test}`.toLowerCase().match(/[a-z]{4,}/g) ?? []) {
+        if (!STOP_WORDS.has(word)) terms.add(word)
+      }
+    }
+  }
+  return [...terms]
+}
+
 /** System prompt for the assessment step. */
 export function assessmentPrompt(requestedType: string, documentCount: number): string {
   const fixed = frameworkOrNull(requestedType)
