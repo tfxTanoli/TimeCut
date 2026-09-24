@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { generateReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL, MAX_CONTENT_CHARS, ModelOutputError, isTimeoutError, TIMEOUT_MESSAGE } from './_lib/aiConfig.js'
+import { REPORT_MODEL, MAX_CONTENT_CHARS, ModelOutputError, isTimeoutError, TIMEOUT_MESSAGE, resolveLanguage } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 import { estimatePages } from './_lib/documents.js'
 import {
@@ -31,7 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!contentAnalysisEnabled()) return res.status(404).json({ error: 'Not found' })
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
-  const { content, language = 'English' } = req.body ?? {}
+  const { content } = req.body ?? {}
+  const language = resolveLanguage(req.body?.language)
   if (typeof content !== 'string' || !content.trim()) {
     return res.status(400).json({ error: 'content is required' })
   }
@@ -59,7 +60,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { data, usage, truncated } = await generateReport(content, String(language).slice(0, 40))
+    const { data, usage, truncated } = await generateReport(content, language)
     await recordAiUsage({
       uid: ent.uid,
       plan: ent.plan,
@@ -78,6 +79,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.error('[ANALYZE ERROR]', err)
     if (isTimeoutError(err)) return res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE })
     if (err instanceof ModelOutputError) return res.status(502).json({ code: 'MODEL_OUTPUT', error: err.message })
-    return res.status(500).json({ error: err instanceof Error ? err.message : 'Analysis failed' })
+    return res.status(500).json({ error: 'The analysis could not be completed. Please try again.' })
   }
 }

@@ -75,20 +75,38 @@ export async function consumeRateLimit(
 /**
  * Best-effort client IP.
  *
- * `x-forwarded-for` is attacker-controllable in general, but on Vercel the
- * platform rewrites it, so the left-most entry is the real client. It is still
- * only one of the two keys every caller is limited on — the other is the email
- * address, which cannot be spoofed into unlimited sends because it is also the
- * address the mail goes to.
+ * `x-vercel-forwarded-for` is set by the platform and any inbound copy is
+ * stripped, so it cannot be spoofed and is preferred wherever it is present.
+ * `x-forwarded-for` is only trustworthy because Vercel rewrites it — read on
+ * its own, anywhere else, it is whatever the caller typed, which would let one
+ * machine walk through every per-IP budget in turn. It is still only one of the
+ * two keys every caller is limited on: the other is the email address, which
+ * cannot be spoofed into unlimited sends because it is also the address the
+ * mail goes to.
  */
 export function clientIp(headers: Record<string, string | string[] | undefined>): string {
-  const raw = headers['x-forwarded-for'] ?? headers['x-real-ip']
+  const raw = headers['x-vercel-forwarded-for']
+    ?? headers['x-forwarded-for']
+    ?? headers['x-real-ip']
   const value = Array.isArray(raw) ? raw[0] : raw
   const first = value?.split(',')[0]?.trim()
   return first && first.length <= 64 ? first : 'unknown'
 }
 
-/** Normalised key part for an email address. */
+/**
+ * Normalised key part for an email address.
+ *
+ * Firestore refuses a document id that is `.` or `..`, or that matches
+ * `__…__`, and `consumeRateLimit` answers a refused write by failing open — so
+ * a key that normalises to one of those shapes would carry no limit at all.
+ * Today every caller prefixes this with a purpose (`contact:`, `verify:`), which
+ * already rules those shapes out; the guard is here so that a future caller
+ * using this key on its own cannot quietly reintroduce the hole.
+ */
 export function emailKey(email: string): string {
-  return email.trim().toLowerCase().slice(0, 120).replace(/[/#[\]]/g, '_')
+  const cleaned = email.trim().toLowerCase().slice(0, 120).replace(/[/#[\]]/g, '_')
+  if (cleaned === '' || cleaned === '.' || cleaned === '..' || /^__.*__$/.test(cleaned)) {
+    return `_${cleaned}_`
+  }
+  return cleaned
 }

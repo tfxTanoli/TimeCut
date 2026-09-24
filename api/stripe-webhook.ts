@@ -115,13 +115,36 @@ async function activateFromSubscription(
   console.log(`[webhook] ✓ ${userRef.id} → ${planKey}, expires ${expiresAt.toDate().toISOString()}`)
 }
 
-/** Return an account to the free plan. */
+/**
+ * Return an account to the free plan.
+ *
+ * Webhook delivery is not ordered, and the event body is a snapshot of the
+ * subscription as it was when the event fired. A `past_due` or `unpaid` event
+ * delayed behind the recovery that followed it would therefore take access away
+ * from a customer who has already paid. The subscription's live state is read
+ * back from Stripe first, and a subscription Stripe still calls active is left
+ * alone — the event that activated it has already written the right plan.
+ */
 async function downgrade(
   adminDb: AdminDb,
   subscription: Stripe.Subscription | null,
   customerId: string | undefined,
   reason: string,
 ): Promise<void> {
+  if (subscription?.id) {
+    try {
+      const current = await stripe.subscriptions.retrieve(subscription.id)
+      if (current.status === 'active' || current.status === 'trialing') {
+        console.log(`[webhook] ignoring stale downgrade for ${current.id} (${reason}): Stripe reports ${current.status}`)
+        return
+      }
+      subscription = current
+    } catch (e) {
+      // Stripe unreachable: fall through and act on the event as delivered.
+      console.warn('[webhook] could not re-read subscription before downgrade:', e)
+    }
+  }
+
   const userRef = await findUserRef(adminDb, subscription, customerId)
   if (!userRef) {
     console.error('[webhook] No user found to downgrade for customer:', customerId)
@@ -158,7 +181,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ? stripe.webhooks.constructEvent(rawBody, sig, verification.secret)
       : JSON.parse(rawBody.toString()) as Stripe.Event
   } catch (err) {
-    return res.status(400).send(`Webhook error: ${err instanceof Error ? err.message : 'unknown'}`)
+    // Logged, not echoed: the verifier's message distinguishes a missing
+    // signature from a mismatched one, which only helps someone probing it.
+    console.error('[webhook] signature verification failed:', err)
+    return res.status(400).send('Webhook signature verification failed')
   }
 
   const adminDb = getAdminDb()

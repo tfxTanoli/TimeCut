@@ -3,7 +3,7 @@ import formidable from 'formidable'
 import fs from 'fs'
 import { generateReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL, ModelOutputError, isTimeoutError, TIMEOUT_MESSAGE } from './_lib/aiConfig.js'
+import { REPORT_MODEL, ModelOutputError, isTimeoutError, TIMEOUT_MESSAGE, resolveLanguage } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 import { extractDocument, DocumentReadError, MAX_UPLOAD_TOTAL_BYTES } from './_lib/documents.js'
 import {
@@ -58,7 +58,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (!file) return res.status(400).json({ error: 'No PDF uploaded' })
 
-    const language = String((Array.isArray(fields.language) ? fields.language[0] : fields.language) ?? 'English').slice(0, 40)
+    const language = resolveLanguage(Array.isArray(fields.language) ? fields.language[0] : fields.language)
     let charged: number | null = null
 
     try {
@@ -102,7 +102,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       if (e instanceof DocumentReadError) return res.status(400).json({ error: e.message })
       if (isTimeoutError(e)) return res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE })
       if (e instanceof ModelOutputError) return res.status(502).json({ code: 'MODEL_OUTPUT', error: e.message })
-      return res.status(500).json({ error: e instanceof Error ? e.message : 'PDF analysis failed' })
+      return res.status(500).json({ error: 'The analysis could not be completed. Please try again.' })
     } finally {
       cleanup()
     }

@@ -122,6 +122,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ success: true, plan: planKey })
   } catch (err) {
     console.error('[activate-plan] Error:', err)
-    return res.status(500).json({ success: false, error: err instanceof Error ? err.message : 'Activation failed' })
+    // The raw error is logged above, never returned: Stripe's messages carry
+    // customer ids and account configuration detail that a caller must not see.
+    return res.status(500).json({ success: false, error: 'Could not activate your plan. Please contact support if this continues.' })
   }
 }

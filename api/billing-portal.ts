@@ -98,6 +98,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: 'Subscription management is not configured yet. Please contact support to cancel.',
       })
     }
-    return res.status(500).json({ error: message })
+    // Anything else is a Stripe or network fault the customer cannot act on,
+    // and its message would expose internal billing detail.
+    return res.status(500).json({ error: 'Could not open billing management just now. Please try again.' })
   }
 }

@@ -47,7 +47,9 @@ export function webhookVerification(): { secret: string } | { skip: true } | { r
   if (isLiveKey) {
     return { refuse: 'STRIPE_WEBHOOK_SECRET is required when using live Stripe keys. Refusing to trust an unsigned event.' }
   }
-  if (process.env.VERCEL) {
+  // VERCEL covers our own deployments; NODE_ENV covers anywhere else this is
+  // ever run in production, where the platform variable would not be set.
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
     return { refuse: 'STRIPE_WEBHOOK_SECRET is not set on this deployment. Refusing to trust an unsigned event.' }
   }
   console.warn('[webhook] No STRIPE_WEBHOOK_SECRET — accepting unsigned events (local test mode only).')

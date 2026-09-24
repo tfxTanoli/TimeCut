@@ -3,7 +3,7 @@ import formidable from 'formidable'
 import fs from 'fs'
 import { generateDecisionReport, normalizeDecisionReport } from './_lib/shared.js'
 import { verifyAuth, ApiError } from './_lib/auth.js'
-import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE, ModelOutputError } from './_lib/aiConfig.js'
+import { REPORT_MODEL, isTimeoutError, TIMEOUT_MESSAGE, ModelOutputError, resolveLanguage } from './_lib/aiConfig.js'
 import { recordAiUsage } from './_lib/aiUsage.js'
 import {
   extractDocument,
@@ -138,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })
     }
 
-    const language = firstField(fields.language).slice(0, 40) || 'English'
+    const language = resolveLanguage(firstField(fields.language))
     const requestedType = firstField(fields.documentType)
     const documentType = DOCUMENT_TYPES.has(requestedType) ? requestedType : 'auto'
 
@@ -265,8 +265,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // the refund, rather than showing the raw SDK message.
       if (isTimeoutError(e)) return res.status(504).json({ code: 'TIMEOUT', error: TIMEOUT_MESSAGE })
       if (e instanceof ModelOutputError) return res.status(502).json({ code: 'MODEL_OUTPUT', error: e.message })
-      const message = e instanceof Error ? e.message : typeof e === 'string' ? e : JSON.stringify(e)
-      return res.status(500).json({ error: message || 'Decision analysis failed' })
+      // Logged above, not returned. This used to forward the raw exception text,
+      // which leaked OpenAI and Firestore internals straight to the browser.
+      return res.status(500).json({ error: 'The analysis could not be completed. Please try again.' })
     }
   }
 }

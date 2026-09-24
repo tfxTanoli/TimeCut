@@ -182,7 +182,15 @@ export async function chargeCredits(
   })
 }
 
-/** Give credits back when the work we charged for failed. Never goes below 0. */
+/**
+ * Give credits back when the work we charged for failed.
+ *
+ * Every counter is floored at 0 from the value read in the same transaction.
+ * `used` already was, but the three usage counters were given back with a bare
+ * `increment(-n)`, which has no floor — a refund that ran twice (a retry, or a
+ * charge that failed partway) drove them negative, and a negative
+ * `assistantUsed` reads as unused quota.
+ */
 export async function refundCredits(
   ent: Entitlement,
   cost: number,
@@ -191,18 +199,18 @@ export async function refundCredits(
   const adb = getAdminDb()
   if (!adb) return
   const ref = ledgerRef(ent.uid)
-  const inc = admin.firestore.FieldValue.increment
   try {
     await adb.runTransaction(async tx => {
       const snap = await tx.get(ref)
-      const used: number = snap.exists ? (snap.data()?.used ?? 0) : 0
+      const data = snap.exists ? (snap.data() ?? {}) : {}
+      const less = (field: string, by: number): number => Math.max(0, (data[field] ?? 0) - by)
       tx.set(
         ref,
         {
-          used: Math.max(0, used - cost),
-          reportsUsed: inc(-(extra.reports ?? 0)),
-          assistantUsed: inc(-(extra.assistant ?? 0)),
-          documentsUploaded: inc(-(extra.documents ?? 0)),
+          used: less('used', cost),
+          reportsUsed: less('reportsUsed', extra.reports ?? 0),
+          assistantUsed: less('assistantUsed', extra.assistant ?? 0),
+          documentsUploaded: less('documentsUploaded', extra.documents ?? 0),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         },
         { merge: true },
@@ -253,17 +261,39 @@ export async function consumeFreeReport(ent: Entitlement, documents: number): Pr
   })
 }
 
-/** Undo consumeFreeReport when the analysis it paid for failed. */
+/**
+ * Undo consumeFreeReport when the analysis it paid for failed.
+ *
+ * One transaction rather than two loose writes, and floored at 0 like
+ * refundCredits: a bare `increment(-1)` on `freeReportsUsed` could drive the
+ * lifetime counter negative, and `consumeFreeReport` reads that counter to
+ * decide whether a free report remains — so a negative value handed out extra
+ * free reports for as long as it took to climb back to zero.
+ */
 export async function refundFreeReport(ent: Entitlement, documents: number): Promise<void> {
   const adb = getAdminDb()
   if (!adb) return
-  const inc = admin.firestore.FieldValue.increment
+  const userRef = adb.doc(`users/${ent.uid}`)
+  const ref = ledgerRef(ent.uid)
   try {
-    await adb.doc(`users/${ent.uid}`).set({ freeReportsUsed: inc(-1) }, { merge: true })
-    await ledgerRef(ent.uid).set(
-      { reportsUsed: inc(-1), documentsUploaded: inc(-documents) },
-      { merge: true },
-    )
+    await adb.runTransaction(async tx => {
+      // Both reads before either write — Firestore requires that order.
+      const userSnap = await tx.get(userRef)
+      const ledgerSnap = await tx.get(ref)
+      const usedFree: number = userSnap.exists ? (userSnap.data()?.freeReportsUsed ?? 0) : 0
+      const ledger = ledgerSnap.exists ? (ledgerSnap.data() ?? {}) : {}
+
+      tx.set(userRef, { freeReportsUsed: Math.max(0, usedFree - 1) }, { merge: true })
+      tx.set(
+        ref,
+        {
+          reportsUsed: Math.max(0, (ledger.reportsUsed ?? 0) - 1),
+          documentsUploaded: Math.max(0, (ledger.documentsUploaded ?? 0) - documents),
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true },
+      )
+    })
   } catch (e) {
     console.warn('[entitlements] free-report refund failed:', e)
   }

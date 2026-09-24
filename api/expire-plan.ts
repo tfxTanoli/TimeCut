@@ -47,6 +47,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ expired: false })
   } catch (err) {
     console.error('[expire-plan] Error:', err)
-    return res.status(500).json({ error: err instanceof Error ? err.message : 'Failed' })
+    return res.status(500).json({ error: 'Could not refresh your plan. Please try again.' })
   }
 }

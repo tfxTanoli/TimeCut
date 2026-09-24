@@ -31,6 +31,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(status).json(body)
   } catch (err) {
     console.error('[create-subscription] Error:', err)
-    return res.status(500).json({ error: err instanceof Error ? err.message : 'Subscription creation failed' })
+    // Never the raw Stripe message: it names customer ids, prices and account
+    // configuration. It is logged above for support to read.
+    return res.status(500).json({ error: 'Could not start your subscription. Please try again or contact support.' })
   }
 }

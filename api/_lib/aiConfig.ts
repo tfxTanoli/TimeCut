@@ -75,6 +75,35 @@ export const MODEL_PRICING: Record<string, { input: number; cachedInput: number;
    fit whole — analysing part of a contract silently is not an option.
 */
 
+// ── Report language ─────────────────────────────────────────────────────────
+// The language name is interpolated straight into the model prompt, so it is
+// caller-controlled prompt text. It used to be accepted as any string clipped
+// to 40 characters, which is more than enough room for an instruction. Only
+// the languages the picker actually offers are accepted now; anything else
+// falls back to English rather than reaching the model.
+//
+// Mirrors LANGUAGES in src/components/DecisionUpload.tsx — keep the two in step.
+export const SUPPORTED_LANGUAGES = [
+  'English', 'Spanish', 'French', 'German', 'Arabic', 'Portuguese',
+  'Chinese (Simplified)', 'Chinese (Traditional)', 'Japanese', 'Turkish', 'Italian', 'Korean',
+] as const
+
+const LANGUAGE_SET: ReadonlySet<string> = new Set(SUPPORTED_LANGUAGES)
+
+/** The requested language when it is one we offer, otherwise English. */
+export function resolveLanguage(requested: unknown): string {
+  if (typeof requested !== 'string') return 'English'
+  const trimmed = requested.trim()
+  if (LANGUAGE_SET.has(trimmed)) return trimmed
+  // Case-insensitive match, so a stored "english" still resolves rather than
+  // silently switching a returning user's reports to a different language.
+  const lower = trimmed.toLowerCase()
+  for (const known of SUPPORTED_LANGUAGES) {
+    if (known.toLowerCase() === lower) return known
+  }
+  return 'English'
+}
+
 /** Single-content analyses (pasted text, one PDF). ~18 pages of dense text. */
 export const MAX_CONTENT_CHARS = 50_000
 /** The most any single document may contribute to a decision report. */
